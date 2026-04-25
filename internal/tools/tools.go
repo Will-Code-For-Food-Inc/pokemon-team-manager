@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"strings"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -30,6 +31,7 @@ func Register(s *server.MCPServer, svc *Services) {
 	registerTeamTools(s, svc)
 	registerKnowledgeTools(s, svc)
 	registerRegulationTools(s, svc)
+	registerAnalysisTools(s, svc)
 }
 
 // registerHelpTool adds a get_help tool that returns compact usage docs.
@@ -38,8 +40,8 @@ func registerHelpTool(s *server.MCPServer) {
 	const helpText = `ptm — Pokemon Team Manager (VGC format only)
 
 QUICK START:
-1. list_regulations → pick one (current: H)
-2. create_team name="..." regulation="H" → get team_id
+1. list_regulations → pick one (current: I2)
+2. create_team name="..." regulation="I2" → get team_id
 3. search_pokemon query="name" → verify species name
 4. add_pokemon team_id=N pokemon_name="..." → adds to next slot (max 6)
 5. set_ability / set_nature / set_item / set_moves / set_stats / set_role
@@ -48,7 +50,7 @@ QUICK START:
 8. export_team team_id=N → markdown output
 
 RULES: 6 Pokemon, no duplicate species or items, final evos only,
-Stat points: 66 total, max 32/stat (Pokemon Champions system). 0 restricted Legendaries (Reg H).
+Stat points: 66 total, max 32/stat (Pokemon Champions system). 0 restricted Legendaries (Reg I2).
 
 STATS for set_stats: hp attack defense sp_attack sp_defense speed
 Use search_knowledge for strategy docs and tier lists.`
@@ -285,7 +287,7 @@ func registerTeamTools(s *server.MCPServer, svc *Services) {
 	s.AddTool(mcp.NewTool("create_team",
 		mcp.WithDescription("Create a new empty VGC team."),
 		mcp.WithString("name", mcp.Required(), mcp.Description("Team name")),
-		mcp.WithString("regulation", mcp.Required(), mcp.Description("Regulation set ID (e.g. 'H')")),
+		mcp.WithString("regulation", mcp.Required(), mcp.Description("Regulation set ID (e.g. 'I2')")),
 	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		args := req.GetArguments()
 		id, err := svc.Team.CreateTeam(getString(args, "name"), getString(args, "regulation"))
@@ -414,6 +416,10 @@ func registerTeamTools(s *server.MCPServer, svc *Services) {
 	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		args := req.GetArguments()
 		nature := getString(args, "nature")
+		removed := map[string]bool{"hardy": true, "docile": true, "bashful": true, "quirky": true}
+		if removed[strings.ToLower(nature)] {
+			return errf("%s is not a valid Stat Alignment in Pokemon Champions", nature), nil
+		}
 		if !pokemon.ValidNature(nature) {
 			return errf("%q is not a valid nature.", nature), nil
 		}
@@ -705,6 +711,128 @@ func registerRegulationTools(s *server.MCPServer, svc *Services) {
 			}
 		}
 		return errResult("regulation not found: " + id), nil
+	})
+}
+
+// registerAnalysisTools adds calc_stats and training_cost tools.
+func registerAnalysisTools(s *server.MCPServer, svc *Services) {
+	// calc_stats: calculate final Level 50 stats for a species + spread + nature.
+	s.AddTool(mcp.NewTool("calc_stats",
+		mcp.WithDescription("Calculate final Lv50 stats for a species given stat points and nature."),
+		mcp.WithString("species", mcp.Required(), mcp.Description("Species name")),
+		mcp.WithNumber("hp", mcp.Description("HP stat points (0-32, default 0)")),
+		mcp.WithNumber("attack", mcp.Description("Attack stat points (0-32, default 0)")),
+		mcp.WithNumber("defense", mcp.Description("Defense stat points (0-32, default 0)")),
+		mcp.WithNumber("sp_attack", mcp.Description("Sp. Atk stat points (0-32, default 0)")),
+		mcp.WithNumber("sp_defense", mcp.Description("Sp. Def stat points (0-32, default 0)")),
+		mcp.WithNumber("speed", mcp.Description("Speed stat points (0-32, default 0)")),
+		mcp.WithString("nature", mcp.Description("Nature name to apply multipliers (optional)")),
+	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		sp, err := svc.Pokemon.GetSpeciesByName(getString(args, "species"))
+		if err != nil {
+			return errResult(err.Error()), nil
+		}
+
+		spread := [6]int{
+			getInt(args, "hp"),
+			getInt(args, "attack"),
+			getInt(args, "defense"),
+			getInt(args, "sp_attack"),
+			getInt(args, "sp_defense"),
+			getInt(args, "speed"),
+		}
+		bases := [6]int{sp.HP, sp.Attack, sp.Defense, sp.SpAttack, sp.SpDefense, sp.Speed}
+		statNames := [6]string{"HP", "Attack", "Defense", "Sp.Atk", "Sp.Def", "Speed"}
+		statKeys := [6]pokemon.Stat{pokemon.StatHP, pokemon.StatAtk, pokemon.StatDef, pokemon.StatSpA, pokemon.StatSpD, pokemon.StatSpe}
+
+		// Resolve nature multipliers.
+		boosted := pokemon.Stat("")
+		reduced := pokemon.Stat("")
+		natureName := getString(args, "nature")
+		if natureName != "" {
+			n, ok := pokemon.NatureByName(natureName)
+			if !ok {
+				return errf("%q is not a valid nature", natureName), nil
+			}
+			boosted = n.Boosted
+			reduced = n.Reduced
+		}
+
+		// Formula (IVs=31, Lv50):
+		//   HP:     floor((2*B + 31 + SP*2) * 50/100) + 60
+		//   Other:  floor((2*B + 31 + SP*2) * 50/100 + 5) * NatureMult
+		var b strings.Builder
+		fmt.Fprintf(&b, "%-9s %6s %4s %7s\n", "Stat", "Base", "SP", "Final")
+		fmt.Fprintf(&b, "%-9s %6s %4s %7s\n", "---------", "------", "----", "-------")
+		for i := 0; i < 6; i++ {
+			inner := 2*bases[i] + 31 + spread[i]*2
+			var final int
+			if statKeys[i] == pokemon.StatHP {
+				final = int(math.Floor(float64(inner)*50.0/100.0)) + 60
+			} else {
+				mult := 1.0
+				if statKeys[i] == boosted {
+					mult = 1.1
+				} else if statKeys[i] == reduced {
+					mult = 0.9
+				}
+				final = int(math.Floor((math.Floor(float64(inner)*50.0/100.0) + 5) * mult))
+			}
+			fmt.Fprintf(&b, "%-9s %6d %4d %7d\n", statNames[i], bases[i], spread[i], final)
+		}
+		if natureName != "" {
+			fmt.Fprintf(&b, "\nNature: %s", natureName)
+			if boosted != "" {
+				fmt.Fprintf(&b, " (+%s / -%s)", boosted, reduced)
+			}
+			b.WriteString("\n")
+		}
+		return textResult(b.String()), nil
+	})
+
+	// training_cost: calculate VP cost to train a team from scratch.
+	s.AddTool(mcp.NewTool("training_cost",
+		mcp.WithDescription("Calculate VP cost to build a team from scratch (stat points + nature + hidden ability)."),
+		mcp.WithNumber("team_id", mcp.Required(), mcp.Description("Team ID")),
+	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		t, err := svc.Team.GetTeam(getInt(req.GetArguments(), "team_id"))
+		if err != nil {
+			return errResult(err.Error()), nil
+		}
+		if len(t.Members) == 0 {
+			return textResult("Team has no members."), nil
+		}
+
+		var b strings.Builder
+		fmt.Fprintf(&b, "VP Cost Breakdown — Team %d: %s\n\n", t.ID, t.Name)
+		fmt.Fprintf(&b, "%-16s %8s %9s %8s\n", "Pokemon", "SP VP", "Nature VP", "Total VP")
+		fmt.Fprintf(&b, "%-16s %8s %9s %8s\n", "----------------", "--------", "---------", "--------")
+
+		teamTotal := 0
+		for _, m := range t.Members {
+			if m.Species == nil {
+				continue
+			}
+			// SP cost: each stat point costs 2 VP.
+			spTotal := m.EVs.HP + m.EVs.Atk + m.EVs.Def + m.EVs.SpA + m.EVs.SpD + m.EVs.Spe
+			spVP := spTotal * 2
+
+			// Nature cost: 200 VP unless nature is Serious (neutral) or unset.
+			natureVP := 0
+			if m.Nature != "" && !strings.EqualFold(m.Nature, "Serious") {
+				natureVP = 200
+			}
+
+			memberTotal := spVP + natureVP
+			teamTotal += memberTotal
+
+			fmt.Fprintf(&b, "%-16s %8d %9d %8d\n", m.Species.Name, spVP, natureVP, memberTotal)
+		}
+
+		fmt.Fprintf(&b, "%-16s %8s %9s %8s\n", "----------------", "--------", "---------", "--------")
+		fmt.Fprintf(&b, "%-16s %35d VP\n", "TEAM TOTAL", teamTotal)
+		return textResult(b.String()), nil
 	})
 }
 
