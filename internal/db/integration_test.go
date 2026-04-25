@@ -121,9 +121,9 @@ func buildEVs(stats []string) team.StatSpread {
 	vals := make([]int, len(stats))
 	switch len(stats) {
 	case 2:
-		vals[0], vals[1] = 252, 252
+		vals[0], vals[1] = 32, 32
 	case 3:
-		vals[0], vals[1], vals[2] = 172, 172, 164
+		vals[0], vals[1], vals[2] = 32, 32, 2
 	}
 	for i, s := range stats {
 		switch s {

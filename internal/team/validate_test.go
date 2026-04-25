@@ -35,9 +35,8 @@ func TestValidate_LegalTeam(t *testing.T) {
 		members[i] = team.Member{
 			Slot:    i + 1,
 			Species: &pokemon.Species{ID: i + 1, Name: "Pokemon", IsFinalEvo: true},
-			Nature:  "Hardy",
-			EVs:     team.StatSpread{HP: 252, Spe: 252, Def: 4},
-			IVs:     team.StatSpread{HP: 31, Atk: 31, Def: 31, SpA: 31, SpD: 31, Spe: 31},
+			Nature:  "Serious",
+			EVs: team.StatSpread{HP: 32, Spe: 32, Def: 2},
 		}
 	}
 	tr := &team.Team{ID: 1, Regulation: "H", Members: members}
@@ -51,20 +50,19 @@ func TestValidate_EVOverLimit(t *testing.T) {
 		ID:         1,
 		Regulation: "H",
 		Members: []team.Member{{
-			Slot: 1, Species: sp, Nature: "Hardy",
-			EVs: team.StatSpread{HP: 252, Atk: 252, Def: 252}, // 756 total
-			IVs: team.StatSpread{HP: 31, Atk: 31, Def: 31, SpA: 31, SpD: 31, Spe: 31},
+			Slot: 1, Species: sp, Nature: "Serious",
+			EVs: team.StatSpread{HP: 32, Atk: 32, Def: 32}, // 756 total
 		}},
 	}
 	vs := team.Validate(tr, nil, nil)
 	rules := violationRules(vs)
-	assert.Contains(t, rules, "ev_total")
+	assert.Contains(t, rules, "stat_total")
 	assert.Contains(t, rules, "team_size") // only 1 member
 }
 
 func TestStatSpread_Total(t *testing.T) {
-	s := team.StatSpread{HP: 252, Atk: 252, Spe: 4}
-	assert.Equal(t, 508, s.Total())
+	s := team.StatSpread{HP: 32, Atk: 32, Spe: 2}
+	assert.Equal(t, 66, s.Total())
 }
 
 func TestDefenseMultiplier_SuperEffective(t *testing.T) {
@@ -87,9 +85,8 @@ func makeMembers(n int, sp *pokemon.Species) []team.Member {
 		m[i] = team.Member{
 			Slot:    i + 1,
 			Species: sp,
-			Nature:  "Hardy",
-			EVs:     team.StatSpread{HP: 252, Spe: 252, Def: 4},
-			IVs:     team.StatSpread{HP: 31, Atk: 31, Def: 31, SpA: 31, SpD: 31, Spe: 31},
+			Nature:  "Serious",
+			EVs: team.StatSpread{HP: 32, Spe: 32, Def: 2},
 		}
 	}
 	return m

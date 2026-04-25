@@ -50,7 +50,7 @@ func Analyse(t *Team) *Analysis {
 			continue
 		}
 		mult := natureMult(m.Nature, string(pokemon.StatSpe))
-		speed := calcStat(m.Species.Speed, 31, m.EVs.Spe, false, mult)
+		speed := calcStat(m.Species.Speed, m.EVs.Spe, false, mult)
 		a.SpeedTiers = append(a.SpeedTiers, SpeedTier{
 			Slot:      m.Slot,
 			Name:      displayName(m),
