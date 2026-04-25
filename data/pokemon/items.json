@@ -1,22 +1,140 @@
 [
-  {"id":1,  "name":"Leftovers",     "description":"Restores 1/16 of the holder's max HP at the end of each turn.","is_banned":0},
-  {"id":2,  "name":"Lum Berry",     "description":"Cures any status condition and confusion. Consumed on use.","is_banned":0},
-  {"id":3,  "name":"Sitrus Berry",  "description":"Restores 25% of the holder's max HP when HP falls to half or less. Consumed on use.","is_banned":0},
-  {"id":4,  "name":"Shuca Berry",   "description":"Halves damage from a super-effective Ground-type move. Consumed on use.","is_banned":0},
-  {"id":5,  "name":"Rocky Helmet",  "description":"Damages the attacker for 1/6 of their max HP when they use a contact move.","is_banned":0},
-  {"id":6,  "name":"Black Belt",    "description":"Boosts the power of Fighting-type moves by 20%.","is_banned":0},
-  {"id":7,  "name":"Hard Stone",    "description":"Boosts the power of Rock-type moves by 20%.","is_banned":0},
-  {"id":8,  "name":"Focus Sash",    "description":"If holder has full HP, it survives a hit that would KO it with 1 HP. Consumed on use.","is_banned":0},
-  {"id":9,  "name":"Weakness Policy","description":"If the holder is hit by a super-effective move, its Attack and Sp. Atk are sharply raised. Consumed on use.","is_banned":0},
-  {"id":10, "name":"Choice Scarf",  "description":"Boosts the holder's Speed by 50%, but only allows use of the first move selected.","is_banned":0},
-  {"id":11, "name":"Choice Band",   "description":"Boosts the holder's Attack by 50%, but only allows use of the first move selected.","is_banned":0},
-  {"id":12, "name":"Choice Specs",  "description":"Boosts the holder's Sp. Atk by 50%, but only allows use of the first move selected.","is_banned":0},
-  {"id":13, "name":"Life Orb",      "description":"Boosts the power of moves by 30% but costs 10% HP per use.","is_banned":0},
-  {"id":14, "name":"Assault Vest",  "description":"Raises Sp. Def by 50% but prevents use of status moves.","is_banned":0},
-  {"id":15, "name":"Throat Spray",  "description":"Raises the holder's Sp. Atk by 1 stage when it uses a sound-based move. Consumed on use.","is_banned":0},
-  {"id":16, "name":"Safety Goggles","description":"Protects the holder from powder moves and the effects of weather.","is_banned":0},
-  {"id":17, "name":"Clear Amulet",  "description":"Prevents the holder's stats from being lowered by other Pokemon's moves or abilities.","is_banned":0},
-  {"id":18, "name":"Covert Cloak",  "description":"Protects the holder from the additional effects of moves used against it.","is_banned":0},
-  {"id":19, "name":"Loaded Dice",   "description":"Makes multi-strike moves more likely to hit more times.","is_banned":0},
-  {"id":20, "name":"Booster Energy","description":"Activates the Quark Drive or Protosynthesis abilities even without terrain or weather.","is_banned":0}
+  {
+    "id": 1,
+    "name": "Leftovers",
+    "description": "Restores 1/16 of the holder's max HP at the end of each turn.",
+    "is_banned": 0
+  },
+  {
+    "id": 2,
+    "name": "Lum Berry",
+    "description": "Cures any status condition and confusion. Consumed on use.",
+    "is_banned": 0
+  },
+  {
+    "id": 3,
+    "name": "Sitrus Berry",
+    "description": "Restores 25% of the holder's max HP when HP falls to half or less. Consumed on use.",
+    "is_banned": 0
+  },
+  {
+    "id": 4,
+    "name": "Shuca Berry",
+    "description": "Halves damage from a super-effective Ground-type move. Consumed on use.",
+    "is_banned": 0
+  },
+  {
+    "id": 5,
+    "name": "Rocky Helmet",
+    "description": "Damages the attacker for 1/6 of their max HP when they use a contact move.",
+    "is_banned": 0
+  },
+  {
+    "id": 6,
+    "name": "Black Belt",
+    "description": "Boosts the power of Fighting-type moves by 20%.",
+    "is_banned": 0
+  },
+  {
+    "id": 7,
+    "name": "Hard Stone",
+    "description": "Boosts the power of Rock-type moves by 20%.",
+    "is_banned": 0
+  },
+  {
+    "id": 8,
+    "name": "Focus Sash",
+    "description": "If holder has full HP, it survives a hit that would KO it with 1 HP. Consumed on use.",
+    "is_banned": 0
+  },
+  {
+    "id": 9,
+    "name": "Weakness Policy",
+    "description": "If the holder is hit by a super-effective move, its Attack and Sp. Atk are sharply raised. Consumed on use.",
+    "is_banned": 0
+  },
+  {
+    "id": 10,
+    "name": "Choice Scarf",
+    "description": "Boosts the holder's Speed by 50%, but only allows use of the first move selected.",
+    "is_banned": 0
+  },
+  {
+    "id": 11,
+    "name": "Choice Band",
+    "description": "Boosts the holder's Attack by 50%, but only allows use of the first move selected.",
+    "is_banned": 0
+  },
+  {
+    "id": 12,
+    "name": "Choice Specs",
+    "description": "Boosts the holder's Sp. Atk by 50%, but only allows use of the first move selected.",
+    "is_banned": 0
+  },
+  {
+    "id": 13,
+    "name": "Life Orb",
+    "description": "Boosts the power of moves by 30% but costs 10% HP per use.",
+    "is_banned": 0
+  },
+  {
+    "id": 14,
+    "name": "Assault Vest",
+    "description": "Raises Sp. Def by 50% but prevents use of status moves.",
+    "is_banned": 0
+  },
+  {
+    "id": 15,
+    "name": "Throat Spray",
+    "description": "Raises the holder's Sp. Atk by 1 stage when it uses a sound-based move. Consumed on use.",
+    "is_banned": 0
+  },
+  {
+    "id": 16,
+    "name": "Safety Goggles",
+    "description": "Protects the holder from powder moves and the effects of weather.",
+    "is_banned": 0
+  },
+  {
+    "id": 17,
+    "name": "Clear Amulet",
+    "description": "Prevents the holder's stats from being lowered by other Pokemon's moves or abilities.",
+    "is_banned": 0
+  },
+  {
+    "id": 18,
+    "name": "Covert Cloak",
+    "description": "Protects the holder from the additional effects of moves used against it.",
+    "is_banned": 0
+  },
+  {
+    "id": 19,
+    "name": "Loaded Dice",
+    "description": "Makes multi-strike moves more likely to hit more times.",
+    "is_banned": 0
+  },
+  {
+    "id": 20,
+    "name": "Booster Energy",
+    "description": "Activates the Quark Drive or Protosynthesis abilities even without terrain or weather.",
+    "is_banned": 0
+  },
+  {
+    "id": 21,
+    "name": "Quick Claw",
+    "description": "Gives the holder a 20% chance to move first in its priority bracket each turn.",
+    "is_banned": 0
+  },
+  {
+    "id": 22,
+    "name": "Focus Band",
+    "description": "Gives the holder a 10% chance to survive a hit that would otherwise KO it, leaving 1 HP.",
+    "is_banned": 0
+  },
+  {
+    "id": 23,
+    "name": "White Herb",
+    "description": "Restores lowered stats to normal once. Consumed on use.",
+    "is_banned": 0
+  }
 ]

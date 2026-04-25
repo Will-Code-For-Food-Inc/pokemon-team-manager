@@ -54,9 +54,10 @@
     </div>
 
     <div style="margin-top:8px">
-      <strong>EVs:</strong>
+      <strong>Stat Points (Champions):</strong>
       HP {{.EVs.HP}} / Atk {{.EVs.Atk}} / Def {{.EVs.Def}} / SpA {{.EVs.SpA}} / SpD {{.EVs.SpD}} / Spe {{.EVs.Spe}}
-      <em style="color:#888">({{.EVs.Total}} total)</em>
+      <em style="color:#888">({{.EVs.Total}}/66 used)</em>
+      {{if lt .EVs.Total 66}}<span style="color:#e67e22;font-weight:bold"> — {{sub66 .EVs.Total}} pts remaining</span>{{end}}
     </div>
 
     {{if .Moves}}

@@ -334,7 +334,7 @@ func registerTeamTools(s *server.MCPServer, svc *Services) {
 			return errResult(err.Error()), nil
 		}
 		if !sp.IsFinalEvo {
-			return errResult(err.Error()), nil
+			return errResult(sp.Name + " is not a final evolution"), nil
 		}
 
 		abilities, err := svc.Pokemon.GetAbilitiesForSpecies(sp.ID)
@@ -347,9 +347,8 @@ func registerTeamTools(s *server.MCPServer, svc *Services) {
 			if err != nil {
 				return errResult(err.Error()), nil
 			}
-			ok, _ := svc.Pokemon.HasAbility(sp.ID, ab.ID)
-			if !ok {
-				return errResult(err.Error()), nil
+			if ok, _ := svc.Pokemon.HasAbility(sp.ID, ab.ID); !ok {
+				return errResult(abName + " is not a valid ability for " + sp.Name), nil
 			}
 			abilityID = ab.ID
 		}
@@ -397,9 +396,8 @@ func registerTeamTools(s *server.MCPServer, svc *Services) {
 			return errResult(err.Error()), nil
 		}
 		if sp != nil {
-			ok, _ := svc.Pokemon.HasAbility(sp.ID, ab.ID)
-			if !ok {
-				return errResult(err.Error()), nil
+			if ok, _ := svc.Pokemon.HasAbility(sp.ID, ab.ID); !ok {
+				return errResult(ab.Name + " is not a valid ability for " + pokeName), nil
 			}
 		}
 		if err := svc.Team.SetAbility(memberID, ab.ID); err != nil {
@@ -444,7 +442,7 @@ func registerTeamTools(s *server.MCPServer, svc *Services) {
 			return errResult(err.Error()), nil
 		}
 		if item.IsBanned {
-			return errResult(err.Error()), nil
+			return errResult(item.Name + " is banned"), nil
 		}
 
 		// Check item clause: no other member on this team can hold the same item.
@@ -454,7 +452,7 @@ func registerTeamTools(s *server.MCPServer, svc *Services) {
 		}
 		for _, m := range t.Members {
 			if m.Item != nil && m.Item.ID == item.ID && !strings.EqualFold(m.Species.Name, pokeName) {
-				return errResult(err.Error()), nil
+				return errResult("item clause: " + item.Name + " already held by " + m.Species.Name), nil
 			}
 		}
 
@@ -496,9 +494,13 @@ func registerTeamTools(s *server.MCPServer, svc *Services) {
 			if err != nil {
 				return errResult(err.Error()), nil
 			}
-			ok, _ := svc.Pokemon.CanLearnMove(sp.ID, mv.ID)
+			ok, lerr := svc.Pokemon.CanLearnMove(sp.ID, mv.ID)
 			if !ok {
-				return errResult(err.Error()), nil
+				msg := name + " is not in " + pokeName + "'s learnset"
+				if lerr != nil {
+					msg = lerr.Error()
+				}
+				return errResult(msg), nil
 			}
 			moveIDs = append(moveIDs, mv.ID)
 		}
@@ -514,34 +516,33 @@ func registerTeamTools(s *server.MCPServer, svc *Services) {
 	})
 
 	s.AddTool(mcp.NewTool("set_stats",
-		mcp.WithDescription("Distribute 66 stat points across 2 or 3 stats (Pokemon Champions system, max 32/stat). 2 stats: 32/32/2. 3 stats: 22/22/22."),
+		mcp.WithDescription("Set stat points for a Pokemon (Champions: 66 total, max 32/stat). Provide explicit points per stat; omitted stats get 0."),
 		mcp.WithNumber("team_id", mcp.Required(), mcp.Description("Team ID")),
 		mcp.WithString("pokemon_name", mcp.Required(), mcp.Description("Species name")),
-		mcp.WithString("stat1", mcp.Required(), mcp.Description("First stat: hp, attack, defense, sp_attack, sp_defense, or speed")),
-		mcp.WithString("stat2", mcp.Required(), mcp.Description("Second stat")),
-		mcp.WithString("stat3", mcp.Description("Optional third stat")),
+		mcp.WithNumber("hp", mcp.Description("HP points (0-32)")),
+		mcp.WithNumber("attack", mcp.Description("Attack points (0-32)")),
+		mcp.WithNumber("defense", mcp.Description("Defense points (0-32)")),
+		mcp.WithNumber("sp_attack", mcp.Description("Sp. Atk points (0-32)")),
+		mcp.WithNumber("sp_defense", mcp.Description("Sp. Def points (0-32)")),
+		mcp.WithNumber("speed", mcp.Description("Speed points (0-32)")),
 	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		args := req.GetArguments()
-		stats := []string{getString(args, "stat1"), getString(args, "stat2"), getString(args, "stat3")}
-
-		// Filter empty and validate.
-		var chosen []string
-		for _, s := range stats {
-			if s != "" {
-				chosen = append(chosen, strings.ToLower(s))
+		evs := team.StatSpread{
+			HP:  getInt(args, "hp"),
+			Atk: getInt(args, "attack"),
+			Def: getInt(args, "defense"),
+			SpA: getInt(args, "sp_attack"),
+			SpD: getInt(args, "sp_defense"),
+			Spe: getInt(args, "speed"),
+		}
+		for _, v := range []int{evs.HP, evs.Atk, evs.Def, evs.SpA, evs.SpD, evs.Spe} {
+			if v < 0 || v > 32 {
+				return errResult("each stat must be 0–32"), nil
 			}
 		}
-		if len(chosen) < 2 || len(chosen) > 3 {
-			return errResult("set_stats requires exactly 2 or 3 stats."), nil
+		if t := evs.Total(); t > 66 {
+			return errf("total %d exceeds 66-point pool", t), nil
 		}
-		validStats := map[string]bool{"hp": true, "attack": true, "defense": true, "sp_attack": true, "sp_defense": true, "speed": true}
-		for _, s := range chosen {
-			if !validStats[s] {
-				return errf("%q is not a valid stat. Use: hp, attack, defense, sp_attack, sp_defense, speed.", s), nil
-			}
-		}
-
-		evs := buildEVSpread(chosen)
 		memberID, err := svc.Team.GetMemberByTeamAndSpecies(getInt(args, "team_id"), getString(args, "pokemon_name"))
 		if err != nil {
 			return errResult(err.Error()), nil
@@ -549,8 +550,9 @@ func registerTeamTools(s *server.MCPServer, svc *Services) {
 		if err := svc.Team.SetEVs(memberID, evs); err != nil {
 			return errResult(err.Error()), nil
 		}
-		return textResult(fmt.Sprintf("Set EVs: HP %d / Atk %d / Def %d / SpA %d / SpD %d / Spe %d (total %d).",
-			evs.HP, evs.Atk, evs.Def, evs.SpA, evs.SpD, evs.Spe, evs.Total())), nil
+		remaining := 66 - evs.Total()
+		return textResult(fmt.Sprintf("Set EVs: HP %d / Atk %d / Def %d / SpA %d / SpD %d / Spe %d (total %d, %d remaining).",
+			evs.HP, evs.Atk, evs.Def, evs.SpA, evs.SpD, evs.Spe, evs.Total(), remaining)), nil
 	})
 
 	s.AddTool(mcp.NewTool("set_role",
@@ -702,38 +704,10 @@ func registerRegulationTools(s *server.MCPServer, svc *Services) {
 				return jsonResult(r), nil
 			}
 		}
-		return errResult(err.Error()), nil
+		return errResult("regulation not found: " + id), nil
 	})
 }
 
 // buildEVSpread distributes 66 stat points (Pokemon Champions system) equally
 // across the chosen stats. Max 32 per stat, 66 total.
 // 2 stats: 32/32 + 2 remainder on first. 3 stats: 22/22/22.
-func buildEVSpread(stats []string) team.StatSpread {
-	var evs team.StatSpread
-	vals := make([]int, len(stats))
-	switch len(stats) {
-	case 2:
-		// 32+32=64; remaining 2 split as 32/32 (cap) + 2 left over on neither — use 32/32 and accept 64/66.
-		vals[0], vals[1] = 32, 32
-	case 3:
-		vals[0], vals[1], vals[2] = 22, 22, 22
-	}
-	for i, s := range stats {
-		switch s {
-		case "hp":
-			evs.HP = vals[i]
-		case "attack":
-			evs.Atk = vals[i]
-		case "defense":
-			evs.Def = vals[i]
-		case "sp_attack":
-			evs.SpA = vals[i]
-		case "sp_defense":
-			evs.SpD = vals[i]
-		case "speed":
-			evs.Spe = vals[i]
-		}
-	}
-	return evs
-}

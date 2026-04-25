@@ -1,15 +1,82 @@
 [
-  {"species_id":59,  "ability_id":22,  "slot":1},
-  {"species_id":59,  "ability_id":18,  "slot":2},
-  {"species_id":59,  "ability_id":154, "slot":3},
-  {"species_id":149, "ability_id":39,  "slot":1},
-  {"species_id":149, "ability_id":136, "slot":3},
-  {"species_id":248, "ability_id":45,  "slot":1},
-  {"species_id":306, "ability_id":5,   "slot":1},
-  {"species_id":306, "ability_id":69,  "slot":2},
-  {"species_id":306, "ability_id":134, "slot":3},
-  {"species_id":700, "ability_id":56,  "slot":1},
-  {"species_id":700, "ability_id":182, "slot":2},
-  {"species_id":844, "ability_id":245, "slot":1},
-  {"species_id":844, "ability_id":61,  "slot":2}
+  {
+    "species_id": 59,
+    "ability_id": 22,
+    "slot": 1
+  },
+  {
+    "species_id": 59,
+    "ability_id": 18,
+    "slot": 2
+  },
+  {
+    "species_id": 59,
+    "ability_id": 154,
+    "slot": 3
+  },
+  {
+    "species_id": 149,
+    "ability_id": 39,
+    "slot": 1
+  },
+  {
+    "species_id": 149,
+    "ability_id": 136,
+    "slot": 3
+  },
+  {
+    "species_id": 248,
+    "ability_id": 45,
+    "slot": 1
+  },
+  {
+    "species_id": 306,
+    "ability_id": 5,
+    "slot": 1
+  },
+  {
+    "species_id": 306,
+    "ability_id": 69,
+    "slot": 2
+  },
+  {
+    "species_id": 306,
+    "ability_id": 134,
+    "slot": 3
+  },
+  {
+    "species_id": 700,
+    "ability_id": 56,
+    "slot": 1
+  },
+  {
+    "species_id": 700,
+    "ability_id": 182,
+    "slot": 2
+  },
+  {
+    "species_id": 844,
+    "ability_id": 245,
+    "slot": 1
+  },
+  {
+    "species_id": 844,
+    "ability_id": 61,
+    "slot": 2
+  },
+  {
+    "species_id": 844,
+    "ability_id": 8,
+    "slot": 3
+  },
+  {
+    "species_id": 547,
+    "ability_id": 158,
+    "slot": 1
+  },
+  {
+    "species_id": 780,
+    "ability_id": 201,
+    "slot": 1
+  }
 ]

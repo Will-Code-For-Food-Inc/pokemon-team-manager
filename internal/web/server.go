@@ -32,6 +32,7 @@ var funcMap = template.FuncMap{
 		return v
 	},
 	"add":      func(a, b int) int { return a + b },
+	"sub66":    func(v int) int { return 66 - v },
 	"iterate":  func(n int) []int { s := make([]int, n); for i := range s { s[i] = i }; return s },
 	"moveName": func(mv *pokemon.Move) string { if mv == nil { return "" }; return mv.Name },
 	"index": func(moves []*pokemon.Move, i int) *pokemon.Move {
