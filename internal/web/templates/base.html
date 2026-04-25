@@ -1,0 +1,89 @@
+{{define "base"}}<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{block "title" .}}ptm{{end}} — Pokemon Team Manager</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Verdana, Geneva, sans-serif; font-size: 14px; background: #c6d4e1; color: #1a1a1a; }
+a { color: #1a5276; text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* Layout */
+#wrap { max-width: 960px; margin: 0 auto; padding: 8px; }
+
+/* Header */
+#header { background: #1a5276; color: #fff; padding: 8px 12px; border-bottom: 3px solid #154360; }
+#header h1 { font-size: 20px; display: inline; }
+#header nav { display: inline; margin-left: 16px; }
+#header nav a { color: #aed6f1; margin-right: 12px; font-size: 13px; }
+#header nav a:hover { color: #fff; }
+
+/* Flash messages */
+.flash-ok  { background: #d4efdf; border: 1px solid #1e8449; padding: 6px 10px; margin: 8px 0; }
+.flash-err { background: #fadbd8; border: 1px solid #c0392b; padding: 6px 10px; margin: 8px 0; }
+
+/* Panels */
+.panel { background: #fff; border: 1px solid #bdc3c7; margin: 8px 0; }
+.panel-head { background: #2471a3; color: #fff; padding: 6px 10px; font-size: 13px; font-weight: bold; }
+.panel-body { padding: 10px; }
+
+/* Tables */
+table { border-collapse: collapse; width: 100%; }
+th { background: #d6eaf8; text-align: left; padding: 4px 8px; border: 1px solid #bdc3c7; }
+td { padding: 4px 8px; border: 1px solid #e8ecef; vertical-align: top; }
+tr:nth-child(even) { background: #f4f6f7; }
+tr:hover { background: #eaf4fc; }
+
+/* Forms */
+form label { display: block; margin-top: 6px; font-weight: bold; font-size: 12px; }
+form input[type=text], form input[type=number], form select, form textarea {
+  width: 100%; padding: 4px 6px; border: 1px solid #bdc3c7; font-size: 13px; font-family: inherit;
+}
+form textarea { height: 60px; resize: vertical; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+
+/* Buttons */
+.btn         { display: inline-block; padding: 4px 12px; border: 1px solid; cursor: pointer; font-size: 13px; font-family: inherit; }
+.btn-primary { background: #2471a3; color: #fff; border-color: #1a5276; }
+.btn-danger  { background: #c0392b; color: #fff; border-color: #922b21; }
+.btn-sm      { padding: 2px 8px; font-size: 12px; }
+.btn-primary:hover { background: #1a5276; }
+.btn-danger:hover  { background: #922b21; }
+
+/* Type badges */
+.type { display: inline-block; padding: 1px 6px; border-radius: 2px; font-size: 11px; color: #fff; margin-right: 2px; }
+.type-fire{background:#e25822}.type-water{background:#3273dc}.type-grass{background:#3cb34a}
+.type-electric{background:#f7d02c;color:#333}.type-ice{background:#96d9d6;color:#333}
+.type-fighting{background:#d56723}.type-poison{background:#9f5bba}.type-ground{background:#c09042;color:#333}
+.type-flying{background:#8899ff}.type-psychic{background:#ff5599}.type-bug{background:#9bbc0f;color:#333}
+.type-rock{background:#b8a038;color:#333}.type-ghost{background:#705898}.type-dragon{background:#6f35fc}
+.type-dark{background:#4a4040}.type-steel{background:#b7b7ce;color:#333}.type-fairy{background:#f4b1d0;color:#333}
+.type-normal{background:#a8a878;color:#333}
+
+/* Stat bar */
+.stat-bar { display: inline-block; background: #2ecc71; height: 10px; vertical-align: middle; }
+.stat-num  { display: inline-block; width: 30px; text-align: right; font-size: 11px; }
+
+/* Violations */
+.violation { background: #fadbd8; border-left: 3px solid #c0392b; padding: 4px 8px; margin: 3px 0; font-size: 12px; }
+</style>
+</head>
+<body>
+<div id="header">
+  <h1><a href="/" style="color:#fff">🏆 ptm</a></h1>
+  <nav>
+    <a href="/teams">Teams</a>
+    <a href="/pokemon">Pokemon</a>
+    <a href="/moves">Moves</a>
+    <a href="/items">Items</a>
+    <a href="/kb">Knowledge Base</a>
+  </nav>
+</div>
+<div id="wrap">
+{{block "content" .}}{{end}}
+</div>
+</body>
+</html>{{end}}

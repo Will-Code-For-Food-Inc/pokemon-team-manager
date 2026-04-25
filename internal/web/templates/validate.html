@@ -1,0 +1,22 @@
+{{template "base" .}}
+{{define "title"}}Validate — {{.Team.Name}}{{end}}
+{{define "content"}}
+<div class="panel">
+  <div class="panel-head">Validation — {{.Team.Name}} (Regulation {{.Team.Regulation}})</div>
+  <div class="panel-body">
+    <a href="/teams/{{.Team.ID}}" style="font-size:12px">← Back to Team</a>
+  </div>
+</div>
+<div class="panel">
+  <div class="panel-body">
+    {{if .Violations}}
+    <p><strong>Found {{len .Violations}} violation(s):</strong></p>
+    {{range .Violations}}
+    <div class="violation">[{{.Rule}}] {{.Message}}</div>
+    {{end}}
+    {{else}}
+    <div class="flash-ok">✓ Team is fully legal in Regulation {{.Team.Regulation}}. No violations found.</div>
+    {{end}}
+  </div>
+</div>
+{{end}}

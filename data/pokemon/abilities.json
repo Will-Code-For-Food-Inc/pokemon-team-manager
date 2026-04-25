@@ -1,0 +1,16 @@
+[
+  {"id":5,   "name":"Sturdy",       "description":"The Pokemon is not knocked out from full HP by a one-hit KO move or a move that would leave it with 0 HP."},
+  {"id":18,  "name":"Flash Fire",   "description":"Powers up the Pokemon's Fire-type moves if it's hit by one."},
+  {"id":22,  "name":"Intimidate",   "description":"Lowers the opposing Pokemon's Attack stat when entering battle."},
+  {"id":39,  "name":"Inner Focus",  "description":"The Pokemon is protected from flinching."},
+  {"id":45,  "name":"Sand Stream",  "description":"The Pokemon summons a sandstorm that lasts 5 turns when it enters battle."},
+  {"id":56,  "name":"Cute Charm",   "description":"Contact with the Pokemon may cause infatuation."},
+  {"id":61,  "name":"Shed Skin",    "description":"The Pokemon may heal its own status conditions by shedding its skin."},
+  {"id":69,  "name":"Rock Head",    "description":"Protects the Pokemon from recoil damage."},
+  {"id":134, "name":"Heavy Metal",  "description":"Doubles the Pokemon's weight."},
+  {"id":136, "name":"Multiscale",   "description":"Reduces damage the Pokemon takes when its HP is full."},
+  {"id":154, "name":"Justified",    "description":"Being hit by a Dark-type move boosts the Attack stat of the Pokemon, for justice."},
+  {"id":182, "name":"Pixilate",     "description":"Normal-type moves become Fairy-type and deal 20% more damage."},
+  {"id":245, "name":"Sand Spit",    "description":"The Pokemon creates a sandstorm when it's hit by an attack."},
+  {"id":257, "name":"Coil",         "description":"Raises Attack, Defense, and Accuracy."}
+]

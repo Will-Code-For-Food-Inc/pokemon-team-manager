@@ -1,0 +1,4 @@
+ptm
+ptm.db
+*.db
+.claude/settings.local.json

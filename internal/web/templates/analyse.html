@@ -1,0 +1,67 @@
+{{template "base" .}}
+{{define "title"}}Analyse — {{.Team.Name}}{{end}}
+{{define "content"}}
+<div class="panel">
+  <div class="panel-head">Analysis — {{.Team.Name}}</div>
+  <div class="panel-body"><a href="/teams/{{.Team.ID}}" style="font-size:12px">← Back to Team</a></div>
+</div>
+
+<div class="panel">
+  <div class="panel-head">Archetypes Detected</div>
+  <div class="panel-body">
+    {{range .Analysis.Archetypes}}<span class="type type-normal">{{.}}</span> {{end}}
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-head">Speed Tiers (Lv. 50)</div>
+  <div class="panel-body">
+    <table>
+      <tr><th>Slot</th><th>Pokemon</th><th>Base Speed</th><th>Stat Speed</th></tr>
+      {{range .Analysis.SpeedTiers}}
+      <tr><td>{{.Slot}}</td><td>{{.Name}}</td><td>{{.BaseSpeed}}</td><td>{{.StatSpeed}}</td></tr>
+      {{end}}
+    </table>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-head">Offensive Type Coverage</div>
+  <div class="panel-body">
+    {{if .Analysis.OffensiveCoverage}}
+      {{range .Analysis.OffensiveCoverage}}<span class="type type-{{.}}">{{.}}</span> {{end}}
+    {{else}}<em>No moves assigned yet.</em>{{end}}
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-head">Shared Defensive Weaknesses (2+ members)</div>
+  <div class="panel-body">
+    {{if .Analysis.DefensiveWeaknesses}}
+    <table>
+      <tr><th>Type</th><th>Members Weak</th></tr>
+      {{range .Analysis.DefensiveWeaknesses}}
+      <tr><td><span class="type type-{{.Type}}">{{.Type}}</span></td><td>{{.Count}}</td></tr>
+      {{end}}
+    </table>
+    {{else}}<div class="flash-ok">No shared weakness patterns found.</div>{{end}}
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-head">EV Investment Summary</div>
+  <div class="panel-body">
+    <table>
+      <tr><th>Slot</th><th>Pokemon</th><th>Nature</th><th>HP</th><th>Atk</th><th>Def</th><th>SpA</th><th>SpD</th><th>Spe</th><th>Total</th></tr>
+      {{range .Analysis.EVSummary}}
+      <tr>
+        <td>{{.Slot}}</td><td>{{.Name}}</td><td>{{.Nature}}</td>
+        <td>{{.EVs.HP}}</td><td>{{.EVs.Atk}}</td><td>{{.EVs.Def}}</td>
+        <td>{{.EVs.SpA}}</td><td>{{.EVs.SpD}}</td><td>{{.EVs.Spe}}</td>
+        <td>{{.Total}}</td>
+      </tr>
+      {{end}}
+    </table>
+  </div>
+</div>
+{{end}}

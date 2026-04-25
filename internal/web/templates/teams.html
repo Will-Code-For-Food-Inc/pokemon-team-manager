@@ -1,0 +1,58 @@
+{{template "base" .}}
+{{define "title"}}Teams{{end}}
+{{define "content"}}
+{{with .Flash}}<div class="flash-ok">{{.}}</div>{{end}}
+{{with .Error}}<div class="flash-err">{{.}}</div>{{end}}
+
+<div class="panel">
+  <div class="panel-head">Your Teams</div>
+  <div class="panel-body">
+    {{if .Teams}}
+    <table>
+      <tr><th>ID</th><th>Name</th><th>Regulation</th><th>Members</th><th>Actions</th></tr>
+      {{range .Teams}}
+      <tr>
+        <td>{{.ID}}</td>
+        <td><a href="/teams/{{.ID}}">{{.Name}}</a></td>
+        <td>{{.Regulation}}</td>
+        <td>{{.MemberCount}}/6</td>
+        <td>
+          <a href="/teams/{{.ID}}" class="btn btn-sm btn-primary">View</a>
+          <a href="/teams/{{.ID}}/validate" class="btn btn-sm btn-primary">Validate</a>
+          <form style="display:inline" method="POST" action="/teams/{{.ID}}/delete" onsubmit="return confirm('Delete team {{.Name}}?')">
+            <button class="btn btn-sm btn-danger">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {{end}}
+    </table>
+    {{else}}
+    <p>No teams yet.</p>
+    {{end}}
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-head">New Team</div>
+  <div class="panel-body">
+    <form method="POST" action="/teams/new">
+      <div class="form-row">
+        <div>
+          <label>Name</label>
+          <input type="text" name="name" required placeholder="e.g. Sand Offense">
+        </div>
+        <div>
+          <label>Regulation</label>
+          <select name="regulation">
+            {{range .Regulations}}
+            <option value="{{.ID}}" {{if eq .ID "H"}}selected{{end}}>{{.ID}} — {{.Name}}</option>
+            {{end}}
+          </select>
+        </div>
+      </div>
+      <br>
+      <button class="btn btn-primary">Create Team</button>
+    </form>
+  </div>
+</div>
+{{end}}

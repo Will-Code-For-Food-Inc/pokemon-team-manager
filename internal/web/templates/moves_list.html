@@ -1,0 +1,45 @@
+{{template "base" .}}
+{{define "title"}}Moves{{end}}
+{{define "content"}}
+<div class="panel">
+  <div class="panel-head">Move Search</div>
+  <div class="panel-body">
+    <form method="GET" action="/moves">
+      <input type="text" name="q" value="{{.Query}}" placeholder="Search moves…" style="width:300px">
+      <select name="type" style="width:120px">
+        <option value="">— any type —</option>
+        <option>fire</option><option>water</option><option>grass</option><option>electric</option>
+        <option>ice</option><option>fighting</option><option>poison</option><option>ground</option>
+        <option>flying</option><option>psychic</option><option>bug</option><option>rock</option>
+        <option>ghost</option><option>dragon</option><option>dark</option><option>steel</option>
+        <option>fairy</option><option>normal</option>
+      </select>
+      <select name="category" style="width:100px">
+        <option value="">— any —</option>
+        <option>physical</option><option>special</option><option>status</option>
+      </select>
+      <button class="btn btn-primary">Search</button>
+    </form>
+  </div>
+</div>
+{{if .Results}}
+<div class="panel">
+  <div class="panel-body">
+    <table>
+      <tr><th>Name</th><th>Type</th><th>Cat.</th><th>BP</th><th>Acc</th><th>PP</th><th>Description</th></tr>
+      {{range .Results}}
+      <tr>
+        <td>{{.Name}}</td>
+        <td><span class="type type-{{.Type}}">{{.Type}}</span></td>
+        <td>{{.Category}}</td>
+        <td>{{if .Power}}{{.Power}}{{else}}—{{end}}</td>
+        <td>{{if .Accuracy}}{{.Accuracy}}%{{else}}—{{end}}</td>
+        <td>{{.PP}}</td>
+        <td style="font-size:12px;color:#555">{{.Description}}</td>
+      </tr>
+      {{end}}
+    </table>
+  </div>
+</div>
+{{end}}
+{{end}}

@@ -1,0 +1,29 @@
+{{template "base" .}}
+{{define "title"}}Items{{end}}
+{{define "content"}}
+<div class="panel">
+  <div class="panel-head">Item Search</div>
+  <div class="panel-body">
+    <form method="GET" action="/items">
+      <input type="text" name="q" value="{{.Query}}" placeholder="Search items…" style="width:300px">
+      <button class="btn btn-primary">Search</button>
+    </form>
+  </div>
+</div>
+{{if .Results}}
+<div class="panel">
+  <div class="panel-body">
+    <table>
+      <tr><th>Name</th><th>Description</th><th>Banned</th></tr>
+      {{range .Results}}
+      <tr>
+        <td>{{.Name}}</td>
+        <td style="font-size:12px">{{.Description}}</td>
+        <td>{{if .IsBanned}}❌{{else}}✓{{end}}</td>
+      </tr>
+      {{end}}
+    </table>
+  </div>
+</div>
+{{end}}
+{{end}}

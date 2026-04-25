@@ -1,0 +1,106 @@
+{{template "base" .}}
+{{define "title"}}Team {{.Team.Name}}{{end}}
+{{define "content"}}
+{{with .Flash}}<div class="flash-ok">{{.}}</div>{{end}}
+{{with .Error}}<div class="flash-err">{{.}}</div>{{end}}
+
+<div class="panel">
+  <div class="panel-head">{{.Team.Name}} <small style="font-weight:normal">— Regulation {{.Team.Regulation}}</small></div>
+  <div class="panel-body">
+    {{if .Team.Notes}}<p style="margin-bottom:8px;color:#555">{{.Team.Notes}}</p>{{end}}
+    <a href="/teams/{{.Team.ID}}/validate" class="btn btn-primary btn-sm">Validate</a>
+    <a href="/teams/{{.Team.ID}}/analyse" class="btn btn-primary btn-sm">Analyse</a>
+    <a href="/teams/{{.Team.ID}}/export" class="btn btn-primary btn-sm">Export</a>
+    &nbsp;
+    <a href="/teams" style="font-size:12px">← Back to Teams</a>
+  </div>
+</div>
+
+{{range .Team.Members}}
+<div class="panel">
+  <div class="panel-head">
+    Slot {{.Slot}} —
+    {{if .Species}}
+      {{.Species.Name}}
+      <span class="type type-{{.Species.Type1}}">{{.Species.Type1}}</span>
+      {{if .Species.Type2}}<span class="type type-{{.Species.Type2}}">{{.Species.Type2}}</span>{{end}}
+    {{else}}(empty){{end}}
+    {{if .Nickname}}<em style="font-weight:normal">"{{.Nickname}}"</em>{{end}}
+  </div>
+  <div class="panel-body">
+    {{if .Species}}
+    <div class="form-row">
+      <div>
+        <table>
+          <tr><th>Ability</th><td>{{if .Ability}}{{.Ability.Name}}{{else}}—{{end}}</td></tr>
+          <tr><th>Item</th><td>{{if .Item}}{{.Item.Name}}{{else}}—{{end}}</td></tr>
+          <tr><th>Nature</th><td>{{.Nature}}</td></tr>
+          <tr><th>Tera Type</th><td>{{if .TeraType}}{{.TeraType}}{{else}}—{{end}}</td></tr>
+          <tr><th>Role</th><td>{{if .Role}}{{.Role}}{{else}}—{{end}}</td></tr>
+        </table>
+        {{if .Notes}}<p style="margin-top:6px;font-size:12px;color:#555">{{.Notes}}</p>{{end}}
+      </div>
+      <div>
+        <table>
+          <tr><th colspan="3">Base Stats (BST {{.Species.BST}})</th></tr>
+          <tr><td>HP</td><td class="stat-num">{{.Species.HP}}</td><td><div class="stat-bar" style="width:{{statbar .Species.HP}}px"></div></td></tr>
+          <tr><td>Atk</td><td class="stat-num">{{.Species.Attack}}</td><td><div class="stat-bar" style="width:{{statbar .Species.Attack}}px;background:#e74c3c"></div></td></tr>
+          <tr><td>Def</td><td class="stat-num">{{.Species.Defense}}</td><td><div class="stat-bar" style="width:{{statbar .Species.Defense}}px;background:#f39c12"></div></td></tr>
+          <tr><td>SpA</td><td class="stat-num">{{.Species.SpAttack}}</td><td><div class="stat-bar" style="width:{{statbar .Species.SpAttack}}px;background:#9b59b6"></div></td></tr>
+          <tr><td>SpD</td><td class="stat-num">{{.Species.SpDefense}}</td><td><div class="stat-bar" style="width:{{statbar .Species.SpDefense}}px;background:#2980b9"></div></td></tr>
+          <tr><td>Spe</td><td class="stat-num">{{.Species.Speed}}</td><td><div class="stat-bar" style="width:{{statbar .Species.Speed}}px;background:#27ae60"></div></td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div style="margin-top:8px">
+      <strong>EVs:</strong>
+      HP {{.EVs.HP}} / Atk {{.EVs.Atk}} / Def {{.EVs.Def}} / SpA {{.EVs.SpA}} / SpD {{.EVs.SpD}} / Spe {{.EVs.Spe}}
+      <em style="color:#888">({{.EVs.Total}} total)</em>
+    </div>
+
+    {{if .Moves}}
+    <div style="margin-top:8px">
+      <strong>Moves:</strong>
+      {{range .Moves}}
+        <span class="type type-{{.Type}}" title="{{.Category}}">{{.Name}}</span>
+      {{end}}
+    </div>
+    {{end}}
+
+    <div style="margin-top:8px">
+      <a href="/teams/{{$.Team.ID}}/members/{{.ID}}/edit" class="btn btn-primary btn-sm">Edit</a>
+      <form style="display:inline" method="POST" action="/teams/{{$.Team.ID}}/members/{{.ID}}/delete">
+        <button class="btn btn-danger btn-sm">Remove</button>
+      </form>
+    </div>
+    {{end}}
+  </div>
+</div>
+{{end}}
+
+{{if lt (len .Team.Members) 6}}
+<div class="panel">
+  <div class="panel-head">Add Pokemon (Slot {{add (len .Team.Members) 1}})</div>
+  <div class="panel-body">
+    <form method="POST" action="/teams/{{.Team.ID}}/members/add">
+      <div class="form-row">
+        <div>
+          <label>Species Name</label>
+          <input type="text" name="pokemon_name" required placeholder="e.g. Garchomp" list="species-list">
+          <datalist id="species-list">
+            {{range .AllSpecies}}<option value="{{.Name}}">{{end}}
+          </datalist>
+        </div>
+        <div>
+          <label>Ability (optional — uses first available)</label>
+          <input type="text" name="ability" placeholder="e.g. Rough Skin">
+        </div>
+      </div>
+      <br>
+      <button class="btn btn-primary">Add Pokemon</button>
+    </form>
+  </div>
+</div>
+{{end}}
+{{end}}

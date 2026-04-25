@@ -1,0 +1,67 @@
+{{template "base" .}}
+{{define "title"}}Dashboard{{end}}
+{{define "content"}}
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+
+  <div class="panel">
+    <div class="panel-head">Teams</div>
+    <div class="panel-body">
+      <p style="font-size:28px;font-weight:bold;margin-bottom:8px">{{.TeamCount}}</p>
+      {{if .RecentTeams}}
+      <table>
+        <tr><th>Name</th><th>Reg</th><th>Members</th></tr>
+        {{range .RecentTeams}}
+        <tr>
+          <td><a href="/teams/{{.ID}}">{{.Name}}</a></td>
+          <td>{{.Regulation}}</td>
+          <td>{{.MemberCount}}/6</td>
+        </tr>
+        {{end}}
+      </table>
+      {{else}}
+      <p>No teams yet.</p>
+      {{end}}
+      <br>
+      <a href="/teams" class="btn btn-primary btn-sm">All Teams →</a>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">New Team</div>
+    <div class="panel-body">
+      <form method="POST" action="/teams/new">
+        <label>Name</label>
+        <input type="text" name="name" required placeholder="e.g. Sand Offense">
+        <label>Regulation</label>
+        <select name="regulation">
+          {{range .Regulations}}
+          <option value="{{.ID}}" {{if eq .ID "H"}}selected{{end}}>{{.ID}} — {{.Name}}</option>
+          {{end}}
+        </select>
+        <br><br>
+        <button class="btn btn-primary">Create Team</button>
+      </form>
+    </div>
+  </div>
+
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:0">
+  <div class="panel">
+    <div class="panel-head">Pokédex</div>
+    <div class="panel-body"><p style="margin-bottom:8px">Browse species, types, base stats, and learnsets.</p>
+      <a href="/pokemon" class="btn btn-primary btn-sm">Open →</a></div>
+  </div>
+  <div class="panel">
+    <div class="panel-head">Moves &amp; Items</div>
+    <div class="panel-body"><p style="margin-bottom:8px">Look up move details and held items.</p>
+      <a href="/moves" class="btn btn-primary btn-sm">Moves →</a>
+      <a href="/items" class="btn btn-primary btn-sm">Items →</a></div>
+  </div>
+  <div class="panel">
+    <div class="panel-head">Knowledge Base</div>
+    <div class="panel-body"><p style="margin-bottom:8px">Search VGC strategy docs and archetypes.</p>
+      <a href="/kb" class="btn btn-primary btn-sm">Search →</a></div>
+  </div>
+</div>
+{{end}}

@@ -1,0 +1,22 @@
+{{template "base" .}}
+{{define "title"}}Knowledge Base{{end}}
+{{define "content"}}
+<div class="panel">
+  <div class="panel-head">Knowledge Base Search</div>
+  <div class="panel-body">
+    <form method="GET" action="/kb">
+      <input type="text" name="q" value="{{.Query}}" placeholder="Search strategy docs…" style="width:400px">
+      <button class="btn btn-primary">Search</button>
+    </form>
+  </div>
+</div>
+{{range .Results}}
+<div class="panel">
+  <div class="panel-head">{{.Title}} <small style="font-weight:normal">chunk {{.ChunkIndex}}</small></div>
+  <div class="panel-body" style="white-space:pre-wrap;font-size:12px;line-height:1.5">{{.Content}}</div>
+</div>
+{{end}}
+{{if and .Query (not .Results)}}
+<div class="panel"><div class="panel-body">No results found for "{{.Query}}".</div></div>
+{{end}}
+{{end}}

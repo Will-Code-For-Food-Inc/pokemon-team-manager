@@ -1,0 +1,35 @@
+{{template "base" .}}
+{{define "title"}}Pokemon{{end}}
+{{define "content"}}
+<div class="panel">
+  <div class="panel-head">Pokemon Search</div>
+  <div class="panel-body">
+    <form method="GET" action="/pokemon">
+      <input type="text" name="q" value="{{.Query}}" placeholder="Search by name…" style="width:300px">
+      <button class="btn btn-primary">Search</button>
+    </form>
+  </div>
+</div>
+{{if .Results}}
+<div class="panel">
+  <div class="panel-body">
+    <table>
+      <tr><th>#</th><th>Name</th><th>Type</th><th>HP</th><th>Atk</th><th>Def</th><th>SpA</th><th>SpD</th><th>Spe</th><th>BST</th></tr>
+      {{range .Results}}
+      <tr>
+        <td>{{.ID}}</td>
+        <td><a href="/pokemon/{{.ID}}">{{.Name}}</a></td>
+        <td>
+          <span class="type type-{{.Type1}}">{{.Type1}}</span>
+          {{if .Type2}}<span class="type type-{{.Type2}}">{{.Type2}}</span>{{end}}
+        </td>
+        <td>{{.HP}}</td><td>{{.Attack}}</td><td>{{.Defense}}</td>
+        <td>{{.SpAttack}}</td><td>{{.SpDefense}}</td><td>{{.Speed}}</td>
+        <td>{{.BST}}</td>
+      </tr>
+      {{end}}
+    </table>
+  </div>
+</div>
+{{end}}
+{{end}}

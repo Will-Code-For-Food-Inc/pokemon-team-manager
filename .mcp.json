@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "ptm": {
+      "command": "/home/alex/projects/pokemon-team-manager/ptm",
+      "args": ["mcp"],
+      "env": {
+        "PTM_DB": "/home/alex/projects/pokemon-team-manager/ptm.db"
+      }
+    }
+  }
+}
