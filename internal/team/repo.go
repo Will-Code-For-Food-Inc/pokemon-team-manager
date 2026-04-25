@@ -113,7 +113,6 @@ type rawMember struct {
 	role      string
 	notes     string
 	evs       StatSpread
-	ivs       StatSpread
 }
 
 func (r *Repo) loadMembers(teamID int) ([]Member, error) {
@@ -122,8 +121,7 @@ func (r *Repo) loadMembers(teamID int) ([]Member, error) {
 	rows, err := r.db.Query(`
 		SELECT id, team_id, slot, species_id, ability_id, item_id,
 		       nickname, COALESCE(tera_type,''), nature, role, notes,
-		       ev_hp, ev_atk, ev_def, ev_spa, ev_spd, ev_spe,
-		       iv_hp, iv_atk, iv_def, iv_spa, iv_spd, iv_spe
+		       ev_hp, ev_atk, ev_def, ev_spa, ev_spd, ev_spe
 		FROM team_members WHERE team_id=? ORDER BY slot`, teamID)
 	if err != nil {
 		return nil, err
@@ -136,7 +134,6 @@ func (r *Repo) loadMembers(teamID int) ([]Member, error) {
 			&rm.id, &rm.teamID, &rm.slot, &rm.speciesID, &rm.abilityID, &rm.itemID,
 			&rm.nickname, &rm.teraType, &rm.nature, &rm.role, &rm.notes,
 			&rm.evs.HP, &rm.evs.Atk, &rm.evs.Def, &rm.evs.SpA, &rm.evs.SpD, &rm.evs.Spe,
-			&rm.ivs.HP, &rm.ivs.Atk, &rm.ivs.Def, &rm.ivs.SpA, &rm.ivs.SpD, &rm.ivs.Spe,
 		); err != nil {
 			rows.Close()
 			return nil, err
@@ -161,7 +158,6 @@ func (r *Repo) loadMembers(teamID int) ([]Member, error) {
 			Role:     rm.role,
 			Notes:    rm.notes,
 			EVs:      rm.evs,
-			IVs:      rm.ivs,
 		}
 
 		if sp, err := r.pokemon.GetSpeciesByID(rm.speciesID); err == nil {

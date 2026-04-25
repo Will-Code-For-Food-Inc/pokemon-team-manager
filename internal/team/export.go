@@ -59,8 +59,7 @@ func ExportMarkdown(t *Team) string {
 		// EVs / IVs
 		fmt.Fprintf(&b, "**EVs:** HP %d / Atk %d / Def %d / SpA %d / SpD %d / Spe %d (%d total)\n\n",
 			m.EVs.HP, m.EVs.Atk, m.EVs.Def, m.EVs.SpA, m.EVs.SpD, m.EVs.Spe, m.EVs.Total())
-		fmt.Fprintf(&b, "**IVs:** HP %d / Atk %d / Def %d / SpA %d / SpD %d / Spe %d\n\n",
-			m.IVs.HP, m.IVs.Atk, m.IVs.Def, m.IVs.SpA, m.IVs.SpD, m.IVs.Spe)
+
 
 		// Moves
 		if len(m.Moves) > 0 {

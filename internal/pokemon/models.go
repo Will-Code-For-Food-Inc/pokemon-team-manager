@@ -57,15 +57,14 @@ const (
 	StatSpe Stat = "speed"
 )
 
-// AllNatures lists all 25 Pokemon natures. Neutral natures have empty Boosted/Reduced.
+// AllNatures lists the 21 valid Stat Alignments in Pokemon Champions.
+// Hardy, Docile, Bashful, and Quirky are not valid in this format.
 var AllNatures = []Nature{
-	{Name: "Hardy"},
 	{Name: "Lonely", Boosted: StatAtk, Reduced: StatDef},
 	{Name: "Brave", Boosted: StatAtk, Reduced: StatSpe},
 	{Name: "Adamant", Boosted: StatAtk, Reduced: StatSpA},
 	{Name: "Naughty", Boosted: StatAtk, Reduced: StatSpD},
 	{Name: "Bold", Boosted: StatDef, Reduced: StatAtk},
-	{Name: "Docile"},
 	{Name: "Relaxed", Boosted: StatDef, Reduced: StatSpe},
 	{Name: "Impish", Boosted: StatDef, Reduced: StatSpA},
 	{Name: "Lax", Boosted: StatDef, Reduced: StatSpD},
@@ -77,13 +76,11 @@ var AllNatures = []Nature{
 	{Name: "Modest", Boosted: StatSpA, Reduced: StatAtk},
 	{Name: "Mild", Boosted: StatSpA, Reduced: StatDef},
 	{Name: "Quiet", Boosted: StatSpA, Reduced: StatSpe},
-	{Name: "Bashful"},
 	{Name: "Rash", Boosted: StatSpA, Reduced: StatSpD},
 	{Name: "Calm", Boosted: StatSpD, Reduced: StatAtk},
 	{Name: "Gentle", Boosted: StatSpD, Reduced: StatDef},
 	{Name: "Sassy", Boosted: StatSpD, Reduced: StatSpe},
 	{Name: "Careful", Boosted: StatSpD, Reduced: StatSpA},
-	{Name: "Quirky"},
 }
 
 // ValidNature returns true if the given nature name is valid.

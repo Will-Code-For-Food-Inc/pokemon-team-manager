@@ -157,15 +157,6 @@ func Validate(t *Team, regulation *Regulation, checker RepoChecker) []Violation 
 			}
 		}
 
-		// 9. IV validation.
-		for statName, val := range map[string]int{
-			"HP": m.IVs.HP, "Atk": m.IVs.Atk, "Def": m.IVs.Def,
-			"SpA": m.IVs.SpA, "SpD": m.IVs.SpD, "Spe": m.IVs.Spe,
-		} {
-			if val < 0 || val > 31 {
-				add("iv_range", "%s %s IV is %d; must be 0–31", m.Species.Name, statName, val)
-			}
-		}
 
 		// 10. Nature validity.
 		if !pokemon.ValidNature(m.Nature) {

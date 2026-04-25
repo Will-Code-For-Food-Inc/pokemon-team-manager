@@ -8,12 +8,13 @@ import (
 	"github.com/user/pokemon-team-manager/internal/pokemon"
 )
 
-// calcStat computes the final Lv. 50 stat value using the standard formula.
+// calcStat computes the final Lv. 50 stat using the Pokemon Champions formula.
+// IVs are always 31. 1 stat point = +2 to the inner term = +1 to the final stat.
 //
-//	HP:    floor((2*base + iv + floor(ev/4)) * 50 / 100 + 60)
-//	Other: floor((floor((2*base + iv + floor(ev/4)) * 50 / 100) + 5) * natureMult)
-func calcStat(base, iv, ev int, isHP bool, natureMult float64) int {
-	inner := (2*base + iv + ev/4) * 50 / 100
+//	HP:    floor((2*base + 31 + sp*2) * 50 / 100) + 60
+//	Other: floor((floor((2*base + 31 + sp*2) * 50 / 100) + 5) * natureMult)
+func calcStat(base, sp int, isHP bool, natureMult float64) int {
+	inner := (2*base + 31 + sp*2) * 50 / 100
 	if isHP {
 		return inner + 60
 	}
@@ -49,7 +50,7 @@ func Analyse(t *Team) *Analysis {
 			continue
 		}
 		mult := natureMult(m.Nature, string(pokemon.StatSpe))
-		speed := calcStat(m.Species.Speed, m.IVs.Spe, m.EVs.Spe, false, mult)
+		speed := calcStat(m.Species.Speed, 31, m.EVs.Spe, false, mult)
 		a.SpeedTiers = append(a.SpeedTiers, SpeedTier{
 			Slot:      m.Slot,
 			Name:      displayName(m),

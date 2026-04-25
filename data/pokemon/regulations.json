@@ -62,5 +62,21 @@
     "end_date": "2025-12-31",
     "description": "2025 season format. No restricted Legendaries allowed. Full Paldea + DLC Pokedex available.",
     "max_restricted": 0
+  },
+  {
+    "id": "I2",
+    "name": "Regulation I2",
+    "start_date": "2026-04-01",
+    "end_date": "2026-05-28",
+    "description": "Pokemon Champions 2026 format. No restricted Legendaries allowed.",
+    "max_restricted": 0
+  },
+  {
+    "id": "M-A",
+    "name": "Regulation M-A",
+    "start_date": "2026-05-29",
+    "end_date": "",
+    "description": "Pokemon Champions ongoing format. No restricted Legendaries allowed.",
+    "max_restricted": 0
   }
 ]

@@ -33,11 +33,10 @@ type Member struct {
 	Role      string           `json:"role"`
 	Notes     string           `json:"notes"`
 	EVs       StatSpread       `json:"evs"`
-	IVs       StatSpread       `json:"ivs"`
 	Moves     []*pokemon.Move  `json:"moves"`
 }
 
-// StatSpread holds EV or IV values for all six stats.
+// StatSpread holds stat point values for all six stats.
 type StatSpread struct {
 	HP  int `json:"hp"`
 	Atk int `json:"attack"`
