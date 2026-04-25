@@ -13,6 +13,11 @@ import (
 //
 //	HP:    floor((2*base + 31 + sp*2) * 50 / 100) + 60
 //	Other: floor((floor((2*base + 31 + sp*2) * 50 / 100) + 5) * natureMult)
+// CalcStat is the exported form of calcStat for testing.
+func CalcStat(base, sp int, isHP bool, natureMult float64) int {
+	return calcStat(base, sp, isHP, natureMult)
+}
+
 func calcStat(base, sp int, isHP bool, natureMult float64) int {
 	inner := (2*base + 31 + sp*2) * 50 / 100
 	if isHP {
