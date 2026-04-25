@@ -2,3 +2,5 @@ ptm
 ptm.db
 *.db
 .claude/settings.local.json
+ptm.db-shm
+ptm.db-wal
