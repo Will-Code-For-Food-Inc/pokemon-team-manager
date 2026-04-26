@@ -83,5 +83,85 @@
     "id": 201,
     "name": "Berserk",
     "description": "Boosts Sp. Atk by 1 when HP drops to half or below."
+  },
+  {
+    "id": 70,
+    "name": "Drought",
+    "description": "Turns the sunlight harsh when the Pokemon enters a battle."
+  },
+  {
+    "id": 81,
+    "name": "Snow Cloak",
+    "description": "Boosts evasiveness in a hailstorm or snowstorm."
+  },
+  {
+    "id": 117,
+    "name": "Snow Warning",
+    "description": "The Pokemon summons a snowstorm when it enters a battle."
+  },
+  {
+    "id": 83,
+    "name": "Anger Point",
+    "description": "Maxes out the Attack stat after the Pokemon takes a critical hit."
+  },
+  {
+    "id": 125,
+    "name": "Sheer Force",
+    "description": "Removes additional effects of moves to increase their power."
+  },
+  {
+    "id": 277,
+    "name": "Cud Chew",
+    "description": "When the Pokemon eats a Berry, it will eat the same Berry again at the end of the next turn."
+  },
+  {
+    "id": 65,
+    "name": "Overgrow",
+    "description": "Powers up Grass-type moves when the Pokemon's HP is low."
+  },
+  {
+    "id": 167,
+    "name": "Long Reach",
+    "description": "The Pokemon uses moves without making contact with the target."
+  },
+  {
+    "id": 173,
+    "name": "Weak Armor",
+    "description": "Physical attacks lower Defense but sharply raise Speed."
+  },
+  {
+    "id": 28,
+    "name": "Synchronize",
+    "description": "Passes a burn, poison, or paralysis to the Pokemon that inflicted it."
+  },
+  {
+    "id": 36,
+    "name": "Trace",
+    "description": "The Pokemon copies the Ability of a foe it faces in battle."
+  },
+  {
+    "id": 89,
+    "name": "Iron Fist",
+    "description": "Powers up punching moves."
+  },
+  {
+    "id": 99,
+    "name": "No Guard",
+    "description": "Ensures attacks by or against the Pokemon land."
+  },
+  {
+    "id": 103,
+    "name": "Klutz",
+    "description": "The Pokemon cannot use its held item, but still suffers from negative effects."
+  },
+  {
+    "id": 258,
+    "name": "Blaze",
+    "description": "Powers up Fire-type moves when the Pokemon's HP is low."
+  },
+  {
+    "id": 259,
+    "name": "Torrent",
+    "description": "Powers up Water-type moves when the Pokemon's HP is low."
   }
 ]

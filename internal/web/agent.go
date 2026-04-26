@@ -468,7 +468,7 @@ func buildPtmTools(svc *Services) []agentTool {
 							if t.Members[i].Species != nil &&
 								strings.EqualFold(t.Members[i].Species.Name, sp.Name) {
 								ev := team.EvaluateMember(&t.Members[i])
-								return formatMemberEvalWeb(ev)
+								return team.FormatMemberEval(ev)
 							}
 						}
 						return fmt.Sprintf("%s is not on team %d; showing species-level evaluation.", sp.Name, teamID)
@@ -476,7 +476,7 @@ func buildPtmTools(svc *Services) []agentTool {
 				}
 				learnset, _ := svc.Pokemon.GetLearnset(sp.ID)
 				ev := team.EvaluateSpecies(sp, learnset)
-				return formatSpeciesEvalWeb(ev)
+				return team.FormatSpeciesEval(ev)
 			},
 		},
 		{
@@ -637,7 +637,7 @@ func runAgent(ollama *ollamaClient, svc *Services, history []ollamaMessage, user
 				if name, ok := tc.Function.Arguments["name"].(string); ok && name != "" {
 					view = &agentView{Type: "pokemon", PokemonName: name}
 				}
-			case "find_pokemon_by_name", "search_pokemon":
+			case "find_pokemon_by_name":
 				if n, ok := tc.Function.Arguments["name"].(string); ok && n != "" {
 					view = &agentView{Type: "pokemon", PokemonName: n}
 				}
@@ -676,61 +676,6 @@ func trimHistory(messages []ollamaMessage) []ollamaMessage {
 		}
 	}
 	return nil
-}
-
-func formatSpeciesEvalWeb(ev team.SpeciesEval) string {
-	var b strings.Builder
-	fmt.Fprintf(&b, "%s (%s)\n", ev.Name, strings.Join(ev.Types, "/"))
-	fmt.Fprintf(&b, "Role: %s | Speed: %s\n", ev.StatRole, ev.SpeedTier)
-	fmt.Fprintf(&b, "Bulk: physical %.0f | special %.0f\n", ev.PhysicalBulk, ev.SpecialBulk)
-	tm := ev.TypeMatchup
-	if len(tm.Immune) > 0 {
-		fmt.Fprintf(&b, "Immune (0×):     %s\n", strings.Join(tm.Immune, ", "))
-	}
-	if len(tm.Quarter) > 0 {
-		fmt.Fprintf(&b, "Quarter (0.25×): %s\n", strings.Join(tm.Quarter, ", "))
-	}
-	if len(tm.Half) > 0 {
-		fmt.Fprintf(&b, "Resists (0.5×):  %s\n", strings.Join(tm.Half, ", "))
-	}
-	if len(tm.Double) > 0 {
-		fmt.Fprintf(&b, "Weak (2×):       %s\n", strings.Join(tm.Double, ", "))
-	}
-	if len(tm.Quadruple) > 0 {
-		fmt.Fprintf(&b, "Very weak (4×):  %s\n", strings.Join(tm.Quadruple, ", "))
-	}
-	if len(ev.OffensiveCoverage) > 0 {
-		fmt.Fprintf(&b, "Offensive coverage (SE): %s\n", strings.Join(ev.OffensiveCoverage, ", "))
-	}
-	return b.String()
-}
-
-func formatMemberEvalWeb(ev team.MemberEval) string {
-	var b strings.Builder
-	b.WriteString(formatSpeciesEvalWeb(ev.SpeciesEval))
-	b.WriteString("--- member analysis ---\n")
-	var flags []string
-	if ev.HasPriorityMove {
-		flags = append(flags, "priority move")
-	}
-	if ev.HasSetupMove {
-		flags = append(flags, "setup move")
-	}
-	if ev.HasRecoveryMove {
-		flags = append(flags, "recovery move")
-	}
-	if ev.HasRedirection {
-		flags = append(flags, "redirection")
-	}
-	if len(flags) > 0 {
-		fmt.Fprintf(&b, "Flags: %s\n", strings.Join(flags, ", "))
-	}
-	if ev.MoveStatMismatch {
-		fmt.Fprintf(&b, "EV warning: %s\n", ev.EVEfficiency)
-	} else {
-		fmt.Fprintf(&b, "EV efficiency: %s\n", ev.EVEfficiency)
-	}
-	return b.String()
 }
 
 func truncate(s string, n int) string {

@@ -134,6 +134,19 @@ func (r *Repo) SearchSpecies(name string, limit int, f SpeciesFilter) ([]Species
 }
 
 // GetAbilitiesForSpecies returns all abilities (slots 1, 2, 3) for a species.
+// SearchSpeciesForAgent applies agent-facing defaults before calling SearchSpecies:
+// owned=true if unspecified, limit=20 if <= 0.
+func (r *Repo) SearchSpeciesForAgent(name string, limit int, f SpeciesFilter) ([]Species, error) {
+	if f.Owned == nil {
+		t := true
+		f.Owned = &t
+	}
+	if limit <= 0 {
+		limit = 20
+	}
+	return r.SearchSpecies(name, limit, f)
+}
+
 func (r *Repo) GetAbilitiesForSpecies(speciesID int) ([]Ability, error) {
 	rows, err := r.db.Query(`
 		SELECT a.id, a.name, a.description

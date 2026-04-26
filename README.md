@@ -146,6 +146,10 @@ A Nix flake (`flake.nix`) provides a `nixosModules.ptm` output for running ptm
 as a user systemd service on NixOS. Tagged releases produce cross-compiled
 binaries and `.deb`/`.rpm` packages via GitHub Actions + nfpm.
 
+## AI Disclosure
+
+This project was built with significant AI assistance. Code, architecture, and tooling were developed collaboratively using [Claude Code](https://claude.ai/code) (Anthropic) running as a local agentic shard, with Ollama/Qwen used for mechanical and data-heavy tasks. All Pokemon data in `data/` was gathered and curated independently by the project author — it is not AI-generated.
+
 ## Identity
 
 This instance runs as **LiraelClaude** — the agentic shard of the primary

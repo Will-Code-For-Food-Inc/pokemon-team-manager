@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math"
 	"strings"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -46,7 +45,6 @@ QUICK START:
 2. create_team name="..." regulation="I2" → get team_id
 3. find_pokemon_by_filters type="fire" role="tank" speed_tier="slow" → discover owned candidates (no name guessing)
    find_pokemon_by_name name="Garcho" → fuzzy name lookup when you already know the name
-   search_pokemon → last-resort broad search
 4. add_pokemon team_id=N pokemon_name="..." → adds to next slot (max 6)
 5. set_ability / set_nature / set_item / set_moves / set_stats / set_role
 6. validate_team team_id=N → check violations
@@ -56,7 +54,7 @@ QUICK START:
 OWNERSHIP: Use set_owned to mark a Pokemon or item as owned/unowned when the user tells you.
   set_owned type="pokemon" name="Tyranitar" owned=true
   set_owned type="item" name="Lum Berry" owned=true
-The owned flag appears in search_pokemon and get_item results.
+The owned flag appears in find_pokemon_by_name, find_pokemon_by_filters, and get_item results.
 
 RULES: 6 Pokemon, no duplicate species or items, final evos only,
 Stat points: 66 total, max 32/stat (Pokemon Champions system). 0 restricted Legendaries (Reg I2).
@@ -894,18 +892,6 @@ func registerTeamTools(s *server.MCPServer, svc *Services) {
 		}
 		return textResult(fmt.Sprintf("Team copied as \"%s\" (ID %d).", getString(args, "name"), newID)), nil
 	})
-
-	s.AddTool(mcp.NewTool("set_team_notes",
-		mcp.WithDescription("Set free-text notes on a team (strategy overview, tournament notes, etc.)."),
-		mcp.WithNumber("team_id", mcp.Required(), mcp.Description("Team ID")),
-		mcp.WithString("notes", mcp.Required(), mcp.Description("Notes text (markdown supported)")),
-	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		args := req.GetArguments()
-		if err := svc.Team.UpdateTeamNotes(getInt(args, "team_id"), getString(args, "notes")); err != nil {
-			return errResult(err.Error()), nil
-		}
-		return textResult("Team notes updated."), nil
-	})
 }
 
 // --- Knowledge tools ---
@@ -1022,27 +1008,17 @@ func registerAnalysisTools(s *server.MCPServer, svc *Services) {
 			reduced = n.Reduced
 		}
 
-		// Formula (IVs=31, Lv50):
-		//   HP:     floor((2*B + 31 + SP*2) * 50/100) + 60
-		//   Other:  floor((2*B + 31 + SP*2) * 50/100 + 5) * NatureMult
 		var b strings.Builder
 		fmt.Fprintf(&b, "%-9s %6s %4s %7s\n", "Stat", "Base", "SP", "Final")
 		fmt.Fprintf(&b, "%-9s %6s %4s %7s\n", "---------", "------", "----", "-------")
 		for i := range 6 {
-			inner := 2*bases[i] + 31 + spread[i]*2
-			var final int
-			if statKeys[i] == pokemon.StatHP {
-				final = int(math.Floor(float64(inner)*50.0/100.0)) + 60
-			} else {
-				mult := 1.0
-				switch statKeys[i] {
-				case boosted:
-					mult = 1.1
-				case reduced:
-					mult = 0.9
-				}
-				final = int(math.Floor((math.Floor(float64(inner)*50.0/100.0) + 5) * mult))
+			mult := 1.0
+			if statKeys[i] == boosted {
+				mult = 1.1
+			} else if statKeys[i] == reduced {
+				mult = 0.9
 			}
+			final := team.CalcStat(bases[i], spread[i], statKeys[i] == pokemon.StatHP, mult)
 			fmt.Fprintf(&b, "%-9s %6d %4d %7d\n", statNames[i], bases[i], spread[i], final)
 		}
 		if natureName != "" {
@@ -1151,7 +1127,7 @@ func registerEvaluateTools(s *server.MCPServer, svc *Services) {
 				return textResult(fmt.Sprintf("%s is not on team %d; showing species-level evaluation.", sp.Name, teamID)), nil
 			}
 			ev := team.EvaluateMember(matched)
-			return textResult(formatMemberEval(ev)), nil
+			return textResult(team.FormatMemberEval(ev)), nil
 		}
 
 		// Species-level evaluation — fetch learnset.
@@ -1160,63 +1136,8 @@ func registerEvaluateTools(s *server.MCPServer, svc *Services) {
 			learnset = nil // degrade gracefully
 		}
 		ev := team.EvaluateSpecies(sp, learnset)
-		return textResult(formatSpeciesEval(ev)), nil
+		return textResult(team.FormatSpeciesEval(ev)), nil
 	})
-}
-
-func formatSpeciesEval(ev team.SpeciesEval) string {
-	var b strings.Builder
-	fmt.Fprintf(&b, "%s (%s)\n", ev.Name, strings.Join(ev.Types, "/"))
-	fmt.Fprintf(&b, "Role: %s | Speed: %s\n", ev.StatRole, ev.SpeedTier)
-	fmt.Fprintf(&b, "Bulk: physical %.0f | special %.0f\n", ev.PhysicalBulk, ev.SpecialBulk)
-	tm := ev.TypeMatchup
-	if len(tm.Immune) > 0 {
-		fmt.Fprintf(&b, "Immune (0×):     %s\n", strings.Join(tm.Immune, ", "))
-	}
-	if len(tm.Quarter) > 0 {
-		fmt.Fprintf(&b, "Quarter (0.25×): %s\n", strings.Join(tm.Quarter, ", "))
-	}
-	if len(tm.Half) > 0 {
-		fmt.Fprintf(&b, "Resists (0.5×):  %s\n", strings.Join(tm.Half, ", "))
-	}
-	if len(tm.Double) > 0 {
-		fmt.Fprintf(&b, "Weak (2×):       %s\n", strings.Join(tm.Double, ", "))
-	}
-	if len(tm.Quadruple) > 0 {
-		fmt.Fprintf(&b, "Very weak (4×):  %s\n", strings.Join(tm.Quadruple, ", "))
-	}
-	if len(ev.OffensiveCoverage) > 0 {
-		fmt.Fprintf(&b, "Offensive coverage (SE): %s\n", strings.Join(ev.OffensiveCoverage, ", "))
-	}
-	return b.String()
-}
-
-func formatMemberEval(ev team.MemberEval) string {
-	var b strings.Builder
-	b.WriteString(formatSpeciesEval(ev.SpeciesEval))
-	b.WriteString("--- member analysis ---\n")
-	flags := []string{}
-	if ev.HasPriorityMove {
-		flags = append(flags, "priority move")
-	}
-	if ev.HasSetupMove {
-		flags = append(flags, "setup move")
-	}
-	if ev.HasRecoveryMove {
-		flags = append(flags, "recovery move")
-	}
-	if ev.HasRedirection {
-		flags = append(flags, "redirection")
-	}
-	if len(flags) > 0 {
-		fmt.Fprintf(&b, "Flags: %s\n", strings.Join(flags, ", "))
-	}
-	if ev.MoveStatMismatch {
-		fmt.Fprintf(&b, "EV warning: %s\n", ev.EVEfficiency)
-	} else {
-		fmt.Fprintf(&b, "EV efficiency: %s\n", ev.EVEfficiency)
-	}
-	return b.String()
 }
 
 // registerLogTools adds add_team_log and get_team_logs.

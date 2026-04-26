@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "ptm": {
+      "command": "/home/alex/projects/pokemon-team-manager/ptm",
+      "args": ["mcp"],
+      "cwd": "/home/alex/projects/pokemon-team-manager"
+    }
+  }
+}

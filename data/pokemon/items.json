@@ -1,140 +1,704 @@
 [
   {
     "id": 1,
-    "name": "Leftovers",
-    "description": "Restores 1/16 of the holder's max HP at the end of each turn.",
+    "name": "Black Belt",
+    "description": "An item to be held by a Pok\u00e9mon. This belt helps with focus and boosts the power of the holder's Fighting-type moves.",
     "is_banned": 0
   },
   {
     "id": 2,
-    "name": "Lum Berry",
-    "description": "Cures any status condition and confusion. Consumed on use.",
+    "name": "Black Glasses",
+    "description": "An item to be held by a Pok\u00e9mon. It's a pair of shady- looking glasses that boost the power of the holder's Dark-type moves.",
     "is_banned": 0
   },
   {
     "id": 3,
-    "name": "Sitrus Berry",
-    "description": "Restores 25% of the holder's max HP when HP falls to half or less. Consumed on use.",
+    "name": "Bright Powder",
+    "description": "An item to be held by a Pok\u00e9mon. This glittery powder casts a tricky glare that lowers the accuracy of opposing Pok\u00e9mon's moves.",
     "is_banned": 0
   },
   {
     "id": 4,
-    "name": "Shuca Berry",
-    "description": "Halves damage from a super-effective Ground-type move. Consumed on use.",
+    "name": "Charcoal",
+    "description": "An item to be held by a Pok\u00e9mon. It's a combustible fuel that boosts the power of the holder's Fire-type moves.",
     "is_banned": 0
   },
   {
     "id": 5,
-    "name": "Rocky Helmet",
-    "description": "Damages the attacker for 1/6 of their max HP when they use a contact move.",
+    "name": "Choice Scarf",
+    "description": "An item to be held by a Pok\u00e9mon. This curious scarf boosts the holder's Speed stat but only allows the use of a single move.",
     "is_banned": 0
   },
   {
     "id": 6,
-    "name": "Black Belt",
-    "description": "Boosts the power of Fighting-type moves by 20%.",
+    "name": "Dragon Fang",
+    "description": "An item to be held by a Pok\u00e9mon. This hard, sharp fang boosts the power of the holder's Dragon-type moves.",
     "is_banned": 0
   },
   {
     "id": 7,
-    "name": "Hard Stone",
-    "description": "Boosts the power of Rock-type moves by 20%.",
+    "name": "Fairy Feather",
+    "description": "An item to be held by a Pok\u00e9mon. This feather, which gleams faintly when hit by light, boosts the power of the holder's Fairy-type moves.",
     "is_banned": 0
   },
   {
     "id": 8,
-    "name": "Focus Sash",
-    "description": "If holder has full HP, it survives a hit that would KO it with 1 HP. Consumed on use.",
+    "name": "Focus Band",
+    "description": "An item to be held by a Pok\u00e9mon. When the holder is hit with a move that should knock it out, it may be able to endure with 1 HP.",
     "is_banned": 0
   },
   {
     "id": 9,
-    "name": "Weakness Policy",
-    "description": "If the holder is hit by a super-effective move, its Attack and Sp. Atk are sharply raised. Consumed on use.",
+    "name": "Focus Sash",
+    "description": "An item to be held by a Pok\u00e9mon. If the holder has full HP and it is hit with a move that should knock it out, it will endure with 1 HPbut only once.",
     "is_banned": 0
   },
   {
     "id": 10,
-    "name": "Choice Scarf",
-    "description": "Boosts the holder's Speed by 50%, but only allows use of the first move selected.",
+    "name": "Hard Stone",
+    "description": "An item to be held by a Pok\u00e9mon. It's a durable stone that boosts the power of the holder's Rock-type moves.",
     "is_banned": 0
   },
   {
     "id": 11,
-    "name": "Choice Band",
-    "description": "Boosts the holder's Attack by 50%, but only allows use of the first move selected.",
+    "name": "King's Rock",
+    "description": "An item to be held by a Pok\u00e9mon. It may cause the target to flinch whenever the holder successfully inflicts damage on them with an attack.",
     "is_banned": 0
   },
   {
     "id": 12,
-    "name": "Choice Specs",
-    "description": "Boosts the holder's Sp. Atk by 50%, but only allows use of the first move selected.",
+    "name": "Leftovers",
+    "description": "An item to be held by a Pok\u00e9mon. It slowly but steadily restores the holder's HP.",
     "is_banned": 0
   },
   {
     "id": 13,
-    "name": "Life Orb",
-    "description": "Boosts the power of moves by 30% but costs 10% HP per use.",
+    "name": "Light Ball",
+    "description": "An item to be held by Pikachu. It's a mysterious orb that boosts Pikachu's Attack and Sp. Atk stats.",
     "is_banned": 0
   },
   {
     "id": 14,
-    "name": "Assault Vest",
-    "description": "Raises Sp. Def by 50% but prevents use of status moves.",
+    "name": "Magnet",
+    "description": "An item to be held by a Pok\u00e9mon. It's a powerful magnet that boosts the power of the holder's Electric-type moves.",
     "is_banned": 0
   },
   {
     "id": 15,
-    "name": "Throat Spray",
-    "description": "Raises the holder's Sp. Atk by 1 stage when it uses a sound-based move. Consumed on use.",
+    "name": "Mental Herb",
+    "description": "An item to be held by a Pok\u00e9mon. The holder will be able to shake off move-binding effects to move freely but only once.",
     "is_banned": 0
   },
   {
     "id": 16,
-    "name": "Safety Goggles",
-    "description": "Protects the holder from powder moves and the effects of weather.",
+    "name": "Metal Coat",
+    "description": "An item to be held by a Pok\u00e9mon. It's a special metallic coating that boosts the power of the holder's Steel-type moves.",
     "is_banned": 0
   },
   {
     "id": 17,
-    "name": "Clear Amulet",
-    "description": "Prevents the holder's stats from being lowered by other Pokemon's moves or abilities.",
+    "name": "Miracle Seed",
+    "description": "An item to be held by a Pok\u00e9mon. It's a seed imbued with life force that boosts the power of the holder's Grass-type moves.",
     "is_banned": 0
   },
   {
     "id": 18,
-    "name": "Covert Cloak",
-    "description": "Protects the holder from the additional effects of moves used against it.",
+    "name": "Mystic Water",
+    "description": "An item to be held by a Pok\u00e9mon. This teardrop-shaped gem boosts the power of the holder's Water-type moves.",
     "is_banned": 0
   },
   {
     "id": 19,
-    "name": "Loaded Dice",
-    "description": "Makes multi-strike moves more likely to hit more times.",
+    "name": "Never-Melt Ice",
+    "description": "An item to be held by a Pok\u00e9mon. It's a heat-repelling piece of ice that boosts the power of the holder's Ice- type moves.",
     "is_banned": 0
   },
   {
     "id": 20,
-    "name": "Booster Energy",
-    "description": "Activates the Quark Drive or Protosynthesis abilities even without terrain or weather.",
+    "name": "Poison Barb",
+    "description": "An item to be held by a Pok\u00e9mon. This small poisonous barb boosts the power of the holder's Poison-type moves.",
     "is_banned": 0
   },
   {
     "id": 21,
     "name": "Quick Claw",
-    "description": "Gives the holder a 20% chance to move first in its priority bracket each turn.",
+    "description": "An item to be held by a Pok\u00e9mon. This light, sharp claw lets the holder occasionally unleash a move faster than it usually would.",
     "is_banned": 0
   },
   {
     "id": 22,
-    "name": "Focus Band",
-    "description": "Gives the holder a 10% chance to survive a hit that would otherwise KO it, leaving 1 HP.",
+    "name": "Scope Lens",
+    "description": "An item to be held by a Pok\u00e9mon. It's a lens for scoping out weak points. It boosts the holder's critical-hit ratio.",
     "is_banned": 0
   },
   {
     "id": 23,
+    "name": "Sharp Beak",
+    "description": "An item to be held by a Pok\u00e9mon. It's a long, sharp beak that boosts the power of the holder's Flying-type moves.",
+    "is_banned": 0
+  },
+  {
+    "id": 24,
+    "name": "Shell Bell",
+    "description": "An item to be held by a Pok\u00e9mon. The holder restores a little HP to itself every time it inflicts damage with an attack.",
+    "is_banned": 0
+  },
+  {
+    "id": 25,
+    "name": "Silk Scarf",
+    "description": "An item to be held by a Pok\u00e9mon. It's a sumptuous scarf that boosts the power of the holder's Normal-type moves.",
+    "is_banned": 0
+  },
+  {
+    "id": 26,
+    "name": "Silver Powder",
+    "description": "An item to be held by a Pok\u00e9mon. It's a shiny silver powder that boosts the power of the holder's Bug-type moves.",
+    "is_banned": 0
+  },
+  {
+    "id": 27,
+    "name": "Soft Sand",
+    "description": "An item to be held by a Pok\u00e9mon. This loose, silky sand boosts the power of the holder's Ground-type moves.",
+    "is_banned": 0
+  },
+  {
+    "id": 28,
+    "name": "Spell Tag",
+    "description": "An item to be held by a Pok\u00e9mon. It's a sinister, eerie tag that boosts the power of the holder's Ghost-type moves.",
+    "is_banned": 0
+  },
+  {
+    "id": 29,
+    "name": "Twisted Spoon",
+    "description": "An item to be held by a Pok\u00e9mon. This spoon is imbued with telekinetic energy and boosts the power of the holder's Psychic-type moves.",
+    "is_banned": 0
+  },
+  {
+    "id": 30,
     "name": "White Herb",
-    "description": "Restores lowered stats to normal once. Consumed on use.",
+    "description": "An item to be held by a Pok\u00e9mon. It will restore any lowered stat in battlebut only once.",
+    "is_banned": 0
+  },
+  {
+    "id": 31,
+    "name": "Abomasite",
+    "description": "One of a variety of mysterious Mega Stones. An Abomasnow holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 32,
+    "name": "Absolite",
+    "description": "One of a variety of mysterious Mega Stones. An Absol holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 33,
+    "name": "Aerodactylite",
+    "description": "One of a variety of mysterious Mega Stones. An Aerodactyl holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 34,
+    "name": "Aggronite",
+    "description": "One of a variety of mysterious Mega Stones. An Aggron holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 35,
+    "name": "Alakazite",
+    "description": "One of a variety of mysterious Mega Stones. An Alakazam holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 36,
+    "name": "Altarianite",
+    "description": "One of a variety of mysterious Mega Stones. An Altaria holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 37,
+    "name": "Ampharosite",
+    "description": "One of a variety of mysterious Mega Stones. An Ampharos holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 38,
+    "name": "Audinite",
+    "description": "One of a variety of mysterious Mega Stones. An Audino holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 39,
+    "name": "Banettite",
+    "description": "One of a variety of mysterious Mega Stones. A Banette holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 40,
+    "name": "Beedrillite",
+    "description": "One of a variety of mysterious Mega Stones. A Beedrill holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 41,
+    "name": "Blastoisinite",
+    "description": "One of a variety of mysterious Mega Stones. A Blastoise holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 42,
+    "name": "Cameruptite",
+    "description": "One of a variety of mysterious Mega Stones. A Camerupt holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 43,
+    "name": "Chandelurite",
+    "description": "One of a variety of mysterious Mega Stones. A Chandelure holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 44,
+    "name": "Charizardite X",
+    "description": "One of a variety of mysterious Mega Stones. A Charizard holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 45,
+    "name": "Charizardite Y",
+    "description": "One of a variety of mysterious Mega Stones. A Charizard holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 46,
+    "name": "Chesnaughtite",
+    "description": "One of a variety of mysterious Mega Stones. A Chesnaught holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 47,
+    "name": "Chimechite",
+    "description": "One of a variety of mysterious Mega Stones. A Chimecho holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 48,
+    "name": "Clefablite",
+    "description": "One of a variety of mysterious Mega Stones. A Clefable holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 49,
+    "name": "Crabominite",
+    "description": "One of a variety of mysterious Mega Stones. A Crabominable holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 50,
+    "name": "Delphoxite",
+    "description": "One of a variety of mysterious Mega Stones. A Delphox holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 51,
+    "name": "Dragoninite",
+    "description": "One of a variety of mysterious Mega Stones. A Dragonite holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 52,
+    "name": "Drampanite",
+    "description": "One of a variety of mysterious Mega Stones. A Drampa holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 53,
+    "name": "Emboarite",
+    "description": "One of a variety of mysterious Mega Stones. An Emboar holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 54,
+    "name": "Excadrite",
+    "description": "One of a variety of mysterious Mega Stones. An Excadrill holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 55,
+    "name": "Feraligite",
+    "description": "One of a variety of mysterious Mega Stones. A Feraligatr holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 56,
+    "name": "Floettite",
+    "description": "One of a variety of mysterious Mega Stones. A special Floette holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 57,
+    "name": "Froslassite",
+    "description": "One of a variety of mysterious Mega Stones. A Froslass holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 58,
+    "name": "Galladite",
+    "description": "One of a variety of mysterious Mega Stones. A Gallade holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 59,
+    "name": "Garchompite",
+    "description": "One of a variety of mysterious Mega Stones. A Garchomp holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 60,
+    "name": "Gardevoirite",
+    "description": "One of a variety of mysterious Mega Stones. A Gardevoir holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 61,
+    "name": "Gengarite",
+    "description": "One of a variety of mysterious Mega Stones. A Gengar holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 62,
+    "name": "Glalitite",
+    "description": "One of a variety of mysterious Mega Stones. A Glalie holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 63,
+    "name": "Glimmoranite",
+    "description": "One of a variety of mysterious Mega Stones. A Glimmora holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 64,
+    "name": "Golurkite",
+    "description": "One of a variety of mysterious Mega Stones. A Golurk holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 65,
+    "name": "Greninjite",
+    "description": "One of a variety of mysterious Mega Stones. A Greninja holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 66,
+    "name": "Gyaradosite",
+    "description": "One of a variety of mysterious Mega Stones. A Gyarados holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 67,
+    "name": "Hawluchanite",
+    "description": "One of a variety of mysterious Mega Stones. A Hawlucha holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 68,
+    "name": "Heracronite",
+    "description": "One of a variety of mysterious Mega Stones. A Heracross holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 69,
+    "name": "Houndoominite",
+    "description": "One of a variety of mysterious Mega Stones. A Houndoom holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 70,
+    "name": "Kangaskhanite",
+    "description": "One of a variety of mysterious Mega Stones. A Kangaskhan holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 71,
+    "name": "Lopunnite",
+    "description": "One of a variety of mysterious Mega Stones. A Lopunny holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 72,
+    "name": "Lucarionite",
+    "description": "One of a variety of mysterious Mega Stones. A Lucario holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 73,
+    "name": "Manectite",
+    "description": "One of a variety of mysterious Mega Stones. A Manectric holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 74,
+    "name": "Medichamite",
+    "description": "One of a variety of mysterious Mega Stones. A Medicham holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 75,
+    "name": "Meganiumite",
+    "description": "One of a variety of mysterious Mega Stones. A Meganium holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 76,
+    "name": "Meowsticite",
+    "description": "One of a variety of mysterious Mega Stones. A Meowstic holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 77,
+    "name": "Pidgeotite",
+    "description": "One of a variety of mysterious Mega Stones. A Pidgeot holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 78,
+    "name": "Pinsirite",
+    "description": "One of a variety of mysterious Mega Stones. A Pinsir holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 79,
+    "name": "Sablenite",
+    "description": "One of a variety of mysterious Mega Stones. A Sableye holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 80,
+    "name": "Scizorite",
+    "description": "One of a variety of mysterious Mega Stones. A Scizor holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 81,
+    "name": "Scovillainite",
+    "description": "One of a variety of mysterious Mega Stones. A Scovillain holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 82,
+    "name": "Sharpedonite",
+    "description": "One of a variety of mysterious Mega Stones. A Sharpedo holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 83,
+    "name": "Skarmorite",
+    "description": "One of a variety of mysterious Mega Stones. A Skarmory holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 84,
+    "name": "Slowbronite",
+    "description": "One of a variety of mysterious Mega Stones. A Slowbro holding this stone will be able to Mega Evolve during battle. It won't work for a Galarian Slowbro, however.",
+    "is_banned": 0
+  },
+  {
+    "id": 85,
+    "name": "Starminite",
+    "description": "One of a variety of mysterious Mega Stones. A Starmie holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 86,
+    "name": "Steelixite",
+    "description": "One of a variety of mysterious Mega Stones. A Steelix holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 87,
+    "name": "Tyranitarite",
+    "description": "One of a variety of mysterious Mega Stones. A Tyranitar holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 88,
+    "name": "Venusaurite",
+    "description": "One of a variety of mysterious Mega Stones. A Venusaur holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 89,
+    "name": "Victreebelite",
+    "description": "One of a variety of mysterious Mega Stones. A Victreebel holding this stone will be able to Mega Evolve during battle.",
+    "is_banned": 0
+  },
+  {
+    "id": 90,
+    "name": "Aspear Berry",
+    "description": "If a Pok\u00e9mon holds one of these Berries, it will be able to thaw itself after being frozen.",
+    "is_banned": 0
+  },
+  {
+    "id": 91,
+    "name": "Babiri Berry",
+    "description": "If a Pok\u00e9mon holding this Berry is hit with a supereffective Steel-type move, the power of that move will be weakened.",
+    "is_banned": 0
+  },
+  {
+    "id": 92,
+    "name": "Charti Berry",
+    "description": "If a Pok\u00e9mon holding this Berry is hit with a supereffective Rock-type move, the power of that move will be weakened.",
+    "is_banned": 0
+  },
+  {
+    "id": 93,
+    "name": "Cheri Berry",
+    "description": "If a Pok\u00e9mon holds one of these Berries, it will be able to free itself from paralysis.",
+    "is_banned": 0
+  },
+  {
+    "id": 94,
+    "name": "Chesto Berry",
+    "description": "If a Pok\u00e9mon holds one of these Berries, it will be able to shake off its drowsiness.",
+    "is_banned": 0
+  },
+  {
+    "id": 95,
+    "name": "Chilan Berry",
+    "description": "If a Pok\u00e9mon holding this Berry is hit with a Normal-type move, the power of that move will be weakened.",
+    "is_banned": 0
+  },
+  {
+    "id": 96,
+    "name": "Chople Berry",
+    "description": "If a Pok\u00e9mon holding this Berry is hit with a supereffective Fighting-type move, the power of that move will be weakened.",
+    "is_banned": 0
+  },
+  {
+    "id": 97,
+    "name": "Coba Berry",
+    "description": "If a Pok\u00e9mon holding this Berry is hit with a supereffective Flying-type move, the power of that move will be weakened.",
+    "is_banned": 0
+  },
+  {
+    "id": 98,
+    "name": "Colbur Berry",
+    "description": "If a Pok\u00e9mon holding this Berry is hit with a supereffective Dark-type move, the power of that move will be weakened.",
+    "is_banned": 0
+  },
+  {
+    "id": 99,
+    "name": "Haban Berry",
+    "description": "If a Pok\u00e9mon holding this Berry is hit with a supereffective Dragon-type move, the power of that move will be weakened.",
+    "is_banned": 0
+  },
+  {
+    "id": 100,
+    "name": "Kasib Berry",
+    "description": "If a Pok\u00e9mon holding this Berry is hit with a supereffective Ghost-type move, the power of that move will be weakened.",
+    "is_banned": 0
+  },
+  {
+    "id": 101,
+    "name": "Kebia Berry",
+    "description": "If a Pok\u00e9mon holding this Berry is hit with a supereffective Poison-type move, the power of that move will be weakened.",
+    "is_banned": 0
+  },
+  {
+    "id": 102,
+    "name": "Leppa Berry",
+    "description": "If a Pok\u00e9mon holds one of these Berries, it will be able to restore 10 PP to a move.",
+    "is_banned": 0
+  },
+  {
+    "id": 103,
+    "name": "Lum Berry",
+    "description": "If a Pok\u00e9mon holds one of these Berries, it will be able to cure itself of any status condition it may have.",
+    "is_banned": 0
+  },
+  {
+    "id": 104,
+    "name": "Occa Berry",
+    "description": "If a Pok\u00e9mon holding this Berry is hit with a supereffective Fire-type move, the power of that move will be weakened.",
+    "is_banned": 0
+  },
+  {
+    "id": 105,
+    "name": "Oran Berry",
+    "description": "If a Pok\u00e9mon holds one of these Berries, it will be able to restore 10 HP to itself.",
+    "is_banned": 0
+  },
+  {
+    "id": 106,
+    "name": "Passho Berry",
+    "description": "If a Pok\u00e9mon holding this Berry is hit with a supereffective Water-type move, the power of that move will be weakened.",
+    "is_banned": 0
+  },
+  {
+    "id": 107,
+    "name": "Payapa Berry",
+    "description": "If a Pok\u00e9mon holding this Berry is hit with a supereffective Psychic-type move, the power of that move will be weakened.",
+    "is_banned": 0
+  },
+  {
+    "id": 108,
+    "name": "Pecha Berry",
+    "description": "If a Pok\u00e9mon holds one of these Berries, it will be able to lift the effects of being poisoned from itself.",
+    "is_banned": 0
+  },
+  {
+    "id": 109,
+    "name": "Persim Berry",
+    "description": "If a Pok\u00e9mon holds one of these Berries, it will be able to cure itself of confusion.",
+    "is_banned": 0
+  },
+  {
+    "id": 110,
+    "name": "Rawst Berry",
+    "description": "If a Pok\u00e9mon holds one of these Berries, it will be able to cure itself of a burn.",
+    "is_banned": 0
+  },
+  {
+    "id": 111,
+    "name": "Rindo Berry",
+    "description": "If a Pok\u00e9mon holding this Berry is hit with a supereffective Grass-type move, the power of that move will be weakened.",
+    "is_banned": 0
+  },
+  {
+    "id": 112,
+    "name": "Roseli Berry",
+    "description": "If a Pok\u00e9mon holding this Berry is hit with a supereffective Fairy-type move, the power of that move will be weakened.",
+    "is_banned": 0
+  },
+  {
+    "id": 113,
+    "name": "Shuca Berry",
+    "description": "If a Pok\u00e9mon holding this Berry is hit with a supereffective Ground-type move, the power of that move will be weakened.",
+    "is_banned": 0
+  },
+  {
+    "id": 114,
+    "name": "Sitrus Berry",
+    "description": "If a Pok\u00e9mon holds one of these Berries, it will be able to restore a small amount of HP to itself.",
+    "is_banned": 0
+  },
+  {
+    "id": 115,
+    "name": "Tanga Berry",
+    "description": "If a Pok\u00e9mon holding this Berry is hit with a supereffective Bug-type move, the power of that move will be weakened.",
+    "is_banned": 0
+  },
+  {
+    "id": 116,
+    "name": "Wacan Berry",
+    "description": "If a Pok\u00e9mon holding this Berry is hit with a supereffective Electric-type move, the power of that move will be weakened.",
+    "is_banned": 0
+  },
+  {
+    "id": 117,
+    "name": "Yache Berry",
+    "description": "If a Pok\u00e9mon holding this Berry is hit with a supereffective Ice-type move, the power of that move will be weakened.",
     "is_banned": 0
   }
 ]
