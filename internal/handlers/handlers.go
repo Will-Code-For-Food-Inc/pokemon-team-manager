@@ -175,10 +175,19 @@ func SetOwned(svc *Services, kind, name string, owned bool) (string, error) {
 	}
 }
 
-// SearchKnowledge searches the strategy knowledge base. Default limit: 5.
+// SearchKnowledge searches the strategy knowledge base using vector similarity
+// if embeddings are available, falling back to FTS5. Default limit: 5.
 func SearchKnowledge(svc *Services, query string, limit int) ([]knowledge.SearchResult, error) {
 	if limit <= 0 {
 		limit = 5
+	}
+	n, _ := svc.Knowledge.EmbeddingCount()
+	if n > 0 {
+		cfg := LoadConfig(svc.DB)
+		ollama := NewOllamaClient(cfg)
+		if vec, err := ollama.Embed(query); err == nil {
+			return svc.Knowledge.SearchWithVector(vec, query, limit)
+		}
 	}
 	return svc.Knowledge.Search(query, limit)
 }

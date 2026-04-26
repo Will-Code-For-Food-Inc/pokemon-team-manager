@@ -2,15 +2,31 @@
 {{define "title"}}Pokemon{{end}}
 {{define "content"}}
 <div class="panel">
-  <div class="panel-head">Pokemon Search</div>
+  <div class="panel-head">Pokemon</div>
   <div class="panel-body">
-    <form method="GET" action="/pokemon">
-      <input type="text" name="q" value="{{.Query}}" placeholder="Search by name…" style="width:300px">
-      <button class="btn btn-primary">Search</button>
+    <form method="GET" action="/pokemon" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+      <input type="text" name="q" value="{{.Query}}" placeholder="Name…" style="width:200px">
+      <select name="type">
+        <option value="">Any type</option>
+        {{range .Types}}<option value="{{.}}" {{if eq . $.FilterType}}selected{{end}}>{{.}}</option>{{end}}
+      </select>
+      <select name="gen">
+        <option value="">Any gen</option>
+        {{range .Gens}}<option value="{{.}}" {{if eq . $.FilterGen}}selected{{end}}>{{.}}</option>{{end}}
+      </select>
+      <select name="owned">
+        <option value="">All</option>
+        <option value="1" {{if eq .FilterOwned "1"}}selected{{end}}>Owned</option>
+        <option value="0" {{if eq .FilterOwned "0"}}selected{{end}}>Not owned</option>
+      </select>
+      <select name="final">
+        <option value="">All evos</option>
+        <option value="1" {{if eq .FilterFinal "1"}}selected{{end}}>Final evo only</option>
+      </select>
+      <button class="btn btn-primary">Filter</button>
     </form>
   </div>
 </div>
-{{if .Results}}
 <div class="panel">
   <div class="panel-body">
     <table>
@@ -21,8 +37,8 @@
           <input type="checkbox" {{if .Owned}}checked{{end}}
             onchange="toggleOwned('/api/pokemon/owned', {{.ID}}, this.checked)">
         </td>
-        <td>{{.ID}}</td>
-        <td><a href="/pokemon/{{.Name}}">{{.Name}}</a></td>
+        <td>{{.DexID}}</td>
+        <td><a href="/pokemon/{{.Name}}">{{.Name}}{{if .Form}} ({{.Form}}){{end}}</a></td>
         <td>
           <span class="type type-{{.Type1}}">{{.Type1}}</span>
           {{if .Type2}}<span class="type type-{{.Type2}}">{{.Type2}}</span>{{end}}
@@ -35,7 +51,6 @@
     </table>
   </div>
 </div>
-{{end}}
 <script>
 function toggleOwned(endpoint, id, owned) {
   const params = new URLSearchParams({id, owned: owned ? '1' : '0'});

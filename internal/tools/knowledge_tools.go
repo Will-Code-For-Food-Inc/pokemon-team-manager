@@ -2,6 +2,7 @@ package tools
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
@@ -11,8 +12,8 @@ import (
 
 func registerKnowledgeTools(s *server.MCPServer, svc *Services) {
 	s.AddTool(mcp.NewTool("search_knowledge",
-		mcp.WithDescription("Search the strategy knowledge base (VGC rules, tier lists, guides) using full-text search."),
-		mcp.WithString("query", mcp.Required(), mcp.Description("Search terms (e.g. 'trick room setters', 'Regulation H restricted')")),
+		mcp.WithDescription("Search the strategy knowledge base using semantic vector search (falls back to FTS). Use natural language — e.g. 'best defensive tank for ghost weakness' or 'tailwind team archetypes 2026'."),
+		mcp.WithString("query", mcp.Required(), mcp.Description("Natural language search query")),
 		mcp.WithNumber("limit", mcp.Description("Max results (default 5)")),
 	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		args := req.GetArguments()
@@ -24,6 +25,17 @@ func registerKnowledgeTools(s *server.MCPServer, svc *Services) {
 			return textResult("No knowledge base results found for that query."), nil
 		}
 		return jsonResult(results), nil
+	})
+
+	s.AddTool(mcp.NewTool("review_document",
+		mcp.WithDescription("Reset the TTL on a knowledge base document, marking it as reviewed for another 6 months."),
+		mcp.WithString("title", mcp.Required(), mcp.Description("Document title (or path) to touch")),
+	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		n, err := svc.Knowledge.Touch(getString(req.GetArguments(), "title"))
+		if err != nil {
+			return errResult(err.Error()), nil
+		}
+		return textResult(fmt.Sprintf("TTL reset on %d chunks — valid for 6 more months.", n)), nil
 	})
 
 	s.AddTool(mcp.NewTool("ingest_document",

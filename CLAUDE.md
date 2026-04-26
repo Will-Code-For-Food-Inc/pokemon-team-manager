@@ -28,6 +28,10 @@ make seed         # seeds ptm.db from data/
 make test         # runs all tests
 ./ptm mcp         # starts MCP stdio server
 ./ptm team list   # CLI
+
+# Web UI — always port 9133; DB is ~/.local/share/ptm/ptm.db (not the repo db)
+nohup ./ptm web --addr 0.0.0.0:9133 > /tmp/ptm.log 2>&1 &
+# To restart: lsof -i -P -n | grep ptm  →  kill <PID>  →  re-run above
 ```
 
 ## Architecture

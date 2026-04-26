@@ -467,11 +467,47 @@ func (h *handler) memberDelete(w http.ResponseWriter, r *http.Request, teamID, m
 // --- Pokemon, Moves, Items, KB ---
 
 func (h *handler) pokemonList(w http.ResponseWriter, r *http.Request) {
-	q := r.URL.Query().Get("q")
-	results, _ := h.svc.Pokemon.SearchSpecies(q, 50, pokemon.SpeciesFilter{})
+	q := r.URL.Query()
+	name := q.Get("q")
+	filterType := q.Get("type")
+	filterGen := q.Get("gen")
+	filterOwned := q.Get("owned")
+	filterFinal := q.Get("final")
+
+	f := pokemon.SpeciesFilter{
+		Type:         filterType,
+		FinalEvoOnly: filterFinal == "1",
+	}
+	if filterGen != "" {
+		if g, err := strconv.Atoi(filterGen); err == nil {
+			f.Generation = g
+		}
+	}
+	if filterOwned == "1" {
+		t := true
+		f.Owned = &t
+	} else if filterOwned == "0" {
+		fv := false
+		f.Owned = &fv
+	}
+
+	results, _ := h.svc.Pokemon.SearchSpecies(name, 300, f)
+
+	types := []string{
+		"normal","fire","water","electric","grass","ice","fighting","poison",
+		"ground","flying","psychic","bug","rock","ghost","dragon","dark","steel","fairy",
+	}
+	gens := []string{"1","2","3","4","5","6","7","8","9"}
+
 	h.render(w, "pokemon_list.html", map[string]any{
-		"Query":   q,
-		"Results": results,
+		"Query":       name,
+		"Results":     results,
+		"Types":       types,
+		"Gens":        gens,
+		"FilterType":  filterType,
+		"FilterGen":   filterGen,
+		"FilterOwned": filterOwned,
+		"FilterFinal": filterFinal,
 	})
 }
 
@@ -557,7 +593,7 @@ func (h *handler) kbSearch(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query().Get("q")
 	var results []knowledge.SearchResult
 	if q != "" {
-		results, _ = h.svc.Knowledge.Search(q, 10)
+		results, _ = handlers.SearchKnowledge(h.svc.Handlers(), q, 10)
 	}
 	h.render(w, "kb.html", map[string]any{
 		"Query":   q,
