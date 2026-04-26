@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/user/pokemon-team-manager/internal/handlers"
 	"github.com/user/pokemon-team-manager/internal/knowledge"
 	"github.com/user/pokemon-team-manager/internal/pokemon"
 	"github.com/user/pokemon-team-manager/internal/team"
@@ -25,6 +26,11 @@ type Services struct {
 	Pokemon   *pokemon.Repo
 	Team      *team.Repo
 	Knowledge *knowledge.Repo
+}
+
+// Handlers returns a handlers.Services for use with the shared handler layer.
+func (s *Services) Handlers() *handlers.Services {
+	return &handlers.Services{Pokemon: s.Pokemon, Team: s.Team, Knowledge: s.Knowledge}
 }
 
 var funcMap = template.FuncMap{

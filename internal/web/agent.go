@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/user/pokemon-team-manager/internal/handlers"
 	"github.com/user/pokemon-team-manager/internal/pokemon"
 	"github.com/user/pokemon-team-manager/internal/team"
 )
@@ -15,9 +16,9 @@ import (
 // ── Ollama types ──────────────────────────────────────────────────────────────
 
 type ollamaMessage struct {
-	Role      string            `json:"role"`
-	Content   string            `json:"content,omitempty"`
-	ToolCalls []ollamaToolCall  `json:"tool_calls,omitempty"`
+	Role      string           `json:"role"`
+	Content   string           `json:"content,omitempty"`
+	ToolCalls []ollamaToolCall `json:"tool_calls,omitempty"`
 }
 
 type ollamaToolCall struct {
@@ -25,19 +26,19 @@ type ollamaToolCall struct {
 }
 
 type ollamaToolCallFn struct {
-	Name      string                 `json:"name"`
+	Name      string         `json:"name"`
 	Arguments map[string]any `json:"arguments"`
 }
 
 type ollamaTool struct {
-	Type     string          `json:"type"`
-	Function ollamaToolFn    `json:"function"`
+	Type     string       `json:"type"`
+	Function ollamaToolFn `json:"function"`
 }
 
 type ollamaToolFn struct {
-	Name        string      `json:"name"`
-	Description string      `json:"description"`
-	Parameters  any `json:"parameters"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Parameters  any    `json:"parameters"`
 }
 
 type ollamaClient struct {
@@ -95,6 +96,8 @@ type agentTool struct {
 }
 
 func buildPtmTools(svc *Services) []agentTool {
+	hsvc := svc.Handlers()
+
 	str := func(args map[string]any, k string) string {
 		v, _ := args[k].(string)
 		return strings.TrimSpace(v)
@@ -126,11 +129,26 @@ func buildPtmTools(svc *Services) []agentTool {
 		}
 	}
 
+	formatSpecies := func(results []pokemon.Species) string {
+		if len(results) == 0 {
+			return ""
+		}
+		var b strings.Builder
+		for _, s := range results {
+			t2 := ""
+			if s.Type2 != "" {
+				t2 = "/" + string(s.Type2)
+			}
+			fmt.Fprintf(&b, "%s (ID %d) %s%s — BST %d\n", s.Name, s.ID, s.Type1, t2, s.BST())
+		}
+		return b.String()
+	}
+
 	return []agentTool{
 		{
 			schema: schema("list_teams", "List all teams in the database.", nil, nil),
 			execute: func(args map[string]any) string {
-				teams, err := svc.Team.ListTeams()
+				teams, err := handlers.ListTeams(hsvc)
 				if err != nil {
 					return "error: " + err.Error()
 				}
@@ -149,7 +167,7 @@ func buildPtmTools(svc *Services) []agentTool {
 				map[string]any{"team_id": prop("integer", "Team ID")},
 				[]string{"team_id"}),
 			execute: func(args map[string]any) string {
-				t, err := svc.Team.GetTeam(num(args, "team_id"))
+				t, err := handlers.GetTeam(hsvc, num(args, "team_id"))
 				if err != nil {
 					return "error: " + err.Error()
 				}
@@ -193,31 +211,19 @@ func buildPtmTools(svc *Services) []agentTool {
 				},
 				[]string{"name"}),
 			execute: func(args map[string]any) string {
-				owned := true
+				var owned *bool
 				if v, ok := args["owned"]; ok && v != nil {
-					owned = v.(bool)
+					b := v.(bool)
+					owned = &b
 				}
-				limit := 10
-				if l := num(args, "limit"); l > 0 {
-					limit = l
-				}
-				f := pokemon.SpeciesFilter{Owned: &owned}
-				results, err := svc.Pokemon.SearchSpecies(str(args, "name"), limit, f)
+				results, err := handlers.FindPokemonByName(hsvc, str(args, "name"), owned, num(args, "limit"))
 				if err != nil {
 					return "error: " + err.Error()
 				}
 				if len(results) == 0 {
 					return "No owned Pokemon found with that name. If you're looking for candidates to fill a role, use find_pokemon_by_filters instead."
 				}
-				var b strings.Builder
-				for _, s := range results {
-					t2 := ""
-					if s.Type2 != "" {
-						t2 = "/" + string(s.Type2)
-					}
-					fmt.Fprintf(&b, "%s (ID %d) %s%s — BST %d\n", s.Name, s.ID, s.Type1, t2, s.BST())
-				}
-				return b.String()
+				return formatSpecies(results)
 			},
 		},
 		{
@@ -230,46 +236,32 @@ func buildPtmTools(svc *Services) []agentTool {
 					"legendary":      prop("boolean", "Filter by legendary status"),
 					"final_evo_only": prop("boolean", "Only final evolutions"),
 					"owned":          prop("boolean", "Default true; set false to include unowned"),
-					"limit":          prop("integer", "Max results (default 8)"),
+					"limit":          prop("integer", "Max results (default 20)"),
 				},
 				[]string{}),
 			execute: func(args map[string]any) string {
-				owned := true
-				if v, ok := args["owned"]; ok && v != nil {
-					owned = v.(bool)
-				}
-				limit := 8
-				if l := num(args, "limit"); l > 0 {
-					limit = l
-				}
-				finalEvoOnly, _ := args["final_evo_only"].(bool)
 				f := pokemon.SpeciesFilter{
 					Type:         str(args, "type"),
 					Role:         str(args, "role"),
 					SpeedTier:    str(args, "speed_tier"),
-					Owned:        &owned,
-					FinalEvoOnly: finalEvoOnly,
+					FinalEvoOnly: func() bool { b, _ := args["final_evo_only"].(bool); return b }(),
+				}
+				if v, ok := args["owned"]; ok && v != nil {
+					b := v.(bool)
+					f.Owned = &b
 				}
 				if v, ok := args["legendary"]; ok && v != nil {
 					b := v.(bool)
 					f.Legendary = &b
 				}
-				results, err := svc.Pokemon.SearchSpecies("", limit, f)
+				results, err := handlers.FindPokemonByFilters(hsvc, f, num(args, "limit"))
 				if err != nil {
 					return "error: " + err.Error()
 				}
 				if len(results) == 0 {
 					return "No owned Pokemon match those filters. Try broadening: remove role or speed_tier constraints."
 				}
-				var b strings.Builder
-				for _, s := range results {
-					t2 := ""
-					if s.Type2 != "" {
-						t2 = "/" + string(s.Type2)
-					}
-					fmt.Fprintf(&b, "%s (ID %d) %s%s — BST %d\n", s.Name, s.ID, s.Type1, t2, s.BST())
-				}
-				return b.String()
+				return formatSpecies(results)
 			},
 		},
 		{
@@ -277,11 +269,10 @@ func buildPtmTools(svc *Services) []agentTool {
 				map[string]any{"team_id": prop("integer", "Team ID")},
 				[]string{"team_id"}),
 			execute: func(args map[string]any) string {
-				t, err := svc.Team.GetTeam(num(args, "team_id"))
+				t, a, err := handlers.AnalyseTeam(hsvc, num(args, "team_id"))
 				if err != nil {
 					return "error: " + err.Error()
 				}
-				a := team.Analyse(t)
 				var b strings.Builder
 				fmt.Fprintf(&b, "Team: %s\n\nSpeed tiers:\n", t.Name)
 				for _, st := range a.SpeedTiers {
@@ -305,12 +296,10 @@ func buildPtmTools(svc *Services) []agentTool {
 				map[string]any{"team_id": prop("integer", "Team ID")},
 				[]string{"team_id"}),
 			execute: func(args map[string]any) string {
-				t, err := svc.Team.GetTeam(num(args, "team_id"))
+				violations, err := handlers.ValidateTeam(hsvc, num(args, "team_id"))
 				if err != nil {
 					return "error: " + err.Error()
 				}
-				reg, _ := svc.Team.GetRegulation(t.Regulation)
-				violations := team.Validate(t, reg, svc.Pokemon)
 				if len(violations) == 0 {
 					return "Team is legal — no violations."
 				}
@@ -326,7 +315,7 @@ func buildPtmTools(svc *Services) []agentTool {
 				map[string]any{"query": prop("string", "Search query")},
 				[]string{"query"}),
 			execute: func(args map[string]any) string {
-				results, err := svc.Knowledge.Search(str(args, "query"), 3)
+				results, err := handlers.SearchKnowledge(hsvc, str(args, "query"), num(args, "limit"))
 				if err != nil {
 					return "error: " + err.Error()
 				}
@@ -354,11 +343,7 @@ func buildPtmTools(svc *Services) []agentTool {
 				},
 				[]string{"species"}),
 			execute: func(args map[string]any) string {
-				sp, err := svc.Pokemon.GetSpeciesByName(str(args, "species"))
-				if err != nil {
-					return "error: " + err.Error()
-				}
-				evs := team.StatSpread{
+				spread := team.StatSpread{
 					HP:  num(args, "hp"),
 					Atk: num(args, "attack"),
 					Def: num(args, "defense"),
@@ -366,19 +351,9 @@ func buildPtmTools(svc *Services) []agentTool {
 					SpD: num(args, "sp_defense"),
 					Spe: num(args, "speed"),
 				}
-				natureName := str(args, "nature")
-				mult := func(stat pokemon.Stat) float64 {
-					n, ok := pokemon.NatureByName(natureName)
-					if !ok {
-						return 1.0
-					}
-					if n.Boosted == stat {
-						return 1.1
-					}
-					if n.Reduced == stat {
-						return 0.9
-					}
-					return 1.0
+				result, err := handlers.CalcStats(hsvc, str(args, "species"), spread, str(args, "nature"))
+				if err != nil {
+					return "error: " + err.Error()
 				}
 				return fmt.Sprintf("%s @ %s (SP: %d/66)\n"+
 					"  HP:      %3d (base %d, SP %d)\n"+
@@ -387,13 +362,13 @@ func buildPtmTools(svc *Services) []agentTool {
 					"  Sp. Atk: %3d (base %d, SP %d)\n"+
 					"  Sp. Def: %3d (base %d, SP %d)\n"+
 					"  Speed:   %3d (base %d, SP %d)\n",
-					sp.Name, natureName, evs.Total(),
-					team.CalcStat(sp.HP, evs.HP, true, 1.0), sp.HP, evs.HP,
-					team.CalcStat(sp.Attack, evs.Atk, false, mult(pokemon.StatAtk)), sp.Attack, evs.Atk,
-					team.CalcStat(sp.Defense, evs.Def, false, mult(pokemon.StatDef)), sp.Defense, evs.Def,
-					team.CalcStat(sp.SpAttack, evs.SpA, false, mult(pokemon.StatSpA)), sp.SpAttack, evs.SpA,
-					team.CalcStat(sp.SpDefense, evs.SpD, false, mult(pokemon.StatSpD)), sp.SpDefense, evs.SpD,
-					team.CalcStat(sp.Speed, evs.Spe, false, mult(pokemon.StatSpe)), sp.Speed, evs.Spe,
+					result.SpeciesName, result.Nature, result.TotalSP,
+					result.Rows[0].Final, result.Rows[0].Base, result.Rows[0].SP,
+					result.Rows[1].Final, result.Rows[1].Base, result.Rows[1].SP,
+					result.Rows[2].Final, result.Rows[2].Base, result.Rows[2].SP,
+					result.Rows[3].Final, result.Rows[3].Base, result.Rows[3].SP,
+					result.Rows[4].Final, result.Rows[4].Base, result.Rows[4].SP,
+					result.Rows[5].Final, result.Rows[5].Base, result.Rows[5].SP,
 				)
 			},
 		},
@@ -407,35 +382,12 @@ func buildPtmTools(svc *Services) []agentTool {
 				},
 				[]string{"type", "name", "owned"}),
 			execute: func(args map[string]any) string {
-				kind := str(args, "type")
-				name := str(args, "name")
 				owned, _ := args["owned"].(bool)
-				status := "unowned"
-				if owned {
-					status = "owned"
+				msg, err := handlers.SetOwned(hsvc, str(args, "type"), str(args, "name"), owned)
+				if err != nil {
+					return "error: " + err.Error()
 				}
-				switch kind {
-				case "pokemon":
-					sp, err := svc.Pokemon.GetSpeciesByName(name)
-					if err != nil {
-						return "Pokemon not found: " + name
-					}
-					if err := svc.Pokemon.SetSpeciesOwned(sp.ID, owned); err != nil {
-						return "error: " + err.Error()
-					}
-					return sp.Name + " marked as " + status
-				case "item":
-					it, err := svc.Pokemon.GetItemByName(name)
-					if err != nil {
-						return "Item not found: " + name
-					}
-					if err := svc.Pokemon.SetItemOwned(it.ID, owned); err != nil {
-						return "error: " + err.Error()
-					}
-					return it.Name + " marked as " + status
-				default:
-					return "type must be 'pokemon' or 'item'"
-				}
+				return msg
 			},
 		},
 		{
@@ -447,36 +399,25 @@ func buildPtmTools(svc *Services) []agentTool {
 				},
 				[]string{"pokemon_name"}),
 			execute: func(args map[string]any) string {
-				sp, err := svc.Pokemon.GetSpeciesByName(str(args, "pokemon_name"))
+				var teamID int
+				switch v := args["team_id"].(type) {
+				case float64:
+					teamID = int(v)
+				case int:
+					teamID = v
+				}
+				result, err := handlers.EvaluatePokemon(hsvc, str(args, "pokemon_name"), teamID)
 				if err != nil {
 					return "error: " + err.Error()
 				}
-				if tidRaw, ok := args["team_id"]; ok {
-					var teamID int
-					switch v := tidRaw.(type) {
-					case float64:
-						teamID = int(v)
-					case int:
-						teamID = v
-					}
-					if teamID > 0 {
-						t, err := svc.Team.GetTeam(teamID)
-						if err != nil {
-							return "error loading team: " + err.Error()
-						}
-						for i := range t.Members {
-							if t.Members[i].Species != nil &&
-								strings.EqualFold(t.Members[i].Species.Name, sp.Name) {
-								ev := team.EvaluateMember(&t.Members[i])
-								return team.FormatMemberEval(ev)
-							}
-						}
-						return fmt.Sprintf("%s is not on team %d; showing species-level evaluation.", sp.Name, teamID)
-					}
+				switch result.Kind {
+				case handlers.EvalMember:
+					return team.FormatMemberEval(result.MemberEval)
+				case handlers.EvalNotOnTeam:
+					return fmt.Sprintf("%s is not on team %d; showing species-level evaluation.", result.SpeciesName, result.TeamID)
+				default:
+					return team.FormatSpeciesEval(result.SpeciesEval)
 				}
-				learnset, _ := svc.Pokemon.GetLearnset(sp.ID)
-				ev := team.EvaluateSpecies(sp, learnset)
-				return team.FormatSpeciesEval(ev)
 			},
 		},
 		{
@@ -488,7 +429,7 @@ func buildPtmTools(svc *Services) []agentTool {
 				},
 				[]string{"team_id", "entry"}),
 			execute: func(args map[string]any) string {
-				id, err := svc.Team.AddLog(num(args, "team_id"), str(args, "entry"))
+				id, err := handlers.AddTeamLog(hsvc, num(args, "team_id"), str(args, "entry"))
 				if err != nil {
 					return "error: " + err.Error()
 				}
@@ -503,7 +444,7 @@ func buildPtmTools(svc *Services) []agentTool {
 				},
 				[]string{"team_id"}),
 			execute: func(args map[string]any) string {
-				logs, err := svc.Team.GetLogs(num(args, "team_id"))
+				logs, err := handlers.GetTeamLogs(hsvc, num(args, "team_id"))
 				if err != nil {
 					return "error: " + err.Error()
 				}
