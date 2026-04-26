@@ -38,7 +38,7 @@ internal/db/      db.go (open/migrate), seed.go (JSON → SQLite), migrations/*.
 internal/pokemon/ models.go (types/natures/structs), repo.go (CRUD queries)
 internal/team/    models.go, repo.go (CRUD), validate.go (VGC rules), analyse.go, export.go
 internal/knowledge/ repo.go (FTS5 search, chunked ingestion)
-internal/tools/   tools.go (all MCP tool handlers + get_help)
+internal/tools/   tools.go (all MCP tool handlers + get_help; see issue #32 to split)
 data/pokemon/     seed JSON (species, moves, abilities, items, learnsets, regulations)
 data/knowledge/   strategy docs (VGC rules, archetypes, meta, tool guide)
 ```
@@ -58,6 +58,12 @@ Knowledge base docs live in `data/knowledge/`. Ingest them with:
 Integration tests use in-memory SQLite (`db.OpenMemory()`). All VGC validation
 logic has unit tests in `internal/team/`. Run `make test`.
 
+## Combat Logs
+
+Teams have a separate combat/session log (`team_logs` table, migration 0002).
+Two tools: `add_team_log` (record an experience) and `get_team_logs` (retrieve history).
+Logs are intentionally separate from `teams.notes` — notes are strategic, logs are experiential.
+
 ## Adding a New Tool
 
 1. Add handler in `internal/tools/tools.go` inside the appropriate `register*` function
@@ -71,7 +77,9 @@ logic has unit tests in `internal/team/`. Run `make test`.
 - Level 50 cap in battle
 - Species clause, item clause
 - Final evolutions only
-- EVs: 0-252 per stat, 508 total; IVs: 0-31
+- Stat points: 0-32 per stat, 66 total; no IV adjustment in Champions
+- Moves selected from a curated per-species pool (not traditional learnset); use `get_moves` to check
+- Customisation costs VP: 2/stat point, 100/move, 200/nature, 400/ability
 - Regulation H (2025): 0 restricted Legendaries
 
 ## Regulations Banlist Source

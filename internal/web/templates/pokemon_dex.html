@@ -1,0 +1,118 @@
+{{template "base" .}}
+{{define "title"}}{{.Species.Name}}{{end}}
+{{define "content"}}
+<div class="panel">
+  <div class="panel-head">
+    #{{.Species.DexID}} — {{.Species.Name}}
+    {{if .Species.Form}}<small style="font-weight:normal">({{.Species.Form}})</small>{{end}}
+    <span class="type type-{{.Species.Type1}}">{{.Species.Type1}}</span>
+    {{if .Species.Type2}}<span class="type type-{{.Species.Type2}}">{{.Species.Type2}}</span>{{end}}
+    {{if .Species.Owned}}
+      <span style="background:#1e8449;color:#fff;padding:1px 7px;border-radius:2px;font-size:11px;margin-left:6px">Owned</span>
+    {{else}}
+      <span style="background:#aaa;color:#fff;padding:1px 7px;border-radius:2px;font-size:11px;margin-left:6px">Not Owned</span>
+    {{end}}
+  </div>
+  <div class="panel-body">
+    <div class="form-row">
+      <div>
+        <table style="width:auto">
+          <tr><th>Generation</th><td>{{.Species.Generation}}</td></tr>
+          <tr><th>Legendary</th><td>{{if .Species.IsLegendary}}Yes{{else}}No{{end}}</td></tr>
+          <tr><th>Mythical</th><td>{{if .Species.IsMythical}}Yes{{else}}No{{end}}</td></tr>
+          <tr><th>Final Evo</th><td>{{if .Species.IsFinalEvo}}Yes{{else}}No{{end}}</td></tr>
+          <tr><th>Restricted</th><td>{{if .Species.IsRestricted}}Yes{{else}}No{{end}}</td></tr>
+        </table>
+        {{if .Abilities}}
+        <div style="margin-top:10px">
+          <strong>Abilities</strong>
+          <ul style="margin-top:4px;padding-left:16px">
+            {{range .Abilities}}
+            <li style="margin:3px 0"><strong>{{.Name}}</strong>{{if .Description}} — <span style="color:#555;font-size:12px">{{.Description}}</span>{{end}}</li>
+            {{end}}
+          </ul>
+        </div>
+        {{end}}
+      </div>
+      <div>
+        <table style="width:auto">
+          <tr><th colspan="3">Base Stats (BST {{.Species.BST}})</th></tr>
+          <tr><td>HP</td><td class="stat-num">{{.Species.HP}}</td><td><div class="stat-bar" style="width:{{statbar .Species.HP}}px"></div></td></tr>
+          <tr><td>Atk</td><td class="stat-num">{{.Species.Attack}}</td><td><div class="stat-bar" style="width:{{statbar .Species.Attack}}px;background:#e74c3c"></div></td></tr>
+          <tr><td>Def</td><td class="stat-num">{{.Species.Defense}}</td><td><div class="stat-bar" style="width:{{statbar .Species.Defense}}px;background:#f39c12"></div></td></tr>
+          <tr><td>SpA</td><td class="stat-num">{{.Species.SpAttack}}</td><td><div class="stat-bar" style="width:{{statbar .Species.SpAttack}}px;background:#9b59b6"></div></td></tr>
+          <tr><td>SpD</td><td class="stat-num">{{.Species.SpDefense}}</td><td><div class="stat-bar" style="width:{{statbar .Species.SpDefense}}px;background:#2980b9"></div></td></tr>
+          <tr><td>Spe</td><td class="stat-num">{{.Species.Speed}}</td><td><div class="stat-bar" style="width:{{statbar .Species.Speed}}px;background:#27ae60"></div></td></tr>
+        </table>
+      </div>
+    </div>
+    <div style="margin-top:8px">
+      <a href="/pokemon" style="font-size:12px">← Back to Pokemon</a>
+    </div>
+  </div>
+</div>
+
+{{if .Memberships}}
+<div class="panel">
+  <div class="panel-head">Your Teams ({{len .Memberships}} appearance{{if gt (len .Memberships) 1}}s{{end}})</div>
+  <div class="panel-body">
+    {{range .Memberships}}
+    <div style="border:1px solid #bdc3c7;padding:8px;margin-bottom:8px;background:#fafafa">
+      <div style="margin-bottom:6px">
+        <strong><a href="/teams/{{.TeamID}}">{{.TeamName}}</a></strong>
+        <span style="color:#888;font-size:12px"> — Regulation {{.Regulation}} / Slot {{.Member.Slot}}</span>
+      </div>
+      <div class="form-row">
+        <div>
+          <table style="width:auto">
+            <tr><th>Ability</th><td>{{if .Member.Ability}}{{.Member.Ability.Name}}{{else}}—{{end}}</td></tr>
+            <tr><th>Item</th><td>{{if .Member.Item}}{{.Member.Item.Name}}{{else}}—{{end}}</td></tr>
+            <tr><th>Nature</th><td>{{if .Member.Nature}}{{.Member.Nature}}{{else}}—{{end}}</td></tr>
+            <tr><th>Tera Type</th><td>{{if .Member.TeraType}}{{.Member.TeraType}}{{else}}—{{end}}</td></tr>
+            <tr><th>Role</th><td>{{if .Member.Role}}{{.Member.Role}}{{else}}—{{end}}</td></tr>
+          </table>
+        </div>
+        <div>
+          <strong>Stat Points:</strong>
+          HP {{.Member.EVs.HP}} / Atk {{.Member.EVs.Atk}} / Def {{.Member.EVs.Def}} / SpA {{.Member.EVs.SpA}} / SpD {{.Member.EVs.SpD}} / Spe {{.Member.EVs.Spe}}
+          <em style="color:#888">({{.Member.EVs.Total}}/66)</em>
+          {{if .Member.Moves}}
+          <div style="margin-top:6px">
+            <strong>Moves:</strong>
+            {{range .Member.Moves}}
+              <span class="type type-{{.Type}}" title="{{.Category}}">{{.Name}}</span>
+            {{end}}
+          </div>
+          {{end}}
+        </div>
+      </div>
+      <div style="margin-top:6px">
+        <a href="/teams/{{.TeamID}}/members/{{.Member.ID}}/edit" class="btn btn-primary btn-sm">Edit</a>
+      </div>
+    </div>
+    {{end}}
+  </div>
+</div>
+{{end}}
+
+{{if .Learnset}}
+<div class="panel">
+  <div class="panel-head">Learnset ({{len .Learnset}} moves)</div>
+  <div class="panel-body">
+    <table>
+      <tr><th>Move</th><th>Type</th><th>Category</th><th>Power</th><th>Accuracy</th><th>PP</th></tr>
+      {{range .Learnset}}
+      <tr>
+        <td>{{.Name}}</td>
+        <td><span class="type type-{{.Type}}">{{.Type}}</span></td>
+        <td>{{.Category}}</td>
+        <td>{{if .Power}}{{.Power}}{{else}}—{{end}}</td>
+        <td>{{if .Accuracy}}{{.Accuracy}}{{else}}—{{end}}</td>
+        <td>{{.PP}}</td>
+      </tr>
+      {{end}}
+    </table>
+  </div>
+</div>
+{{end}}
+{{end}}

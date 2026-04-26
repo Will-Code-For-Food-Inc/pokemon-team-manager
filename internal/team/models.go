@@ -14,6 +14,8 @@ type Team struct {
 	Name       string    `json:"name"`
 	Regulation string    `json:"regulation"`
 	Notes      string    `json:"notes"`
+	// NotesHTML is the Notes field rendered to HTML via goldmark (unsafe HTML stripped).
+	NotesHTML  string    `json:"notes_html"`
 	Members    []Member  `json:"members"`
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`
@@ -80,6 +82,14 @@ type SpeedTier struct {
 type WeaknessSummary struct {
 	Type  string `json:"type"`
 	Count int    `json:"count"`
+}
+
+// TeamLog is a single combat/session log entry for a team.
+type TeamLog struct {
+	ID        int       `json:"id"`
+	TeamID    int       `json:"team_id"`
+	Entry     string    `json:"entry"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 // EVSummary summarises EV investment for a team member.

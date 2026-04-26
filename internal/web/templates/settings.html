@@ -1,0 +1,94 @@
+{{template "base" .}}
+{{define "title"}}Settings{{end}}
+{{define "content"}}
+<style>
+.settings-section { margin: 12px 0; }
+.settings-section h2 { font-size: 14px; font-weight: bold; margin-bottom: 6px; color: #1a5276; border-bottom: 1px solid #d6eaf8; padding-bottom: 4px; }
+.field-hint { font-size: 11px; color: #888; margin-top: 2px; }
+textarea#agent_prompt { height: 180px; font-family: monospace; font-size: 12px; }
+.db-path { font-family: monospace; font-size: 12px; background: #f4f6f7; padding: 4px 6px; border: 1px solid #d5d8dc; word-break: break-all; }
+</style>
+
+{{if .Saved}}<div class="flash-ok">Settings saved.</div>{{end}}
+
+<form method="POST" action="/settings">
+  <div class="panel">
+    <div class="panel-head">Ollama</div>
+    <div class="panel-body">
+      <div class="settings-section">
+        <div class="form-row">
+          <div>
+            <label>URL</label>
+            <input type="text" name="ollama_url" value="{{.Cfg.OllamaURL}}">
+          </div>
+          <div>
+            <label>Model</label>
+            <input type="text" name="ollama_model" value="{{.Cfg.Model}}">
+          </div>
+        </div>
+        <div class="form-row-3" style="margin-top:8px">
+          <div>
+            <label>Context size (num_ctx)</label>
+            <input type="number" name="ollama_num_ctx" value="{{.Cfg.NumCtx}}" min="512" max="131072">
+          </div>
+          <div>
+            <label>Keep alive</label>
+            <input type="text" name="ollama_keep_alive" value="{{.Cfg.KeepAlive}}">
+            <div class="field-hint">e.g. 5m, 1h, -1 (forever)</div>
+          </div>
+          <div>
+            <label>Temperature</label>
+            <input type="number" name="ollama_temp" value="{{.Cfg.Temperature}}" step="0.05" min="0" max="2">
+          </div>
+        </div>
+        <div class="form-row-3" style="margin-top:8px">
+          <div>
+            <label>Top P</label>
+            <input type="number" name="ollama_top_p" value="{{.Cfg.TopP}}" step="0.05" min="0" max="1">
+          </div>
+          <div>
+            <label>Top K</label>
+            <input type="number" name="ollama_top_k" value="{{.Cfg.TopK}}" min="1" max="200">
+          </div>
+          <div>
+            <label>Repeat penalty</label>
+            <input type="number" name="ollama_repeat" value="{{.Cfg.Repeat}}" step="0.05" min="0.5" max="2">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">Agent</div>
+    <div class="panel-body">
+      <div class="settings-section">
+        <label>Context lookback (messages)</label>
+        <input type="number" name="agent_lookback" value="{{.Cfg.Lookback}}" min="1" max="100" style="width:100px">
+        <div class="field-hint">Number of non-tool messages to keep in context window each turn.</div>
+      </div>
+      <div class="settings-section">
+        <label>System prompt</label>
+        <textarea name="agent_prompt" id="agent_prompt">{{.Cfg.Prompt}}</textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">Database</div>
+    <div class="panel-body">
+      <div class="settings-section">
+        <label>Path</label>
+        <div class="db-path">{{.DBPath}}</div>
+      </div>
+      <div class="settings-section" style="margin-top:10px">
+        <a href="/api/db/backup" class="btn btn-primary btn-sm">Download backup</a>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin: 12px 0">
+    <button type="submit" class="btn btn-primary">Save settings</button>
+  </div>
+</form>
+{{end}}

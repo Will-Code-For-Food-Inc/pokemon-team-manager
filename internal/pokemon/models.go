@@ -106,7 +106,8 @@ func NatureByName(name string) (Nature, bool) {
 
 // Species represents a Pokemon species row from the database.
 type Species struct {
-	ID           int    `json:"id"`
+	ID           int    `json:"id"`      // auto-increment row id
+	DexID        int    `json:"dex_id"`  // national dex number
 	Name         string `json:"name"`
 	Form         string `json:"form"`
 	Type1        Type   `json:"type1"`
@@ -122,6 +123,7 @@ type Species struct {
 	IsMythical   bool   `json:"is_mythical"`
 	IsFinalEvo   bool   `json:"is_final_evo"`
 	IsRestricted bool   `json:"is_restricted"`
+	Owned        bool   `json:"owned"`
 }
 
 // BST returns the base stat total for the species.
@@ -164,6 +166,7 @@ type Item struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	IsBanned    bool   `json:"is_banned"`
+	Owned       bool   `json:"owned"`
 }
 
 // SpeciesAbility links an ability to a species at a given slot.

@@ -1,0 +1,401 @@
+{{template "base" .}}
+{{define "title"}}Agent Chat{{end}}
+{{define "content"}}
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+#page { display: flex; gap: 10px; height: calc(100vh - 80px); padding: 8px 0; }
+#chat-wrap { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+#messages { flex: 1; overflow-y: auto; background: var(--navy-panel); border: 1px solid var(--navy-border); padding: 8px; margin-bottom: 8px; }
+.msg { margin: 4px 0; padding: 4px 8px; border-radius: 2px; font-size: 13px; word-break: break-word; }
+.msg-user      { background: var(--navy-raised); border-left: 3px solid var(--gold-border); color: var(--cream); }
+.msg-user p { margin: 0.3em 0; }
+.msg-assistant { background: rgba(201,168,76,.07); border-left: 3px solid var(--gold); color: var(--cream); }
+.msg-assistant p { margin: 0.3em 0; }
+.msg-assistant ul, .msg-assistant ol { margin: 0.3em 0; padding-left: 1.4em; }
+.msg-assistant code { background: var(--navy-raised); padding: 1px 4px; border-radius: 2px; font-size: 12px; color: var(--gold-bright); }
+.msg-assistant pre { background: var(--navy-raised); padding: 6px 8px; border-radius: 2px; overflow-x: auto; border: 1px solid var(--navy-border); }
+.msg-assistant pre code { background: none; padding: 0; }
+.msg-tool  { background: var(--navy-mid); border-left: 3px solid var(--gold-dim); font-family: monospace; font-size: 12px; color: var(--cream-dim); white-space: pre-wrap; }
+.msg-error { background: #2b0e0e; border-left: 3px solid var(--red-danger); color: #f1948a; white-space: pre-wrap; }
+#input-row { display: flex; gap: 6px; }
+#user-input { flex: 1; padding: 6px 8px; border: 1px solid var(--navy-border); background: var(--navy-mid); color: var(--cream); font-size: 13px; font-family: inherit; }
+#user-input::placeholder { color: var(--cream-dim); }
+#send-btn { padding: 6px 16px; background: var(--navy-raised); color: var(--gold-bright); border: 1px solid var(--gold-border); cursor: pointer; font-size: 13px; font-family: inherit; }
+#send-btn:hover { background: var(--gold-border); color: var(--navy-deep); }
+#send-btn:disabled { background: var(--navy-mid); color: var(--gold-dim); border-color: var(--navy-border); cursor: default; }
+#status { font-size: 12px; color: var(--cream-dim); margin-bottom: 4px; min-height: 16px; }
+#clear-btn { font-size: 11px; color: var(--gold-dim); background: none; border: none; cursor: pointer; padding: 0 4px; }
+#clear-btn:hover { color: var(--red-danger); }
+
+/* Team panel */
+#view-panel { width: 300px; flex-shrink: 0; overflow-y: auto; display: none; flex-direction: column; gap: 6px; }
+#view-panel.active { display: flex; animation: panel-popin 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+@keyframes panel-popin {
+  from { opacity: 0; transform: scale(0.88) translateX(16px); }
+  to   { opacity: 1; transform: scale(1)    translateX(0); }
+}
+#view-body.slide-left  { animation: slide-left  0.18s ease both; }
+#view-body.slide-right { animation: slide-right 0.18s ease both; }
+@keyframes slide-left {
+  from { opacity: 0; transform: translateX(24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes slide-right {
+  from { opacity: 0; transform: translateX(-24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+#view-header { display: flex; align-items: center; gap: 4px; border-bottom: 1px solid var(--gold-border); padding-bottom: 4px; margin-bottom: 2px; }
+#view-title { font-size: 13px; font-weight: bold; color: var(--gold-bright); flex: 1; }
+#view-nav { display: flex; gap: 2px; }
+#view-nav button { background: var(--navy-mid); border: 1px solid var(--navy-border); border-radius: 2px; cursor: pointer; font-size: 12px; padding: 1px 6px; color: var(--cream-dim); line-height: 1.4; }
+#view-nav button:hover { border-color: var(--gold-border); color: var(--gold); }
+#view-nav button:disabled { color: var(--navy-border); border-color: var(--navy-border); cursor: default; }
+.member-card { background: var(--navy-raised); border: 1px solid var(--navy-border); border-radius: 3px; padding: 8px; font-size: 12px; }
+.member-name { font-weight: bold; font-size: 13px; color: var(--gold-bright); margin-bottom: 3px; }
+.member-meta { color: var(--cream-dim); margin-bottom: 4px; }
+.member-moves { display: flex; flex-wrap: wrap; gap: 3px; }
+.move-tag { background: var(--navy-mid); border: 1px solid var(--navy-border); border-radius: 2px; padding: 1px 5px; font-size: 11px; color: var(--cream); }
+.stat-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; color: var(--cream-dim); }
+.stat-chip { font-size: 11px; }
+
+@media (max-width: 600px) {
+  #page { flex-direction: column; }
+  #view-panel { width: 100%; max-height: 40vh; }
+}
+</style>
+
+<div id="page">
+  <div id="chat-wrap">
+    <div id="messages"></div>
+    <div id="status"><button id="clear-btn" onclick="clearHistory()">clear history</button></div>
+    <div id="input-row">
+      <input id="user-input" type="text" placeholder="Ask the ptm agent…" autocomplete="off">
+      <button id="send-btn" onclick="send()">Send</button>
+    </div>
+  </div>
+  <div id="view-panel">
+    <div id="view-header">
+      <div id="view-title"></div>
+      <div id="view-nav">
+        <button id="nav-prev" onclick="navView(-1)" disabled>‹</button>
+        <button id="nav-next" onclick="navView(1)" disabled>›</button>
+      </div>
+    </div>
+    <div id="view-body"></div>
+  </div>
+</div>
+
+<script>
+// Standard Pokemon type colours
+const TYPE_COLORS = {
+  normal:'#9099A1',fire:'#FF9C54',water:'#4D90D5',electric:'#F3D23B',grass:'#63BB5B',
+  ice:'#74CEC0',fighting:'#CE4069',poison:'#AB6AC8',ground:'#D97746',flying:'#8FA8DD',
+  psychic:'#F97176',bug:'#90C12C',rock:'#C7B78B',ghost:'#5269AC',dragon:'#0A6DC4',
+  dark:'#5A5366',steel:'#5A8EA2',fairy:'#EC8FE6',
+};
+
+function typeTag(t, scale) {
+  const bg = TYPE_COLORS[t.toLowerCase()] || '#555';
+  const fs = scale === 'sm' ? '10px' : '11px';
+  const pad = scale === 'sm' ? '1px 4px' : '2px 6px';
+  return `<span style="background:${bg};border-radius:3px;padding:${pad};font-size:${fs};color:#fff;font-weight:600;text-shadow:0 1px 1px rgba(0,0,0,.4);white-space:nowrap">${t}</span>`;
+}
+
+function weaknessTier(arr, label, labelColor) {
+  if (!arr || !arr.length) return '';
+  return `
+    <div style="display:flex;align-items:flex-start;gap:6px;margin:3px 0">
+      <span style="font-size:11px;color:${labelColor};width:90px;flex-shrink:0;padding-top:2px">${label}</span>
+      <div style="display:flex;flex-wrap:wrap;gap:3px">${arr.map(t => typeTag(t)).join('')}</div>
+    </div>`;
+}
+
+function renderHeuristics(ev) {
+  if (!ev) return '';
+  const tm = ev.type_matchup || {};
+  const typeChart = [
+    weaknessTier(tm.quadruple, '4× weak',     '#f1948a'),
+    weaknessTier(tm.double,    '2× weak',      '#e59866'),
+    weaknessTier(tm.immune,    'immune',        '#82e0aa'),
+    weaknessTier(tm.quarter,   '¼× resist',    '#7fb3d3'),
+    weaknessTier(tm.half,      '½× resist',    '#aab7b8'),
+  ].join('');
+  const coverage = (ev.offensive_coverage || []).map(t => typeTag(t, 'sm')).join(' ');
+
+  const roleIcon = {
+    'physical attacker':'⚔️', 'special attacker':'✨', 'mixed attacker':'⚔️✨',
+    'support':'🛡', 'tank':'🏔',
+  }[ev.stat_role] || '';
+
+  const bulkMax = 400;
+  const physPct = Math.min(100, ev.physical_bulk / bulkMax * 100).toFixed(1);
+  const specPct = Math.min(100, ev.special_bulk  / bulkMax * 100).toFixed(1);
+  const bulkBar = (label, pct, color) => `
+    <div style="display:flex;align-items:center;gap:6px;margin:2px 0">
+      <span style="font-size:11px;color:var(--cream-dim);width:32px">${label}</span>
+      <div style="flex:1;background:#0e1c35;border-radius:2px;height:6px;border:1px solid #1e3460">
+        <div style="width:${pct}%;background:${color};height:6px;border-radius:2px"></div>
+      </div>
+    </div>`;
+
+  return `
+    <div style="border-top:1px solid var(--navy-border);margin-top:10px;padding-top:8px">
+      <div style="font-size:11px;font-weight:bold;letter-spacing:.06em;color:var(--gold-bright);margin-bottom:6px">ANALYSIS</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;font-size:12px;margin-bottom:8px">
+        <div><span style="color:var(--cream-dim)">Role</span><br><span style="color:var(--cream);font-weight:600">${roleIcon} ${ev.stat_role}</span></div>
+        <div><span style="color:var(--cream-dim)">Speed tier</span><br><span style="color:var(--cream)">${ev.speed_tier}</span></div>
+      </div>
+
+      <div style="font-size:11px;color:var(--cream-dim);margin-bottom:3px">Bulk</div>
+      ${bulkBar('Phys', physPct, '#2471a3')}
+      ${bulkBar('Spec', specPct, '#8e44ad')}
+      <div style="display:flex;gap:12px;font-size:11px;color:var(--cream-dim);margin:2px 0 8px">
+        <span>Phys: ${ev.physical_bulk}</span><span>Spec: ${ev.special_bulk}</span>
+      </div>
+
+      <div style="font-size:11px;font-weight:bold;letter-spacing:.06em;color:var(--gold-bright);margin-bottom:4px">MATCHUPS</div>
+      ${typeChart || '<span style="color:var(--cream-dim);font-size:12px">—</span>'}
+
+      ${coverage ? `
+      <div style="margin-top:8px">
+        <div style="font-size:11px;font-weight:bold;letter-spacing:.06em;color:var(--gold-bright);margin-bottom:4px">COVERAGE (SE)</div>
+        <div style="display:flex;flex-wrap:wrap;gap:3px">${coverage}</div>
+      </div>` : ''}
+    </div>`;
+}
+
+const msgsEl   = document.getElementById('messages');
+const inputEl  = document.getElementById('user-input');
+const btnEl    = document.getElementById('send-btn');
+const statusEl = document.getElementById('status');
+const panelEl  = document.getElementById('view-panel');
+const titleEl  = document.getElementById('view-title');
+const bodyEl   = document.getElementById('view-body');
+const prevBtn  = document.getElementById('nav-prev');
+const nextBtn  = document.getElementById('nav-next');
+const clearBtn = '<button id="clear-btn" onclick="clearHistory()">clear history</button>';
+
+// View history stack
+const viewHistory = [];
+let viewCursor = -1;
+
+function pushView(renderFn, label) {
+  viewHistory.splice(viewCursor + 1);
+  viewHistory.push({renderFn, label});
+  viewCursor = viewHistory.length - 1;
+  renderFn();
+  animateBody('slide-left');
+  updateNavButtons();
+}
+
+function navView(delta) {
+  const next = viewCursor + delta;
+  if (next < 0 || next >= viewHistory.length) return;
+  const dir = delta > 0 ? 'slide-left' : 'slide-right';
+  viewCursor = next;
+  viewHistory[viewCursor].renderFn();
+  animateBody(dir);
+  updateNavButtons();
+}
+
+function animateBody(cls) {
+  bodyEl.classList.remove('slide-left', 'slide-right');
+  void bodyEl.offsetWidth; // force reflow so re-adding the class re-triggers
+  bodyEl.classList.add(cls);
+}
+
+function updateNavButtons() {
+  prevBtn.disabled = viewCursor <= 0;
+  nextBtn.disabled = viewCursor >= viewHistory.length - 1;
+}
+
+function showMessages(msgs) {
+  msgsEl.innerHTML = '';
+  for (const m of msgs) {
+    const d = document.createElement('div');
+    d.className = 'msg msg-' + m.role;
+    if (m.role === 'tool' || m.role === 'error') {
+      d.textContent = m.content;
+    } else {
+      d.innerHTML = marked.parse(m.content);
+    }
+    msgsEl.appendChild(d);
+  }
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+}
+
+function renderPokemon(sp, abilities, ev) {
+  const typeBadges = [sp.type1, sp.type2].filter(Boolean).map(t => typeTag(t)).join(' ');
+  const flags = [sp.is_legendary && 'Legendary', sp.is_mythical && 'Mythical', sp.is_final_evo && 'Final Evo'].filter(Boolean);
+  const flagBadges = flags.map(f =>
+    `<span style="font-size:10px;color:var(--gold-bright);border:1px solid var(--gold-border);border-radius:2px;padding:1px 4px">${f}</span>`
+  ).join(' ');
+  const abilityList = (abilities || []).map(a =>
+    `<div style="margin-bottom:3px"><span style="color:#f0e6c8;font-weight:600">${a.name}</span> <span style="color:#b0a080;font-size:11px">${a.description}</span></div>`
+  ).join('');
+  const stats = [
+    ['HP', sp.hp], ['Atk', sp.attack], ['Def', sp.defense],
+    ['SpA', sp.sp_attack], ['SpD', sp.sp_defense], ['Spe', sp.speed]
+  ];
+  const bst = stats.reduce((s, [, v]) => s + v, 0);
+  const statBars = stats.map(([name, val]) => `
+    <div style="display:flex;align-items:center;gap:6px;margin:2px 0">
+      <span style="width:28px;font-size:11px;color:#b0a080">${name}</span>
+      <div style="flex:1;background:#0e1c35;border-radius:2px;height:7px;border:1px solid #1e3460">
+        <div style="width:${Math.min(100, val/255*100)}%;background:#2471a3;height:7px;border-radius:2px"></div>
+      </div>
+      <span style="width:28px;font-size:11px;text-align:right;color:#f0e6c8">${val}</span>
+    </div>`).join('');
+
+  titleEl.textContent = sp.name + (sp.form ? ` (${sp.form})` : '');
+  bodyEl.innerHTML = `
+    <div class="member-card">
+      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:4px">
+        ${typeBadges}${flagBadges ? ' ' + flagBadges : ''}
+        <span style="font-size:11px;color:var(--cream-dim);margin-left:auto">BST ${bst}</span>
+      </div>
+      <div style="margin-bottom:8px">${statBars}</div>
+      <div style="font-size:11px;font-weight:bold;letter-spacing:.06em;color:var(--gold-bright);margin-bottom:4px">ABILITIES</div>
+      <div style="font-size:12px">${abilityList || '—'}</div>
+      ${renderHeuristics(ev)}
+    </div>`;
+  panelEl.classList.add('active');
+}
+
+function showPokemon(sp, abilities, ev) {
+  pushView(() => renderPokemon(sp, abilities, ev), sp.name);
+}
+
+function renderTeam(team) {
+  titleEl.textContent = `${team.name} (Reg ${team.regulation})`;
+  bodyEl.innerHTML = '';
+  for (const m of (team.members || [])) {
+    if (!m.species) continue;
+    const card = document.createElement('div');
+    card.className = 'member-card';
+
+    const ability = m.ability ? m.ability.name : '—';
+    const item    = m.item    ? m.item.name    : '—';
+    const moves   = (m.moves || []).filter(Boolean).map(mv =>
+      `<span class="move-tag">${mv.name}</span>`).join('');
+
+    const evs = m.evs || {};
+    const statLine = [
+      evs.hp         ? `HP:${evs.hp}`         : '',
+      evs.attack     ? `Atk:${evs.attack}`     : '',
+      evs.defense    ? `Def:${evs.defense}`    : '',
+      evs.sp_attack  ? `SpA:${evs.sp_attack}`  : '',
+      evs.sp_defense ? `SpD:${evs.sp_defense}` : '',
+      evs.speed      ? `Spe:${evs.speed}`      : '',
+    ].filter(Boolean).map(s => `<span class="stat-chip">${s}</span>`).join('');
+
+    card.innerHTML = `
+      <div class="member-name">${m.species.name}${m.species.form ? ' ('+m.species.form+')' : ''}</div>
+      <div class="member-meta">${m.nature} · ${ability} · ${item}</div>
+      <div class="member-moves">${moves}</div>
+      ${statLine ? `<div class="stat-row">${statLine}</div>` : ''}
+    `;
+    bodyEl.appendChild(card);
+  }
+  panelEl.classList.add('active');
+}
+
+function showTeam(team) {
+  pushView(() => renderTeam(team), team.name);
+}
+
+function renderEvaluate(ev, isMember) {
+  const typeBadges = (ev.types || []).map(t => typeTag(t)).join(' ');
+
+  let memberSection = '';
+  if (isMember) {
+    const flags = [
+      ev.has_priority_move && 'priority',
+      ev.has_setup_move    && 'setup',
+      ev.has_recovery_move && 'recovery',
+      ev.has_redirection   && 'redirection',
+    ].filter(Boolean);
+    const flagHtml = flags.length
+      ? `<div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:4px">${flags.map(f =>
+          `<span style="font-size:11px;border:1px solid var(--gold-border);border-radius:2px;padding:1px 5px;color:var(--gold-bright)">${f}</span>`
+        ).join('')}</div>`
+      : '';
+    const evWarn = ev.move_stat_mismatch
+      ? `<div style="font-size:12px;color:#f1948a;margin-top:2px">⚠ ${ev.ev_efficiency}</div>`
+      : `<div style="font-size:12px;color:var(--cream-dim);margin-top:2px">EVs: ${ev.ev_efficiency}</div>`;
+    memberSection = `
+      <div style="border-top:1px solid var(--navy-border);margin-top:10px;padding-top:8px">
+        <div style="font-size:11px;font-weight:bold;letter-spacing:.06em;color:var(--gold-bright);margin-bottom:4px">SET FLAGS</div>
+        ${flagHtml || '<div style="font-size:12px;color:var(--cream-dim);margin-bottom:4px">none</div>'}
+        ${evWarn}
+      </div>`;
+  }
+
+  titleEl.textContent = ev.name;
+  bodyEl.innerHTML = `
+    <div class="member-card">
+      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">${typeBadges}</div>
+      ${renderHeuristics(ev)}
+      ${memberSection}
+    </div>`;
+  panelEl.classList.add('active');
+}
+
+function showEvaluate(ev, isMember) {
+  pushView(() => renderEvaluate(ev, isMember), ev.name);
+}
+
+function handleResponse(data) {
+  if (data.error) {
+    const d = document.createElement('div');
+    d.className = 'msg msg-error';
+    d.textContent = data.error;
+    msgsEl.appendChild(d);
+  } else {
+    showMessages(data.messages);
+    if (data.view) {
+      if (data.view.type === 'team')     showTeam(data.view.team);
+      if (data.view.type === 'pokemon')  showPokemon(data.view.species, data.view.abilities, data.view.eval);
+      if (data.view.type === 'evaluate') showEvaluate(data.view.eval, data.view.member);
+    }
+  }
+}
+
+async function clearHistory() {
+  if (!confirm('Clear all chat history?')) return;
+  await fetch('/api/chat/history', {method: 'DELETE'});
+  msgsEl.innerHTML = '';
+}
+
+async function send() {
+  const text = inputEl.value.trim();
+  if (!text) return;
+  inputEl.value = '';
+  btnEl.disabled = true;
+  statusEl.innerHTML = 'Thinking… ' + clearBtn;
+
+  try {
+    const data = await fetch('/api/chat', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({message: text}),
+    }).then(r => r.json());
+    handleResponse(data);
+  } catch (e) {
+    const d = document.createElement('div');
+    d.className = 'msg msg-error';
+    d.textContent = 'Request failed: ' + e;
+    msgsEl.appendChild(d);
+  }
+
+  statusEl.innerHTML = clearBtn;
+  btnEl.disabled = false;
+  inputEl.focus();
+}
+
+inputEl.addEventListener('keydown', e => { if (e.key === 'Enter') send(); });
+fetch('/api/chat/history').then(r => r.json()).then(d => showMessages(d.messages || []));
+inputEl.focus();
+</script>
+{{end}}

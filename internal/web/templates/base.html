@@ -5,71 +5,105 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{block "title" .}}ptm{{end}} — Pokemon Team Manager</title>
 <style>
+:root {
+  --navy-deep:   #080f1f;
+  --navy-mid:    #0e1c35;
+  --navy-panel:  #111f3a;
+  --navy-raised: #16264a;
+  --navy-border: #1e3460;
+  --gold:        #c9a84c;
+  --gold-bright: #e8c96a;
+  --gold-dim:    #7a6128;
+  --gold-border: #a07c30;
+  --cream:       #f0e6c8;
+  --cream-dim:   #b0a080;
+  --red-danger:  #c0392b;
+  --red-border:  #7a241a;
+}
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: Verdana, Geneva, sans-serif; font-size: 14px; background: #c6d4e1; color: #1a1a1a; }
-a { color: #1a5276; text-decoration: none; }
-a:hover { text-decoration: underline; }
+body { font-family: Verdana, Geneva, sans-serif; font-size: 14px; background: var(--navy-deep); color: var(--cream); }
+a { color: var(--gold); text-decoration: none; }
+a:hover { color: var(--gold-bright); text-decoration: underline; }
 
 /* Layout */
 #wrap { max-width: 960px; margin: 0 auto; padding: 8px; }
 
 /* Header */
-#header { background: #1a5276; color: #fff; padding: 8px 12px; border-bottom: 3px solid #154360; }
-#header h1 { font-size: 20px; display: inline; }
-#header nav { display: inline; margin-left: 16px; }
-#header nav a { color: #aed6f1; margin-right: 12px; font-size: 13px; }
-#header nav a:hover { color: #fff; }
+#header {
+  background: linear-gradient(180deg, #0e1c35 0%, #080f1f 100%);
+  border-bottom: 2px solid var(--gold-border);
+  padding: 8px 14px;
+  display: flex; align-items: center; flex-wrap: wrap; gap: 4px 0;
+}
+#header h1 { font-size: 20px; white-space: nowrap; letter-spacing: 1px; }
+#header h1 a { color: var(--gold-bright); }
+#header nav { display: flex; flex-wrap: wrap; margin-left: 14px; gap: 2px 0; }
+#header nav a { color: var(--gold-dim); margin-right: 12px; font-size: 13px; white-space: nowrap; letter-spacing: .5px; }
+#header nav a:hover { color: var(--gold-bright); text-decoration: none; }
 
 /* Flash messages */
-.flash-ok  { background: #d4efdf; border: 1px solid #1e8449; padding: 6px 10px; margin: 8px 0; }
-.flash-err { background: #fadbd8; border: 1px solid #c0392b; padding: 6px 10px; margin: 8px 0; }
+.flash-ok  { background: #0e2b1a; border: 1px solid #2e7d4f; color: #7dcea0; padding: 6px 10px; margin: 8px 0; }
+.flash-err { background: #2b0e0e; border: 1px solid var(--red-border); color: #f1948a; padding: 6px 10px; margin: 8px 0; }
 
 /* Panels */
-.panel { background: #fff; border: 1px solid #bdc3c7; margin: 8px 0; }
-.panel-head { background: #2471a3; color: #fff; padding: 6px 10px; font-size: 13px; font-weight: bold; }
+.panel { background: var(--navy-panel); border: 1px solid var(--navy-border); margin: 8px 0; border-radius: 3px; }
+.panel-head {
+  background: linear-gradient(90deg, #1a3260 0%, #0e1c35 100%);
+  border-bottom: 1px solid var(--gold-border);
+  color: var(--gold-bright);
+  padding: 7px 12px; font-size: 13px; font-weight: bold; letter-spacing: .5px;
+}
 .panel-body { padding: 10px; }
+.team-notes { margin-bottom: 8px; color: var(--cream-dim); line-height: 1.6; }
+.team-notes h1, .team-notes h2, .team-notes h3 { color: var(--gold); margin: 10px 0 4px; }
+.team-notes ul, .team-notes ol { padding-left: 20px; margin: 4px 0; }
+.team-notes li { margin: 3px 0; }
+.team-notes p { margin: 4px 0; }
+.team-notes strong { color: var(--cream); }
 
 /* Tables */
 table { border-collapse: collapse; width: 100%; }
-th { background: #d6eaf8; text-align: left; padding: 4px 8px; border: 1px solid #bdc3c7; }
-td { padding: 4px 8px; border: 1px solid #e8ecef; vertical-align: top; }
-tr:nth-child(even) { background: #f4f6f7; }
-tr:hover { background: #eaf4fc; }
+th { background: var(--navy-raised); color: var(--gold); text-align: left; padding: 5px 8px; border: 1px solid var(--navy-border); font-size: 12px; letter-spacing: .4px; }
+td { padding: 4px 8px; border: 1px solid var(--navy-border); vertical-align: top; color: var(--cream); }
+tr:nth-child(even) td { background: rgba(255,255,255,.03); }
+tr:hover td { background: rgba(201,168,76,.07); }
 
 /* Forms */
-form label { display: block; margin-top: 6px; font-weight: bold; font-size: 12px; }
+form label { display: block; margin-top: 6px; font-weight: bold; font-size: 12px; color: var(--gold); }
 form input[type=text], form input[type=number], form select, form textarea {
-  width: 100%; padding: 4px 6px; border: 1px solid #bdc3c7; font-size: 13px; font-family: inherit;
+  width: 100%; padding: 4px 6px;
+  background: var(--navy-mid); border: 1px solid var(--navy-border);
+  color: var(--cream); font-size: 13px; font-family: inherit;
 }
 form textarea { height: 60px; resize: vertical; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
 
 /* Buttons */
-.btn         { display: inline-block; padding: 4px 12px; border: 1px solid; cursor: pointer; font-size: 13px; font-family: inherit; }
-.btn-primary { background: #2471a3; color: #fff; border-color: #1a5276; }
-.btn-danger  { background: #c0392b; color: #fff; border-color: #922b21; }
+.btn         { display: inline-block; padding: 4px 12px; border: 1px solid; cursor: pointer; font-size: 13px; font-family: inherit; border-radius: 2px; }
+.btn-primary { background: var(--navy-raised); color: var(--gold-bright); border-color: var(--gold-border); }
+.btn-danger  { background: #3a1010; color: #f1948a; border-color: var(--red-border); }
 .btn-sm      { padding: 2px 8px; font-size: 12px; }
-.btn-primary:hover { background: #1a5276; }
-.btn-danger:hover  { background: #922b21; }
+.btn-primary:hover { background: var(--gold-border); color: var(--navy-deep); }
+.btn-danger:hover  { background: var(--red-danger); color: #fff; }
 
 /* Type badges */
 .type { display: inline-block; padding: 1px 6px; border-radius: 2px; font-size: 11px; color: #fff; margin-right: 2px; }
-.type-fire{background:#e25822}.type-water{background:#3273dc}.type-grass{background:#3cb34a}
-.type-electric{background:#f7d02c;color:#333}.type-ice{background:#96d9d6;color:#333}
-.type-fighting{background:#d56723}.type-poison{background:#9f5bba}.type-ground{background:#c09042;color:#333}
-.type-flying{background:#8899ff}.type-psychic{background:#ff5599}.type-bug{background:#9bbc0f;color:#333}
-.type-rock{background:#b8a038;color:#333}.type-ghost{background:#705898}.type-dragon{background:#6f35fc}
-.type-dark{background:#4a4040}.type-steel{background:#b7b7ce;color:#333}.type-fairy{background:#f4b1d0;color:#333}
-.type-normal{background:#a8a878;color:#333}
+.type-fire{background:#b84010}.type-water{background:#1a5aaa}.type-grass{background:#2a8a38}
+.type-electric{background:#c4a010;color:#1a1a00}.type-ice{background:#4a9fa0;color:#0a1a1a}
+.type-fighting{background:#a04410}.type-poison{background:#7a3a9a}.type-ground{background:#8a6420;color:#1a1000}
+.type-flying{background:#4455cc}.type-psychic{background:#cc2266}.type-bug{background:#607808;color:#f0f0e0}
+.type-rock{background:#7a6818;color:#f0e8c0}.type-ghost{background:#44346a}.type-dragon{background:#4a1acc}
+.type-dark{background:#2a2020}.type-steel{background:#606080;color:#e0e0f0}.type-fairy{background:#9a4470;color:#ffe0f0}
+.type-normal{background:#605848;color:#f0ece0}
 
-/* Stat bar */
-.stat-bar { display: inline-block; background: #2ecc71; height: 10px; vertical-align: middle; }
-.stat-num  { display: inline-block; width: 30px; text-align: right; font-size: 11px; }
+.stat-num  { text-align: right; font-size: 11px; white-space: nowrap; padding-right: 6px; color: var(--cream); }
 
 /* Violations */
-.violation { background: #fadbd8; border-left: 3px solid #c0392b; padding: 4px 8px; margin: 3px 0; font-size: 12px; }
+.violation { background: #2b0e0e; border-left: 3px solid var(--red-danger); color: #f1948a; padding: 4px 8px; margin: 3px 0; font-size: 12px; }
 </style>
+{{block "head_extra" .}}{{end}}
 </head>
 <body>
 <div id="header">
@@ -79,11 +113,14 @@ form textarea { height: 60px; resize: vertical; }
     <a href="/pokemon">Pokemon</a>
     <a href="/moves">Moves</a>
     <a href="/items">Items</a>
-    <a href="/kb">Knowledge Base</a>
+    <a href="/kb">KB</a>
+    <a href="/chat">Agent</a>
+    <a href="/settings">Settings</a>
   </nav>
 </div>
 <div id="wrap">
 {{block "content" .}}{{end}}
 </div>
+{{block "scripts" .}}{{end}}
 </body>
 </html>{{end}}

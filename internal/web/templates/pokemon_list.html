@@ -14,11 +14,15 @@
 <div class="panel">
   <div class="panel-body">
     <table>
-      <tr><th>#</th><th>Name</th><th>Type</th><th>HP</th><th>Atk</th><th>Def</th><th>SpA</th><th>SpD</th><th>Spe</th><th>BST</th></tr>
+      <tr><th>Owned</th><th>#</th><th>Name</th><th>Type</th><th>HP</th><th>Atk</th><th>Def</th><th>SpA</th><th>SpD</th><th>Spe</th><th>BST</th></tr>
       {{range .Results}}
       <tr>
+        <td style="text-align:center">
+          <input type="checkbox" {{if .Owned}}checked{{end}}
+            onchange="toggleOwned('/api/pokemon/owned', {{.ID}}, this.checked)">
+        </td>
         <td>{{.ID}}</td>
-        <td><a href="/pokemon/{{.ID}}">{{.Name}}</a></td>
+        <td><a href="/pokemon/{{.Name}}">{{.Name}}</a></td>
         <td>
           <span class="type type-{{.Type1}}">{{.Type1}}</span>
           {{if .Type2}}<span class="type type-{{.Type2}}">{{.Type2}}</span>{{end}}
@@ -32,4 +36,10 @@
   </div>
 </div>
 {{end}}
+<script>
+function toggleOwned(endpoint, id, owned) {
+  const params = new URLSearchParams({id, owned: owned ? '1' : '0'});
+  fetch(endpoint + '?' + params, {method: 'POST'});
+}
+</script>
 {{end}}

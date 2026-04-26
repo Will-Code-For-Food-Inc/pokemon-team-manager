@@ -2,7 +2,9 @@
 package web
 
 import (
+	"database/sql"
 	"embed"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -19,17 +21,25 @@ var templateFS embed.FS
 
 // Services holds all domain repos the web handlers need.
 type Services struct {
+	DB        *sql.DB
 	Pokemon   *pokemon.Repo
 	Team      *team.Repo
 	Knowledge *knowledge.Repo
 }
 
 var funcMap = template.FuncMap{
+	"safeHTML": func(s string) template.HTML { return template.HTML(s) },
 	"statbar": func(v int) int {
 		if v > 120 {
 			return 120
 		}
 		return v
+	},
+	"moveAcc": func(acc *int) string {
+		if acc == nil || *acc == 0 || *acc >= 101 {
+			return "∞"
+		}
+		return fmt.Sprintf("%d", *acc)
 	},
 	"add":      func(a, b int) int { return a + b },
 	"sub66":    func(v int) int { return 66 - v },
@@ -70,11 +80,31 @@ func New(svc *Services) http.Handler {
 	mux.HandleFunc("/teams/", h.teamRouter)
 	mux.HandleFunc("/pokemon", h.pokemonList)
 	mux.HandleFunc("/pokemon/", h.pokemonDetail)
+	mux.HandleFunc("/api/pokemon/owned", h.togglePokemonOwned)
 	mux.HandleFunc("/moves", h.movesList)
 	mux.HandleFunc("/items", h.itemsList)
+	mux.HandleFunc("/api/items/owned", h.toggleItemOwned)
 	mux.HandleFunc("/kb", h.kbSearch)
+	mux.HandleFunc("/chat", h.chatPage)
+	mux.HandleFunc("/api/chat", h.chatAPI)
+	mux.HandleFunc("/api/chat/history", h.chatHistory)
+	mux.HandleFunc("/settings", h.settingsPage)
+	mux.HandleFunc("/api/db/backup", h.dbBackup)
 
-	return mux
+	return corsMiddleware(mux)
+}
+
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 type handler struct {
@@ -186,7 +216,7 @@ func (h *handler) teamView(w http.ResponseWriter, r *http.Request, teamID int) {
 		http.Error(w, "Team not found", 404)
 		return
 	}
-	allSpecies, _ := h.svc.Pokemon.SearchSpecies("", 2000)
+	allSpecies, _ := h.svc.Pokemon.SearchSpecies("", 2000, pokemon.SpeciesFilter{})
 	h.render(w, "team.html", map[string]any{
 		"Team":       t,
 		"Flash":      r.URL.Query().Get("flash"),
@@ -200,7 +230,7 @@ func (h *handler) teamDelete(w http.ResponseWriter, r *http.Request, teamID int)
 	http.Redirect(w, r, "/teams?flash=Team+deleted", http.StatusFound)
 }
 
-func (h *handler) teamValidate(w http.ResponseWriter, r *http.Request, teamID int) {
+func (h *handler) teamValidate(w http.ResponseWriter, _ *http.Request, teamID int) {
 	t, err := h.svc.Team.GetTeam(teamID)
 	if err != nil {
 		http.Error(w, "Team not found", 404)
@@ -214,7 +244,7 @@ func (h *handler) teamValidate(w http.ResponseWriter, r *http.Request, teamID in
 	})
 }
 
-func (h *handler) teamAnalyse(w http.ResponseWriter, r *http.Request, teamID int) {
+func (h *handler) teamAnalyse(w http.ResponseWriter, _ *http.Request, teamID int) {
 	t, err := h.svc.Team.GetTeam(teamID)
 	if err != nil {
 		http.Error(w, "Team not found", 404)
@@ -226,7 +256,7 @@ func (h *handler) teamAnalyse(w http.ResponseWriter, r *http.Request, teamID int
 	})
 }
 
-func (h *handler) teamExport(w http.ResponseWriter, r *http.Request, teamID int) {
+func (h *handler) teamExport(w http.ResponseWriter, _ *http.Request, teamID int) {
 	t, err := h.svc.Team.GetTeam(teamID)
 	if err != nil {
 		http.Error(w, "Team not found", 404)
@@ -306,7 +336,7 @@ func (h *handler) memberEdit(w http.ResponseWriter, r *http.Request, teamID, mem
 
 	abilities, _ := h.svc.Pokemon.GetAbilitiesForSpecies(member.Species.ID)
 	learnset, _ := h.svc.Pokemon.GetLearnset(member.Species.ID)
-	items, _ := h.svc.Pokemon.SearchItems("", 200)
+	items, _ := h.svc.Pokemon.SearchItems("", 200, pokemon.ItemFilter{})
 	allTypes := []string{"normal","fire","water","electric","grass","ice","fighting","poison","ground","flying","psychic","bug","rock","ghost","dragon","dark","steel","fairy"}
 
 	h.render(w, "member_edit.html", map[string]any{
@@ -432,7 +462,7 @@ func (h *handler) memberDelete(w http.ResponseWriter, r *http.Request, teamID, m
 
 func (h *handler) pokemonList(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query().Get("q")
-	results, _ := h.svc.Pokemon.SearchSpecies(q, 50)
+	results, _ := h.svc.Pokemon.SearchSpecies(q, 50, pokemon.SpeciesFilter{})
 	h.render(w, "pokemon_list.html", map[string]any{
 		"Query":   q,
 		"Results": results,
@@ -440,25 +470,60 @@ func (h *handler) pokemonList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) pokemonDetail(w http.ResponseWriter, r *http.Request) {
-	idStr := strings.TrimPrefix(r.URL.Path, "/pokemon/")
-	id, err := strconv.Atoi(idStr)
+	name := strings.TrimPrefix(r.URL.Path, "/pokemon/")
+	if name == "" {
+		http.NotFound(w, r)
+		return
+	}
+
+	// Try lookup by name first; fall back to numeric ID for legacy links.
+	var sp *pokemon.Species
+	var err error
+	if id, convErr := strconv.Atoi(name); convErr == nil {
+		sp, err = h.svc.Pokemon.GetSpeciesByID(id)
+	} else {
+		sp, err = h.svc.Pokemon.GetSpeciesByName(name)
+	}
 	if err != nil {
 		http.NotFound(w, r)
 		return
 	}
-	sp, err := h.svc.Pokemon.GetSpeciesByID(id)
-	if err != nil {
-		http.NotFound(w, r)
-		return
-	}
+
 	abilities, _ := h.svc.Pokemon.GetAbilitiesForSpecies(sp.ID)
 	learnset, _ := h.svc.Pokemon.GetLearnset(sp.ID)
-	// Reuse pokemon_list template with a single result for now; a detail page could be added later.
-	h.render(w, "pokemon_list.html", map[string]any{
-		"Query":     sp.Name,
-		"Results":   []pokemon.Species{*sp},
-		"Abilities": abilities,
-		"Learnset":  learnset,
+
+	// Find all teams that contain this species.
+	type teamMembership struct {
+		TeamID   int
+		TeamName string
+		Regulation string
+		Member   team.Member
+	}
+	var memberships []teamMembership
+	if teams, err := h.svc.Team.ListTeams(); err == nil {
+		for _, ts := range teams {
+			t, err := h.svc.Team.GetTeam(ts.ID)
+			if err != nil {
+				continue
+			}
+			for _, m := range t.Members {
+				if m.Species != nil && m.Species.ID == sp.ID {
+					memberships = append(memberships, teamMembership{
+						TeamID:     t.ID,
+						TeamName:   t.Name,
+						Regulation: t.Regulation,
+						Member:     m,
+					})
+				}
+			}
+		}
+	}
+
+	h.render(w, "pokemon_dex.html", map[string]any{
+		"Species":      sp,
+		"Abilities":    abilities,
+		"Learnset":     learnset,
+		"Memberships":  memberships,
 	})
 }
 
@@ -466,7 +531,7 @@ func (h *handler) movesList(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query().Get("q")
 	moveType := r.URL.Query().Get("type")
 	category := r.URL.Query().Get("category")
-	moves, _ := h.svc.Pokemon.SearchMoves(q, moveType, category, 50)
+	moves, _ := h.svc.Pokemon.SearchMoves(q, 50, pokemon.MoveFilter{Type: moveType, Category: category})
 	h.render(w, "moves_list.html", map[string]any{
 		"Query":   q,
 		"Results": moves,
@@ -475,7 +540,7 @@ func (h *handler) movesList(w http.ResponseWriter, r *http.Request) {
 
 func (h *handler) itemsList(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query().Get("q")
-	items, _ := h.svc.Pokemon.SearchItems(q, 50)
+	items, _ := h.svc.Pokemon.SearchItems(q, 50, pokemon.ItemFilter{})
 	h.render(w, "items_list.html", map[string]any{
 		"Query":   q,
 		"Results": items,
@@ -503,4 +568,213 @@ func formInt(r *http.Request, key string) int {
 
 func url(s string) string {
 	return strings.ReplaceAll(s, " ", "+")
+}
+
+func (h *handler) chatPage(w http.ResponseWriter, r *http.Request) {
+	h.render(w, "chat.html", nil)
+}
+
+func (h *handler) chatHistory(w http.ResponseWriter, r *http.Request) {
+	repo := &chatRepo{db: h.svc.DB}
+	w.Header().Set("Content-Type", "application/json")
+	switch r.Method {
+	case http.MethodGet:
+		msgs, err := repo.messages()
+		if err != nil {
+			json.NewEncoder(w).Encode(map[string]any{"error": err.Error()})
+			return
+		}
+		if msgs == nil {
+			msgs = []displayMessage{}
+		}
+		json.NewEncoder(w).Encode(map[string]any{"messages": lastN(msgs, 10)})
+	case http.MethodDelete:
+		if err := repo.clear(); err != nil {
+			json.NewEncoder(w).Encode(map[string]any{"error": err.Error()})
+			return
+		}
+		json.NewEncoder(w).Encode(map[string]any{"ok": true})
+	default:
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+func (h *handler) chatAPI(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	var req struct {
+		Message string `json:"message"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Message == "" {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{"error": "missing message"})
+		return
+	}
+
+	repo := &chatRepo{db: h.svc.DB}
+
+	fullCtx, err := repo.loadContext()
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]any{"error": err.Error()})
+		return
+	}
+	cfg := loadConfig(h.svc.DB)
+	hist := fullCtx
+	if len(hist) > cfg.Lookback {
+		hist = hist[len(hist)-cfg.Lookback:]
+	}
+
+	ollama := newOllamaClient(cfg)
+	produced, newCtx, view := runAgent(ollama, h.svc, hist, req.Message)
+
+	// Persist display messages.
+	_, _ = repo.appendMessage("user", req.Message)
+	for _, m := range produced {
+		_, _ = repo.appendMessage(m.Role, m.Content)
+	}
+
+	// Persist full accumulated context.
+	_ = repo.saveContext(append(fullCtx, newCtx...))
+
+	all, _ := repo.messages()
+	resp := map[string]any{"messages": lastN(all, 10)}
+	if view != nil {
+		switch view.Type {
+		case "team":
+			if t, err := h.svc.Team.GetTeam(view.TeamID); err == nil {
+				resp["view"] = map[string]any{"type": "team", "team": t}
+			}
+		case "pokemon":
+			var sp *pokemon.Species
+			if s, err := h.svc.Pokemon.GetSpeciesByName(view.PokemonName); err == nil {
+				sp = s
+			} else if results, err2 := h.svc.Pokemon.SearchSpecies(view.PokemonName, 1, pokemon.SpeciesFilter{}); err2 == nil && len(results) > 0 {
+				sp = &results[0]
+			}
+			if sp != nil {
+				abilities, _ := h.svc.Pokemon.GetAbilitiesForSpecies(sp.ID)
+				learnset, _ := h.svc.Pokemon.GetLearnset(sp.ID)
+				ev := team.EvaluateSpecies(sp, learnset)
+				resp["view"] = map[string]any{"type": "pokemon", "species": sp, "abilities": abilities, "eval": ev}
+			}
+		case "evaluate":
+			sp, err := h.svc.Pokemon.GetSpeciesByName(view.PokemonName)
+			if err != nil {
+				if results, err2 := h.svc.Pokemon.SearchSpecies(view.PokemonName, 1, pokemon.SpeciesFilter{}); err2 == nil && len(results) > 0 {
+					sp = &results[0]
+					err = nil
+				}
+			}
+			if err == nil {
+				if view.TeamID > 0 {
+					if t, err2 := h.svc.Team.GetTeam(view.TeamID); err2 == nil {
+						for i := range t.Members {
+							if t.Members[i].Species != nil &&
+								strings.EqualFold(t.Members[i].Species.Name, sp.Name) {
+								ev := team.EvaluateMember(&t.Members[i])
+								resp["view"] = map[string]any{"type": "evaluate", "eval": ev, "member": true}
+								break
+							}
+						}
+					}
+				}
+				if _, set := resp["view"]; !set {
+					learnset, _ := h.svc.Pokemon.GetLearnset(sp.ID)
+					ev := team.EvaluateSpecies(sp, learnset)
+					resp["view"] = map[string]any{"type": "evaluate", "eval": ev, "member": false}
+				}
+			}
+		}
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(resp)
+}
+
+func (h *handler) settingsPage(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodPost {
+		if err := r.ParseForm(); err != nil {
+			http.Error(w, "bad form", 400)
+			return
+		}
+		parseInt := func(key string, def int) int {
+			v, err := strconv.Atoi(r.FormValue(key))
+			if err != nil {
+				return def
+			}
+			return v
+		}
+		parseFloat := func(key string, def float64) float64 {
+			v, err := strconv.ParseFloat(r.FormValue(key), 64)
+			if err != nil {
+				return def
+			}
+			return v
+		}
+		cfg := agentConfig{
+			OllamaURL:   r.FormValue("ollama_url"),
+			Model:       r.FormValue("ollama_model"),
+			NumCtx:      parseInt("ollama_num_ctx", 16000),
+			Temperature: parseFloat("ollama_temp", 0.3),
+			TopP:        parseFloat("ollama_top_p", 0.7),
+			TopK:        parseInt("ollama_top_k", 20),
+			Repeat:      parseFloat("ollama_repeat", 1.1),
+			KeepAlive:   r.FormValue("ollama_keep_alive"),
+			Lookback:    parseInt("agent_lookback", 10),
+			Prompt:      r.FormValue("agent_prompt"),
+		}
+		_ = saveConfig(h.svc.DB, cfg)
+		http.Redirect(w, r, "/settings?saved=1", http.StatusSeeOther)
+		return
+	}
+	cfg := loadConfig(h.svc.DB)
+	dbPath, _ := h.svc.DB.Query(`PRAGMA database_list`)
+	var path string
+	if dbPath != nil {
+		defer dbPath.Close()
+		var seq int
+		var name string
+		if dbPath.Next() {
+			_ = dbPath.Scan(&seq, &name, &path)
+		}
+	}
+	h.render(w, "settings.html", map[string]any{
+		"Cfg":    cfg,
+		"DBPath": path,
+		"Saved":  r.URL.Query().Get("saved") == "1",
+	})
+}
+
+func (h *handler) togglePokemonOwned(w http.ResponseWriter, r *http.Request) {
+	id := formInt(r, "id")
+	owned := r.FormValue("owned") == "1"
+	w.Header().Set("Content-Type", "application/json")
+	if err := h.svc.Pokemon.SetSpeciesOwned(id, owned); err != nil {
+		json.NewEncoder(w).Encode(map[string]any{"error": err.Error()})
+		return
+	}
+	json.NewEncoder(w).Encode(map[string]any{"ok": true})
+}
+
+func (h *handler) toggleItemOwned(w http.ResponseWriter, r *http.Request) {
+	id := formInt(r, "id")
+	owned := r.FormValue("owned") == "1"
+	w.Header().Set("Content-Type", "application/json")
+	if err := h.svc.Pokemon.SetItemOwned(id, owned); err != nil {
+		json.NewEncoder(w).Encode(map[string]any{"error": err.Error()})
+		return
+	}
+	json.NewEncoder(w).Encode(map[string]any{"ok": true})
+}
+
+func (h *handler) dbBackup(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/octet-stream")
+	w.Header().Set("Content-Disposition", `attachment; filename="ptm-backup.db"`)
+	if _, err := h.svc.DB.Exec(`VACUUM INTO '/tmp/ptm-backup.db'`); err != nil {
+		http.Error(w, "backup failed: "+err.Error(), 500)
+		return
+	}
+	http.ServeFile(w, r, "/tmp/ptm-backup.db")
 }

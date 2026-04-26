@@ -10,7 +10,7 @@ import (
 
 // seedSpecies is the JSON representation used in data/pokemon/species.json.
 type seedSpecies struct {
-	ID           int    `json:"id"`
+	ID           int    `json:"id"`   // national dex number → dex_id
 	Name         string `json:"name"`
 	Form         string `json:"form"`
 	Type1        string `json:"type1"`
@@ -61,9 +61,10 @@ type seedLearnset struct {
 }
 
 type seedSpeciesAbility struct {
-	SpeciesID int `json:"species_id"`
-	AbilityID int `json:"ability_id"`
-	Slot      int `json:"slot"`
+	SpeciesID int    `json:"species_id"`
+	Form      string `json:"form"`
+	AbilityID int    `json:"ability_id"`
+	Slot      int    `json:"slot"`
 }
 
 type seedRegulation struct {
@@ -130,7 +131,7 @@ func seedFile[T any](db *sql.DB, path string, fn func(*sql.Tx, []T) error) error
 
 func seedSpeciesRows(tx *sql.Tx, rows []seedSpecies) error {
 	stmt, err := tx.Prepare(`INSERT OR IGNORE INTO species
-		(id,name,form,type1,type2,hp,attack,defense,sp_attack,sp_defense,speed,
+		(dex_id,name,form,type1,type2,hp,attack,defense,sp_attack,sp_defense,speed,
 		 generation,is_legendary,is_mythical,is_final_evo,is_restricted)
 		VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
 	if err != nil {
@@ -148,7 +149,7 @@ func seedSpeciesRows(tx *sql.Tx, rows []seedSpecies) error {
 }
 
 func seedMoveRows(tx *sql.Tx, rows []seedMove) error {
-	stmt, err := tx.Prepare(`INSERT OR IGNORE INTO moves
+	stmt, err := tx.Prepare(`INSERT OR REPLACE INTO moves
 		(id,name,type,category,power,accuracy,pp,priority,target,description)
 		VALUES(?,?,?,?,?,?,?,?,?,?)`)
 	if err != nil {
@@ -193,13 +194,14 @@ func seedItemRows(tx *sql.Tx, rows []seedItem) error {
 }
 
 func seedLearnsetRows(tx *sql.Tx, rows []seedLearnset) error {
-	stmt, err := tx.Prepare(`INSERT OR IGNORE INTO learnsets(species_id,move_id,learn_method) VALUES(?,?,?)`)
+	stmt, err := tx.Prepare(`INSERT OR IGNORE INTO learnsets(species_id,move_id,learn_method)
+		SELECT id,?,? FROM species WHERE dex_id=? AND form=''`)
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 	for _, r := range rows {
-		if _, err := stmt.Exec(r.SpeciesID, r.MoveID, r.LearnMethod); err != nil {
+		if _, err := stmt.Exec(r.MoveID, r.LearnMethod, r.SpeciesID); err != nil {
 			return err
 		}
 	}
@@ -207,14 +209,29 @@ func seedLearnsetRows(tx *sql.Tx, rows []seedLearnset) error {
 }
 
 func seedSpeciesAbilityRows(tx *sql.Tx, rows []seedSpeciesAbility) error {
-	stmt, err := tx.Prepare(`INSERT OR IGNORE INTO species_abilities(species_id,ability_id,slot) VALUES(?,?,?)`)
+	stmtBase, err := tx.Prepare(`INSERT OR IGNORE INTO species_abilities(species_id,ability_id,slot)
+		SELECT id,?,? FROM species WHERE dex_id=? AND form=''`)
 	if err != nil {
 		return err
 	}
-	defer stmt.Close()
+	defer stmtBase.Close()
+
+	stmtForm, err := tx.Prepare(`INSERT OR IGNORE INTO species_abilities(species_id,ability_id,slot)
+		SELECT id,?,? FROM species WHERE dex_id=? AND form=?`)
+	if err != nil {
+		return err
+	}
+	defer stmtForm.Close()
+
 	for _, r := range rows {
-		if _, err := stmt.Exec(r.SpeciesID, r.AbilityID, r.Slot); err != nil {
-			return err
+		if r.Form == "" {
+			if _, err := stmtBase.Exec(r.AbilityID, r.Slot, r.SpeciesID); err != nil {
+				return err
+			}
+		} else {
+			if _, err := stmtForm.Exec(r.AbilityID, r.Slot, r.SpeciesID, r.Form); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

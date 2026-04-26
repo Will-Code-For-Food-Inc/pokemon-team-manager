@@ -18,7 +18,7 @@ func TestOpenMemory(t *testing.T) {
 	var count int
 	err = sqlDB.QueryRow(`SELECT COUNT(*) FROM schema_migrations`).Scan(&count)
 	assert.NoError(t, err)
-	assert.GreaterOrEqual(t, count, 3) // 3 migration files
+	assert.GreaterOrEqual(t, count, 1) // at least the squashed init migration
 
 	// Verify core tables exist.
 	for _, table := range []string{"species", "moves", "abilities", "items", "teams", "team_members", "kb_documents"} {

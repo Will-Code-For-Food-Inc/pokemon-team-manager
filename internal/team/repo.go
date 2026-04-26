@@ -1,10 +1,12 @@
 package team
 
 import (
+	"bytes"
 	"database/sql"
 	"fmt"
 	"time"
 
+	"github.com/yuin/goldmark"
 	"github.com/user/pokemon-team-manager/internal/pokemon"
 )
 
@@ -39,6 +41,78 @@ func (r *Repo) DeleteTeam(id int) error {
 func (r *Repo) UpdateTeamNotes(id int, notes string) error {
 	_, err := r.db.Exec(`UPDATE teams SET notes=?, updated_at=datetime('now') WHERE id=?`, notes, id)
 	return err
+}
+
+// RenameTeam changes a team's name.
+func (r *Repo) RenameTeam(id int, name string) error {
+	_, err := r.db.Exec(`UPDATE teams SET name=?, updated_at=datetime('now') WHERE id=?`, name, id)
+	return err
+}
+
+// SwapSlots swaps the slot numbers of two members on the same team.
+func (r *Repo) SwapSlots(teamID, slotA, slotB int) error {
+	var idA, idB int
+	if err := r.db.QueryRow(`SELECT id FROM team_members WHERE team_id=? AND slot=?`, teamID, slotA).Scan(&idA); err != nil {
+		return fmt.Errorf("slot %d not found", slotA)
+	}
+	if err := r.db.QueryRow(`SELECT id FROM team_members WHERE team_id=? AND slot=?`, teamID, slotB).Scan(&idB); err != nil {
+		return fmt.Errorf("slot %d not found", slotB)
+	}
+	_, err := r.db.Exec(`PRAGMA ignore_check_constraints = ON`)
+	if err == nil {
+		r.db.Exec(`UPDATE team_members SET slot=7 WHERE id=?`, idA)
+		r.db.Exec(`UPDATE team_members SET slot=? WHERE id=?`, slotA, idB)
+		_, err = r.db.Exec(`UPDATE team_members SET slot=? WHERE id=?`, slotB, idA)
+		r.db.Exec(`PRAGMA ignore_check_constraints = OFF`)
+	}
+	r.touchTeam(teamID)
+	return err
+}
+
+// CopyTeam duplicates a team (all members, moves, stats, items) under a new name.
+func (r *Repo) CopyTeam(srcID int, newName string) (int64, error) {
+	src, err := r.GetTeam(srcID)
+	if err != nil {
+		return 0, err
+	}
+	newID, err := r.CreateTeam(newName, src.Regulation)
+	if err != nil {
+		return 0, err
+	}
+	// Copy notes.
+	r.db.Exec(`UPDATE teams SET notes=? WHERE id=?`, src.Notes, newID)
+	for _, m := range src.Members {
+		if m.Species == nil {
+			continue
+		}
+		abilityID := 0
+		if m.Ability != nil {
+			abilityID = m.Ability.ID
+		}
+		memberID, err := r.AddMember(int(newID), m.Species.ID, abilityID)
+		if err != nil {
+			continue
+		}
+		r.SetNature(int(memberID), m.Nature)
+		r.SetRole(int(memberID), m.Role)
+		r.SetMemberNotes(int(memberID), m.Notes)
+		r.SetNickname(int(memberID), m.Nickname)
+		r.SetTeraType(int(memberID), m.TeraType)
+		r.SetEVs(int(memberID), m.EVs)
+		if m.Item != nil {
+			r.SetItem(int(memberID), m.Item.ID)
+		}
+		var moveIDs []int
+		for _, mv := range m.Moves {
+			if mv != nil {
+				moveIDs = append(moveIDs, mv.ID)
+			}
+		}
+		if len(moveIDs) > 0 {
+			r.SetMoves(int(memberID), moveIDs)
+		}
+	}
+	return newID, nil
 }
 
 // ListTeams returns all teams with member counts.
@@ -90,6 +164,11 @@ func (r *Repo) GetTeam(id int) (*Team, error) {
 	}
 	t.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", ca)
 	t.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", ua)
+
+	var buf bytes.Buffer
+	if mdErr := goldmark.Convert([]byte(t.Notes), &buf); mdErr == nil {
+		t.NotesHTML = buf.String()
+	}
 
 	members, err := r.loadMembers(id)
 	if err != nil {
@@ -435,4 +514,33 @@ func (r *Repo) reSlot(teamID int) {
 	for i, id := range ids {
 		r.db.Exec(`UPDATE team_members SET slot=? WHERE id=?`, i+1, id)
 	}
+}
+
+// AddLog inserts a new combat/session log entry for a team.
+func (r *Repo) AddLog(teamID int, entry string) (int64, error) {
+	res, err := r.db.Exec(
+		`INSERT INTO team_logs(team_id, entry) VALUES(?, ?)`, teamID, entry)
+	if err != nil {
+		return 0, err
+	}
+	return res.LastInsertId()
+}
+
+// GetLogs returns all log entries for a team, newest first.
+func (r *Repo) GetLogs(teamID int) ([]TeamLog, error) {
+	rows, err := r.db.Query(
+		`SELECT id, team_id, entry, created_at FROM team_logs WHERE team_id=? ORDER BY created_at DESC`, teamID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var logs []TeamLog
+	for rows.Next() {
+		var l TeamLog
+		if err := rows.Scan(&l.ID, &l.TeamID, &l.Entry, &l.CreatedAt); err != nil {
+			return nil, err
+		}
+		logs = append(logs, l)
+	}
+	return logs, rows.Err()
 }

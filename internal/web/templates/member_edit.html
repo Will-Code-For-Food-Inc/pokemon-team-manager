@@ -1,5 +1,12 @@
 {{template "base" .}}
 {{define "title"}}Edit {{.Member.Species.Name}}{{end}}
+{{define "head_extra"}}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+<style>
+.CodeMirror { border: 1px solid #bdc3c7; font-size: 13px; font-family: inherit; height: auto; min-height: 80px; }
+.CodeMirror-scroll { min-height: 80px; }
+</style>
+{{end}}
 {{define "content"}}
 {{with .Error}}<div class="flash-err">{{.}}</div>{{end}}
 
@@ -114,7 +121,7 @@
 <div class="panel">
   <div class="panel-head">Notes</div>
   <div class="panel-body">
-    <textarea name="notes">{{.Member.Notes}}</textarea>
+    <textarea name="notes" id="notes-editor">{{.Member.Notes}}</textarea>
   </div>
 </div>
 
@@ -131,4 +138,22 @@
   </div>
 </div>
 </form>
+{{end}}
+{{define "scripts"}}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/markdown/markdown.min.js"></script>
+<script>
+(function() {
+  var ta = document.getElementById('notes-editor');
+  var cm = CodeMirror.fromTextArea(ta, {
+    mode: 'markdown',
+    lineWrapping: true,
+    viewportMargin: Infinity
+  });
+  // Sync CodeMirror content back to the textarea before the form submits
+  ta.form.addEventListener('submit', function() {
+    cm.save();
+  });
+})();
+</script>
 {{end}}

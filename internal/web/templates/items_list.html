@@ -14,9 +14,13 @@
 <div class="panel">
   <div class="panel-body">
     <table>
-      <tr><th>Name</th><th>Description</th><th>Banned</th></tr>
+      <tr><th>Owned</th><th>Name</th><th>Description</th><th>Banned</th></tr>
       {{range .Results}}
       <tr>
+        <td style="text-align:center">
+          <input type="checkbox" {{if .Owned}}checked{{end}}
+            onchange="toggleOwned({{.ID}}, this.checked)">
+        </td>
         <td>{{.Name}}</td>
         <td style="font-size:12px">{{.Description}}</td>
         <td>{{if .IsBanned}}❌{{else}}✓{{end}}</td>
@@ -26,4 +30,10 @@
   </div>
 </div>
 {{end}}
+<script>
+function toggleOwned(id, owned) {
+  const params = new URLSearchParams({id, owned: owned ? '1' : '0'});
+  fetch('/api/items/owned?' + params, {method: 'POST'});
+}
+</script>
 {{end}}

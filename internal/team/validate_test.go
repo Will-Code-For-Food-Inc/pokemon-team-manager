@@ -136,6 +136,27 @@ func TestValidate_RemovedNaturesRejected(t *testing.T) {
 	assert.True(t, pokemon.ValidNature("Serious"), "Serious should be the only neutral Stat Alignment")
 }
 
+func TestValidate_BannedItem(t *testing.T) {
+	bannedItem := &pokemon.Item{ID: 99, Name: "Soul Dew", IsBanned: true}
+	members := makeMembers(6, &pokemon.Species{ID: 1, Name: "Latios", IsFinalEvo: true})
+	members[0].Item = bannedItem
+	tr := &team.Team{ID: 1, Regulation: "H", Members: members}
+	vs := team.Validate(tr, nil, nil)
+	assert.Contains(t, violationRules(vs), "banned_item")
+}
+
+func TestValidate_BannedMove(t *testing.T) {
+	bannedMoveID := 999
+	reg := team.NewRegulation("H", "Regulation H", 0, nil, nil, []int{bannedMoveID})
+
+	mv := &pokemon.Move{ID: bannedMoveID, Name: "Dark Void"}
+	members := makeMembers(6, &pokemon.Species{ID: 1, Name: "Darkrai", IsFinalEvo: true})
+	members[0].Moves = []*pokemon.Move{mv}
+	tr := &team.Team{ID: 1, Regulation: "H", Members: members}
+	vs := team.Validate(tr, reg, nil)
+	assert.Contains(t, violationRules(vs), "banned_move")
+}
+
 // TestCalcStat_Champions verifies the formula against known in-game values from screenshots.
 func TestCalcStat_Champions(t *testing.T) {
 	tests := []struct {

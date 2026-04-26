@@ -7,7 +7,7 @@
 <div class="panel">
   <div class="panel-head">{{.Team.Name}} <small style="font-weight:normal">— Regulation {{.Team.Regulation}}</small></div>
   <div class="panel-body">
-    {{if .Team.Notes}}<p style="margin-bottom:8px;color:#555">{{.Team.Notes}}</p>{{end}}
+    {{if .Team.NotesHTML}}<div class="team-notes">{{.Team.NotesHTML | safeHTML}}</div>{{end}}
     <a href="/teams/{{.Team.ID}}/validate" class="btn btn-primary btn-sm">Validate</a>
     <a href="/teams/{{.Team.ID}}/analyse" class="btn btn-primary btn-sm">Analyse</a>
     <a href="/teams/{{.Team.ID}}/export" class="btn btn-primary btn-sm">Export</a>
@@ -21,7 +21,7 @@
   <div class="panel-head">
     Slot {{.Slot}} —
     {{if .Species}}
-      {{.Species.Name}}
+      <a href="/pokemon/{{.Species.Name}}" style="color:#fff">{{.Species.Name}}</a>
       <span class="type type-{{.Species.Type1}}">{{.Species.Type1}}</span>
       {{if .Species.Type2}}<span class="type type-{{.Species.Type2}}">{{.Species.Type2}}</span>{{end}}
     {{else}}(empty){{end}}
@@ -42,29 +42,30 @@
       </div>
       <div>
         <table>
-          <tr><th colspan="3">Base Stats (BST {{.Species.BST}})</th></tr>
-          <tr><td>HP</td><td class="stat-num">{{.Species.HP}}</td><td><div class="stat-bar" style="width:{{statbar .Species.HP}}px"></div></td></tr>
-          <tr><td>Atk</td><td class="stat-num">{{.Species.Attack}}</td><td><div class="stat-bar" style="width:{{statbar .Species.Attack}}px;background:#e74c3c"></div></td></tr>
-          <tr><td>Def</td><td class="stat-num">{{.Species.Defense}}</td><td><div class="stat-bar" style="width:{{statbar .Species.Defense}}px;background:#f39c12"></div></td></tr>
-          <tr><td>SpA</td><td class="stat-num">{{.Species.SpAttack}}</td><td><div class="stat-bar" style="width:{{statbar .Species.SpAttack}}px;background:#9b59b6"></div></td></tr>
-          <tr><td>SpD</td><td class="stat-num">{{.Species.SpDefense}}</td><td><div class="stat-bar" style="width:{{statbar .Species.SpDefense}}px;background:#2980b9"></div></td></tr>
-          <tr><td>Spe</td><td class="stat-num">{{.Species.Speed}}</td><td><div class="stat-bar" style="width:{{statbar .Species.Speed}}px;background:#27ae60"></div></td></tr>
+          <tr><th colspan="2">Base Stats (BST {{.Species.BST}}) <em style="font-weight:normal;color:#888;font-size:11px">— {{.EVs.Total}}/66 SP{{if lt .EVs.Total 66}} · <span style="color:#e67e22">{{sub66 .EVs.Total}} left</span>{{end}}</em></th></tr>
+          <tr><td>HP</td><td class="stat-num">{{.Species.HP}}{{if .EVs.HP}}<span style="color:#3498db;font-size:10px;margin-left:2px">+{{.EVs.HP}}</span>{{end}}</td></tr>
+          <tr><td>Atk</td><td class="stat-num">{{.Species.Attack}}{{if .EVs.Atk}}<span style="color:#3498db;font-size:10px;margin-left:2px">+{{.EVs.Atk}}</span>{{end}}</td></tr>
+          <tr><td>Def</td><td class="stat-num">{{.Species.Defense}}{{if .EVs.Def}}<span style="color:#3498db;font-size:10px;margin-left:2px">+{{.EVs.Def}}</span>{{end}}</td></tr>
+          <tr><td>SpA</td><td class="stat-num">{{.Species.SpAttack}}{{if .EVs.SpA}}<span style="color:#3498db;font-size:10px;margin-left:2px">+{{.EVs.SpA}}</span>{{end}}</td></tr>
+          <tr><td>SpD</td><td class="stat-num">{{.Species.SpDefense}}{{if .EVs.SpD}}<span style="color:#3498db;font-size:10px;margin-left:2px">+{{.EVs.SpD}}</span>{{end}}</td></tr>
+          <tr><td>Spe</td><td class="stat-num">{{.Species.Speed}}{{if .EVs.Spe}}<span style="color:#3498db;font-size:10px;margin-left:2px">+{{.EVs.Spe}}</span>{{end}}</td></tr>
         </table>
       </div>
     </div>
 
-    <div style="margin-top:8px">
-      <strong>Stat Points (Champions):</strong>
-      HP {{.EVs.HP}} / Atk {{.EVs.Atk}} / Def {{.EVs.Def}} / SpA {{.EVs.SpA}} / SpD {{.EVs.SpD}} / Spe {{.EVs.Spe}}
-      <em style="color:#888">({{.EVs.Total}}/66 used)</em>
-      {{if lt .EVs.Total 66}}<span style="color:#e67e22;font-weight:bold"> — {{sub66 .EVs.Total}} pts remaining</span>{{end}}
-    </div>
-
     {{if .Moves}}
-    <div style="margin-top:8px">
-      <strong>Moves:</strong>
+    <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px">
       {{range .Moves}}
-        <span class="type type-{{.Type}}" title="{{.Category}}">{{.Name}}</span>
+      <div style="border:1px solid #1e3460;border-radius:4px;padding:6px 8px;background:#0e1c35">
+        <div style="margin-bottom:4px">
+          <span class="type type-{{.Type}}" style="font-size:10px;padding:1px 4px;vertical-align:middle">{{.Type}}</span>
+          <strong style="font-size:13px;vertical-align:middle;color:#f0e6c8">{{.Name}}</strong>
+        </div>
+        <div style="font-size:11px;white-space:nowrap;display:flex;gap:6px;align-items:center">
+          <span style="color:{{if eq .Category "physical"}}#e07040{{else if eq .Category "special"}}#a070e0{{else}}#50b880{{end}}">{{if eq .Category "physical"}}⚔ Phys{{else if eq .Category "special"}}✦ Spec{{else}}~ Stat{{end}}</span>
+          <span style="color:#7a6840">{{if .Power}}{{.Power}}{{else}}—{{end}} / {{moveAcc .Accuracy}}</span>
+        </div>
+      </div>
       {{end}}
     </div>
     {{end}}
