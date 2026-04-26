@@ -30,7 +30,7 @@ type Services struct {
 
 // Handlers returns a handlers.Services for use with the shared handler layer.
 func (s *Services) Handlers() *handlers.Services {
-	return &handlers.Services{Pokemon: s.Pokemon, Team: s.Team, Knowledge: s.Knowledge}
+	return &handlers.Services{DB: s.DB, Pokemon: s.Pokemon, Team: s.Team, Knowledge: s.Knowledge}
 }
 
 var funcMap = template.FuncMap{

@@ -26,6 +26,7 @@ func Register(s *server.MCPServer, svc *Services) {
 	registerKnowledgeTools(s, svc)
 	registerRegulationTools(s, svc)
 	registerAnalysisTools(s, svc)
+	registerAgentTool(s, svc)
 }
 
 // registerHelpTool adds a get_help tool that returns compact usage docs.
