@@ -111,7 +111,7 @@ make seed
 - Double battles, 6 Pokemon registered, 4 brought per match
 - Level cap: Lv. 50
 - Species clause (no duplicate species), Item clause (no duplicate items)
-- Final evolutions only
+- Final evolutions only (exception: Pikachu is permitted)
 - 0 restricted Legendaries/Mythicals (Regulation I2 / M-A default)
 - Champions format stat points: 66 total, max 32 per stat, all IVs fixed at 31
 - Banned moves: see `data/pokemon/regulation_move_bans.json`
