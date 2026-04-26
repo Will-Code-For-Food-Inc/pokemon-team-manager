@@ -1,0 +1,24 @@
+name: ptm
+arch: "${DEB_ARCH}"
+platform: linux
+version: "${PKG_VERSION}"
+section: utils
+priority: optional
+maintainer: "Will-Code-For-Food-Inc"
+description: |
+  Pokemon Team Manager — VGC team builder, MCP server, and web UI.
+  Manages Pokemon Champions format teams with a local SQLite database.
+  Requires Ollama running locally for the AI agent chat feature.
+vendor: Will-Code-For-Food-Inc
+homepage: https://github.com/Will-Code-For-Food-Inc/pokemon-team-manager
+license: MIT
+
+contents:
+  - src: "${BINARY}"
+    dst: /usr/bin/ptm
+    file_info:
+      mode: 0755
+
+overrides:
+  rpm:
+    arch: "${RPM_ARCH}"

@@ -51,9 +51,58 @@ jobs:
           path: dist/
           retention-days: 7
 
+  package:
+    name: Package (deb/rpm)
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist/
+          merge-multiple: true
+
+      - name: Install nfpm
+        run: |
+          curl -sSfL https://github.com/goreleaser/nfpm/releases/latest/download/nfpm_amd64.deb \
+            -o /tmp/nfpm.deb && sudo dpkg -i /tmp/nfpm.deb
+
+      - name: Build packages
+        env:
+          VERSION: ${{ github.ref_name }}
+        run: |
+          # Strip leading 'v' for package version field
+          PKG_VERSION="${VERSION#v}"
+          mkdir -p packages
+
+          for ARCH in amd64 arm64 armv7 386; do
+            case $ARCH in
+              amd64)  BINARY="dist/ptm-linux-amd64";  DEB_ARCH="amd64";   RPM_ARCH="x86_64" ;;
+              arm64)  BINARY="dist/ptm-linux-arm64";  DEB_ARCH="arm64";   RPM_ARCH="aarch64" ;;
+              armv7)  BINARY="dist/ptm-linux-armv7";  DEB_ARCH="armhf";   RPM_ARCH="armv7hl" ;;
+              386)    BINARY="dist/ptm-linux-386";    DEB_ARCH="i386";    RPM_ARCH="i686" ;;
+            esac
+
+            [ -f "$BINARY" ] || continue
+
+            PKG_ARCH=$ARCH PKG_VERSION=$PKG_VERSION BINARY=$BINARY DEB_ARCH=$DEB_ARCH RPM_ARCH=$RPM_ARCH \
+              nfpm package --config nfpm.yaml --packager deb --target "packages/ptm_${PKG_VERSION}_${DEB_ARCH}.deb"
+
+            PKG_ARCH=$ARCH PKG_VERSION=$PKG_VERSION BINARY=$BINARY DEB_ARCH=$DEB_ARCH RPM_ARCH=$RPM_ARCH \
+              nfpm package --config nfpm.yaml --packager rpm --target "packages/ptm-${PKG_VERSION}-1.${RPM_ARCH}.rpm"
+          done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: packages
+          path: packages/
+          retention-days: 7
+
   release:
     name: Release
-    needs: build
+    needs: [build, package]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -67,12 +116,14 @@ jobs:
       - name: Checksum
         run: |
           cd dist
-          sha256sum ptm-* > sha256sums.txt
+          sha256sum ptm-* *.deb *.rpm 2>/dev/null >> sha256sums.txt || sha256sum ptm-* > sha256sums.txt
           cat sha256sums.txt
 
       - uses: softprops/action-gh-release@v2
         with:
           files: |
             dist/ptm-*
+            dist/*.deb
+            dist/*.rpm
             dist/sha256sums.txt
           generate_release_notes: true
