@@ -15,7 +15,7 @@ buildGoModule {
   meta = {
     description = "Pokemon Team Manager — VGC team builder MCP server and web UI";
     homepage = "https://github.com/Will-Code-For-Food-Inc/pokemon-team-manager";
-    license = lib.licenses.mit;
+    license = lib.licenses.agpl3Only;
     mainProgram = "ptm";
   };
 }
