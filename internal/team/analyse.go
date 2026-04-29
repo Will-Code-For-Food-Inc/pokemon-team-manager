@@ -8,16 +8,11 @@ import (
 	"github.com/user/pokemon-team-manager/internal/pokemon"
 )
 
-// calcStat computes the final Lv. 50 stat using the Pokemon Champions formula.
+// calcStat computes the final Lv50 stat using the Pokemon Champions formula.
 // IVs are always 31. 1 stat point = +2 to the inner term = +1 to the final stat.
 //
 //	HP:    floor((2*base + 31 + sp*2) * 50 / 100) + 60
 //	Other: floor((floor((2*base + 31 + sp*2) * 50 / 100) + 5) * natureMult)
-// CalcStat is the exported form of calcStat for testing.
-func CalcStat(base, sp int, isHP bool, natureMult float64) int {
-	return calcStat(base, sp, isHP, natureMult)
-}
-
 func calcStat(base, sp int, isHP bool, natureMult float64) int {
 	inner := (2*base + 31 + sp*2) * 50 / 100
 	if isHP {
@@ -26,8 +21,12 @@ func calcStat(base, sp int, isHP bool, natureMult float64) int {
 	return int(math.Floor(float64(inner+5) * natureMult))
 }
 
+// CalcStat is the exported form of calcStat for testing and external use.
+func CalcStat(base, sp int, isHP bool, natureMult float64) int {
+	return calcStat(base, sp, isHP, natureMult)
+}
+
 // natureMult returns the nature multiplier for a stat.
-// boosted stat → 1.1, reduced stat → 0.9, neutral → 1.0.
 func natureMult(nature, stat string) float64 {
 	n, ok := pokemon.NatureByName(nature)
 	if !ok {
@@ -49,74 +48,72 @@ func Analyse(t *Team) *Analysis {
 		TeamName: t.Name,
 	}
 
-	// Speed tiers.
 	for _, m := range t.Members {
-		if m.Species == nil {
+		if m.Config == nil || m.Config.Species == nil {
 			continue
 		}
-		mult := natureMult(m.Nature, string(pokemon.StatSpe))
-		speed := calcStat(m.Species.Speed, m.EVs.Spe, false, mult)
+		c := m.Config
+		mult := natureMult(c.Nature, string(pokemon.StatSpe))
+		speed := calcStat(c.Species.Speed, c.EVs.Spe, false, mult)
 		a.SpeedTiers = append(a.SpeedTiers, SpeedTier{
 			Slot:      m.Slot,
 			Name:      displayName(m),
-			BaseSpeed: m.Species.Speed,
+			BaseSpeed: c.Species.Speed,
 			StatSpeed: speed,
 		})
 	}
 
-	// Defensive weaknesses.
 	weakCounts := map[string]int{}
 	for _, m := range t.Members {
-		if m.Species == nil {
+		if m.Config == nil || m.Config.Species == nil {
 			continue
 		}
-		defTypes := m.Species.Types()
+		defTypes := m.Config.Species.Types()
 		for _, at := range AllTypes {
-			mult := DefenseMultiplier(at, defTypes)
-			if mult > 10 {
+			if DefenseMultiplier(at, defTypes) > 10 {
 				weakCounts[string(at)]++
 			}
 		}
 	}
-	for t, count := range weakCounts {
+	for typ, count := range weakCounts {
 		if count >= 2 {
-			a.DefensiveWeaknesses = append(a.DefensiveWeaknesses, WeaknessSummary{Type: t, Count: count})
+			a.DefensiveWeaknesses = append(a.DefensiveWeaknesses, WeaknessSummary{Type: typ, Count: count})
 		}
 	}
 
-	// Offensive type coverage (types the team can hit super-effectively).
 	coveredTypes := map[string]bool{}
 	for _, m := range t.Members {
-		for _, mv := range m.Moves {
+		if m.Config == nil {
+			continue
+		}
+		for _, mv := range m.Config.Moves {
 			if mv == nil || mv.Category == pokemon.CategoryStatus {
 				continue
 			}
 			for _, dt := range AllTypes {
-				mult := DefenseMultiplier(mv.Type, []pokemon.Type{dt})
-				if mult > 10 {
+				if DefenseMultiplier(mv.Type, []pokemon.Type{dt}) > 10 {
 					coveredTypes[string(dt)] = true
 				}
 			}
 		}
 	}
-	for t := range coveredTypes {
-		a.OffensiveCoverage = append(a.OffensiveCoverage, t)
+	for typ := range coveredTypes {
+		a.OffensiveCoverage = append(a.OffensiveCoverage, typ)
 	}
 
-	// Archetype detection.
 	a.Archetypes = detectArchetypes(t.Members)
 
-	// EV summaries.
 	for _, m := range t.Members {
-		if m.Species == nil {
+		if m.Config == nil || m.Config.Species == nil {
 			continue
 		}
+		c := m.Config
 		a.EVSummary = append(a.EVSummary, EVSummary{
 			Slot:   m.Slot,
 			Name:   displayName(m),
-			Nature: m.Nature,
-			EVs:    m.EVs,
-			Total:  m.EVs.Total(),
+			Nature: c.Nature,
+			EVs:    c.EVs,
+			Total:  c.EVs.Total(),
 		})
 	}
 
@@ -127,64 +124,46 @@ func Analyse(t *Team) *Analysis {
 func detectArchetypes(members []Member) []string {
 	var archetypes []string
 
-	// Trick Room: look for moves/abilities associated with TR support.
-	trSetters := []string{"trick room"}
-	trSupportAbilities := []string{"telepathy", "indirectly"}
 	hasTR := false
 	trCount := 0
 	slowCount := 0
-
 	for _, m := range members {
-		for _, mv := range m.Moves {
-			if mv == nil {
-				continue
-			}
-			for _, tr := range trSetters {
-				if strings.EqualFold(mv.Name, tr) {
-					hasTR = true
-					trCount++
-				}
+		if m.Config == nil {
+			continue
+		}
+		for _, mv := range m.Config.Moves {
+			if mv != nil && strings.EqualFold(mv.Name, "trick room") {
+				hasTR = true
+				trCount++
 			}
 		}
-		if m.Ability != nil {
-			for _, ab := range trSupportAbilities {
-				if strings.Contains(strings.ToLower(m.Ability.Name), ab) {
-					_ = ab
-				}
-			}
-		}
-		if m.Species != nil && m.Species.Speed <= 50 {
+		if m.Config.Species != nil && m.Config.Species.Speed <= 50 {
 			slowCount++
 		}
 	}
-	_ = trSupportAbilities
 	if hasTR || (slowCount >= 3 && trCount > 0) {
 		archetypes = append(archetypes, "Trick Room")
 	}
 
-	// Weather detection via abilities.
 	weatherAbilities := map[string]string{
-		"drought":      "Sun",
-		"drizzle":      "Rain",
-		"sandstream":   "Sand",
-		"snow warning": "Snow",
-		"cloud nine":   "Weather Nullify",
+		"drought": "Sun", "drizzle": "Rain",
+		"sandstream": "Sand", "snow warning": "Snow",
 	}
 	weatherCounts := map[string]int{}
 	for _, m := range members {
-		if m.Ability == nil {
+		if m.Config == nil || m.Config.Ability == nil {
 			continue
 		}
-		for ab, weather := range weatherAbilities {
-			if strings.EqualFold(m.Ability.Name, ab) {
+		ab := strings.ToLower(m.Config.Ability.Name)
+		for name, weather := range weatherAbilities {
+			if ab == name {
 				weatherCounts[weather]++
 			}
 		}
-		// Also check for Protosynthesis/Quark Drive (Paradox mons that thrive in weather).
-		if strings.EqualFold(m.Ability.Name, "protosynthesis") {
+		if ab == "protosynthesis" {
 			weatherCounts["Sun"]++
 		}
-		if strings.EqualFold(m.Ability.Name, "swift swim") || strings.EqualFold(m.Ability.Name, "rain dish") {
+		if ab == "swift swim" || ab == "rain dish" {
 			weatherCounts["Rain"]++
 		}
 	}
@@ -194,10 +173,12 @@ func detectArchetypes(members []Member) []string {
 		}
 	}
 
-	// Tailwind detection.
 	twCount := 0
 	for _, m := range members {
-		for _, mv := range m.Moves {
+		if m.Config == nil {
+			continue
+		}
+		for _, mv := range m.Config.Moves {
 			if mv != nil && strings.EqualFold(mv.Name, "tailwind") {
 				twCount++
 			}
@@ -207,13 +188,12 @@ func detectArchetypes(members []Member) []string {
 		archetypes = append(archetypes, "Tailwind")
 	}
 
-	// Hyper Offense: high BST, low bulk spread (all offensive EVs).
 	offCount := 0
 	for _, m := range members {
-		if m.Species == nil {
+		if m.Config == nil || m.Config.Species == nil {
 			continue
 		}
-		if m.Species.BST() >= 580 && m.Species.Speed >= 100 {
+		if m.Config.Species.BST() >= 580 && m.Config.Species.Speed >= 100 {
 			offCount++
 		}
 	}
@@ -229,15 +209,15 @@ func detectArchetypes(members []Member) []string {
 
 // TypeMatchup holds the full defensive type chart result for a species.
 type TypeMatchup struct {
-	Immune   []string `json:"immune"`    // 0×
-	Quarter  []string `json:"quarter"`   // 0.25×
-	Half     []string `json:"half"`      // 0.5×
-	Neutral  []string `json:"neutral"`   // 1×
-	Double   []string `json:"double"`    // 2×
+	Immune    []string `json:"immune"`    // 0×
+	Quarter   []string `json:"quarter"`   // 0.25×
+	Half      []string `json:"half"`      // 0.5×
+	Neutral   []string `json:"neutral"`   // 1×
+	Double    []string `json:"double"`    // 2×
 	Quadruple []string `json:"quadruple"` // 4×
 }
 
-// GetTypeMatchup returns the full defensive type chart for a species with the given types.
+// GetTypeMatchup returns the full defensive type chart for the given types.
 func GetTypeMatchup(types []pokemon.Type) TypeMatchup {
 	var m TypeMatchup
 	for _, at := range AllTypes {
@@ -291,7 +271,6 @@ func EvaluateSpecies(sp *pokemon.Species, learnset []pokemon.Move) SpeciesEval {
 		typeNames = append(typeNames, string(t))
 	}
 
-	// Offensive coverage from learnset (damaging moves only).
 	coveredTypes := map[string]bool{}
 	for _, mv := range learnset {
 		if mv.Category == pokemon.CategoryStatus {
@@ -308,10 +287,6 @@ func EvaluateSpecies(sp *pokemon.Species, learnset []pokemon.Move) SpeciesEval {
 		coverage = append(coverage, t)
 	}
 
-	// Stat role classification.
-	role := classifyStatRole(sp)
-
-	// Speed tier.
 	var speedTier string
 	switch {
 	case sp.Speed > 100:
@@ -330,14 +305,13 @@ func EvaluateSpecies(sp *pokemon.Species, learnset []pokemon.Move) SpeciesEval {
 		Types:             typeNames,
 		TypeMatchup:       GetTypeMatchup(sp.Types()),
 		OffensiveCoverage: coverage,
-		StatRole:          role,
+		StatRole:          classifyStatRole(sp),
 		SpeedTier:         speedTier,
 		PhysicalBulk:      math.Round(physBulk*10) / 10,
 		SpecialBulk:       math.Round(specBulk*10) / 10,
 	}
 }
 
-// classifyStatRole returns a role label based on base stat ratios.
 func classifyStatRole(sp *pokemon.Species) string {
 	if sp.HP*int(sp.Defense+sp.SpDefense)/200 >= 80 {
 		return "tank"
@@ -356,18 +330,19 @@ func classifyStatRole(sp *pokemon.Species) string {
 
 // EvaluateMember computes a member-level evaluation including move/EV context.
 func EvaluateMember(m *Member) MemberEval {
-	// Use assigned moves as the "learnset" for coverage; convert pointer slice.
-	learnset := make([]pokemon.Move, 0, len(m.Moves))
-	for _, mv := range m.Moves {
+	if m.Config == nil || m.Config.Species == nil {
+		return MemberEval{}
+	}
+	c := m.Config
+
+	learnset := make([]pokemon.Move, 0, len(c.Moves))
+	for _, mv := range c.Moves {
 		if mv != nil {
 			learnset = append(learnset, *mv)
 		}
 	}
-	eval := MemberEval{
-		SpeciesEval: EvaluateSpecies(m.Species, learnset),
-	}
+	eval := MemberEval{SpeciesEval: EvaluateSpecies(c.Species, learnset)}
 
-	// Move flags.
 	setupMoves := map[string]bool{
 		"dragon dance": true, "calm mind": true, "swords dance": true,
 		"nasty plot": true, "iron defense": true, "quiver dance": true,
@@ -378,12 +353,10 @@ func EvaluateMember(m *Member) MemberEval {
 		"shore up": true, "slack off": true, "soft-boiled": true, "wish": true,
 		"healing wish": true, "lunar blessing": true,
 	}
-	redirectMoves := map[string]bool{
-		"follow me": true, "rage powder": true,
-	}
+	redirectMoves := map[string]bool{"follow me": true, "rage powder": true}
 
 	physMoveCount, specMoveCount := 0, 0
-	for _, mv := range m.Moves {
+	for _, mv := range c.Moves {
 		if mv == nil {
 			continue
 		}
@@ -407,13 +380,12 @@ func EvaluateMember(m *Member) MemberEval {
 		}
 	}
 
-	// Move/stat mismatch: EVs invested in the wrong attacking stat.
-	if physMoveCount > 0 && specMoveCount == 0 && m.EVs.SpA > 0 {
+	if physMoveCount > 0 && specMoveCount == 0 && c.EVs.SpA > 0 {
 		eval.MoveStatMismatch = true
-		eval.EVEfficiency = fmt.Sprintf("SpA EVs (%d pts) wasted — moveset is purely physical", m.EVs.SpA)
-	} else if specMoveCount > 0 && physMoveCount == 0 && m.EVs.Atk > 0 {
+		eval.EVEfficiency = fmt.Sprintf("SpA EVs (%d pts) wasted — moveset is purely physical", c.EVs.SpA)
+	} else if specMoveCount > 0 && physMoveCount == 0 && c.EVs.Atk > 0 {
 		eval.MoveStatMismatch = true
-		eval.EVEfficiency = fmt.Sprintf("Atk EVs (%d pts) wasted — moveset is purely special", m.EVs.Atk)
+		eval.EVEfficiency = fmt.Sprintf("Atk EVs (%d pts) wasted — moveset is purely special", c.EVs.Atk)
 	} else {
 		eval.EVEfficiency = "ok"
 	}
@@ -421,13 +393,15 @@ func EvaluateMember(m *Member) MemberEval {
 	return eval
 }
 
-// displayName returns the nickname if set, otherwise the species name.
+// displayName returns nickname if set, otherwise species name.
 func displayName(m Member) string {
-	if m.Nickname != "" {
-		return m.Nickname
-	}
-	if m.Species != nil {
-		return m.Species.Name
+	if m.Config != nil {
+		if m.Config.Nickname != "" {
+			return m.Config.Nickname
+		}
+		if m.Config.Species != nil {
+			return m.Config.Species.Name
+		}
 	}
 	return fmt.Sprintf("Slot %d", m.Slot)
 }

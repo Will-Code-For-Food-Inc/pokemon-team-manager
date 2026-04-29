@@ -59,6 +59,7 @@ const (
 
 // AllNatures lists the 21 valid Stat Alignments in Pokemon Champions.
 // Hardy, Docile, Bashful, and Quirky are not valid in this format.
+// Serious is the free neutral nature (0 VP); all others cost 500 VP.
 var AllNatures = []Nature{
 	{Name: "Lonely", Boosted: StatAtk, Reduced: StatDef},
 	{Name: "Brave", Boosted: StatAtk, Reduced: StatSpe},
@@ -83,7 +84,7 @@ var AllNatures = []Nature{
 	{Name: "Careful", Boosted: StatSpD, Reduced: StatSpA},
 }
 
-// ValidNature returns true if the given nature name is valid.
+// ValidNature returns true if the given nature name is valid in Champions format.
 func ValidNature(name string) bool {
 	for _, n := range AllNatures {
 		if strings.EqualFold(n.Name, name) {
@@ -94,7 +95,6 @@ func ValidNature(name string) bool {
 }
 
 // NatureByName returns the Nature for the given name (case-insensitive).
-// ok is false if the name is not a valid nature.
 func NatureByName(name string) (Nature, bool) {
 	for _, n := range AllNatures {
 		if strings.EqualFold(n.Name, name) {
@@ -106,8 +106,9 @@ func NatureByName(name string) (Nature, bool) {
 
 // Species represents a Pokemon species row from the database.
 type Species struct {
-	ID           int    `json:"id"`      // auto-increment row id
-	DexID        int    `json:"dex_id"`  // national dex number
+	Slug         string `json:"slug"`
+	ID           int    `json:"id"`      // internal autoincrement (for legacy joins)
+	DexID        int    `json:"dex_id"`
 	Name         string `json:"name"`
 	Form         string `json:"form"`
 	Type1        Type   `json:"type1"`
@@ -142,6 +143,7 @@ func (s Species) Types() []Type {
 // Move represents a move row from the database.
 type Move struct {
 	ID          int          `json:"id"`
+	Slug        string       `json:"slug"`
 	Name        string       `json:"name"`
 	Type        Type         `json:"type"`
 	Category    MoveCategory `json:"category"`
@@ -156,6 +158,7 @@ type Move struct {
 // Ability represents an ability row from the database.
 type Ability struct {
 	ID          int    `json:"id"`
+	Slug        string `json:"slug"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
 }
@@ -163,15 +166,17 @@ type Ability struct {
 // Item represents an item row from the database.
 type Item struct {
 	ID          int    `json:"id"`
+	Slug        string `json:"slug"`
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	IsBanned    bool   `json:"is_banned"`
+	VPCost      int    `json:"vp_cost"`
 	Owned       bool   `json:"owned"`
 }
 
 // SpeciesAbility links an ability to a species at a given slot.
 type SpeciesAbility struct {
-	SpeciesID int
-	AbilityID int
-	Slot      int // 1, 2, or 3 (hidden)
+	SpeciesSlug string
+	AbilitySlug string
+	Slot        int // 1, 2, or 3 (hidden)
 }

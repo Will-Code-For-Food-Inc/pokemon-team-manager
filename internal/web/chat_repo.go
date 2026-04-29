@@ -10,24 +10,27 @@ type chatRepo struct{ db *sql.DB }
 
 type displayMessage = handlers.DisplayMessage
 
+func (r *chatRepo) chatRepo() *handlers.ChatRepo { return &handlers.ChatRepo{DB: r.db} }
+
 func (r *chatRepo) messages() ([]displayMessage, error) {
-	return (&handlers.ChatRepo{DB: r.db}).Messages()
+	return r.chatRepo().Messages()
 }
 
 func (r *chatRepo) appendMessage(role, content string) (int64, error) {
-	return (&handlers.ChatRepo{DB: r.db}).AppendMessage(role, content)
+	return r.chatRepo().AppendMessage(role, content)
 }
 
 func (r *chatRepo) loadContext() ([]ollamaMessage, error) {
-	return (&handlers.ChatRepo{DB: r.db}).LoadContext()
+	return r.chatRepo().LoadContext()
 }
 
 func (r *chatRepo) saveContext(msgs []ollamaMessage) error {
-	return (&handlers.ChatRepo{DB: r.db}).SaveContext(msgs)
+	return r.chatRepo().SaveContext(msgs)
 }
 
-func (r *chatRepo) clear() error {
-	return (&handlers.ChatRepo{DB: r.db}).Clear()
+
+func (r *chatRepo) semanticHistory(queryVec []float32, k, fallbackN int) ([]ollamaMessage, error) {
+	return r.chatRepo().SemanticHistory(queryVec, k, fallbackN)
 }
 
 func lastN(msgs []displayMessage, n int) []displayMessage {

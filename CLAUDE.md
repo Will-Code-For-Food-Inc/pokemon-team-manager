@@ -80,7 +80,7 @@ Logs are intentionally separate from `teams.notes` — notes are strategic, logs
 - 6 Pokemon, bring 4, double battles
 - Level 50 cap in battle
 - Species clause, item clause
-- Final evolutions only (exception: Pikachu is permitted)
+- Roster is curated per regulation (regulation_species table); not every Pokemon exists. There is no general "final-evolution-only" rule — Pikachu is in the roster despite not being a final evo.
 - Stat points: 0-32 per stat, 66 total; no IV adjustment in Champions
 - Moves selected from a curated per-species pool (not traditional learnset); use `get_moves` to check
 - Customisation costs VP: 2/stat point, 100/move, 200/nature, 400/ability

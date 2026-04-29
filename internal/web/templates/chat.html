@@ -1,11 +1,37 @@
 {{template "base" .}}
-{{define "title"}}Agent Chat{{end}}
+{{define "title"}}Sable{{end}}
+{{define "head_extra"}}
+<style>
+/*
+ * #wrap must be a flex column so #page { flex:1 } has a flex parent to size against.
+ * #page MUST NOT use flex-wrap:wrap — per CSS spec, multi-line flex containers
+ * size each line by max(items' content heights), so a tall #chat-wrap forces the
+ * line taller than the container, pushing the input below an overflow:hidden clip.
+ * With nowrap (single-line), line cross-size = container's inner cross-size, and
+ * align-items:stretch (default) properly sizes children to the container's height.
+ * For narrow viewports, the media query below switches to column stacking instead.
+ */
+#wrap { overflow: hidden !important; padding: 0 !important; display: flex; flex-direction: column; }
+#page { flex: 1; min-height: 0; display: flex; gap: 10px; padding: 8px; overflow: hidden; }
+#chat-wrap { flex: 0 0 420px; min-width: 280px; display: flex; flex-direction: column; overflow: hidden; }
+#view-panel { flex: 1 1 0; min-width: 0; display: none; flex-direction: column; overflow: hidden; }
+#view-panel.active { display: flex; }
+#messages { flex: 1; min-height: 0; overflow-y: auto; }
+#col-resizer { width: 5px; cursor: ew-resize; background: var(--navy-border); border-left: 1px solid var(--gold-dim); border-right: 1px solid var(--gold-dim); flex-shrink: 0; transition: background 0.15s; }
+#col-resizer:hover, #col-resizer.dragging { background: var(--gold-border); }
+
+@media (max-width: 720px) {
+  #page { flex-direction: column; }
+  #chat-wrap { flex: 1 1 50%; width: 100%; min-height: 0; }
+  #view-panel.active { flex: 1 1 50%; min-width: 100%; }
+  #col-resizer { display: none; }
+}
+</style>
+{{end}}
 {{define "content"}}
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <style>
-#page { display: flex; gap: 10px; height: calc(100vh - 80px); padding: 8px 0; }
-#chat-wrap { display: flex; flex-direction: column; flex: 1; min-width: 0; }
-#messages { flex: 1; overflow-y: auto; background: var(--navy-panel); border: 1px solid var(--navy-border); padding: 8px; margin-bottom: 8px; }
+#messages { flex: 1; overflow-y: auto; min-height: 0; background: var(--navy-panel); border: 1px solid var(--navy-border); padding: 8px; margin-bottom: 8px; }
 .msg { margin: 4px 0; padding: 4px 8px; border-radius: 2px; font-size: 13px; word-break: break-word; }
 .msg-user      { background: var(--navy-raised); border-left: 3px solid var(--gold-border); color: var(--cream); }
 .msg-user p { margin: 0.3em 0; }
@@ -17,39 +43,47 @@
 .msg-assistant pre code { background: none; padding: 0; }
 .msg-tool  { background: var(--navy-mid); border-left: 3px solid var(--gold-dim); font-family: monospace; font-size: 12px; color: var(--cream-dim); white-space: pre-wrap; }
 .msg-error { background: #2b0e0e; border-left: 3px solid var(--red-danger); color: #f1948a; white-space: pre-wrap; }
-#input-row { display: flex; gap: 6px; }
-#user-input { flex: 1; padding: 6px 8px; border: 1px solid var(--navy-border); background: var(--navy-mid); color: var(--cream); font-size: 13px; font-family: inherit; }
+#input-row { display: flex; gap: 6px; flex-shrink: 0; align-items: flex-end; }
+#user-input { flex: 1; height: 56px; min-height: 28px; max-height: 70vh; resize: none; padding: 6px 8px; border: 1px solid var(--navy-border); background: var(--navy-mid); color: var(--cream); font-size: 13px; font-family: inherit; line-height: 1.4; white-space: pre-wrap; }
 #user-input::placeholder { color: var(--cream-dim); }
+#input-resizer { height: 5px; cursor: ns-resize; background: var(--navy-border); border-top: 1px solid var(--gold-dim); border-bottom: 1px solid var(--gold-dim); flex-shrink: 0; margin: 4px 0; transition: background 0.15s; }
+#input-resizer:hover, #input-resizer.dragging { background: var(--gold-border); }
 #send-btn { padding: 6px 16px; background: var(--navy-raised); color: var(--gold-bright); border: 1px solid var(--gold-border); cursor: pointer; font-size: 13px; font-family: inherit; }
 #send-btn:hover { background: var(--gold-border); color: var(--navy-deep); }
 #send-btn:disabled { background: var(--navy-mid); color: var(--gold-dim); border-color: var(--navy-border); cursor: default; }
+.msg-optimistic { opacity: 0.6; }
+.msg-fresh { animation: msg-in 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+@keyframes msg-in {
+  from { opacity: 0; transform: translateX(-12px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes pulse { 0%,100% { opacity:.4; transform:rotate(0deg); } 50% { opacity:1; transform:rotate(180deg); } }
 #status { font-size: 12px; color: var(--cream-dim); margin-bottom: 4px; min-height: 16px; }
 #clear-btn { font-size: 11px; color: var(--gold-dim); background: none; border: none; cursor: pointer; padding: 0 4px; }
 #clear-btn:hover { color: var(--red-danger); }
 
-/* Team panel */
-#view-panel { width: 300px; flex-shrink: 0; overflow-y: auto; display: none; flex-direction: column; gap: 6px; }
+/* Side panel */
+#view-panel { flex: 1 1 400px; min-width: 300px; min-height: 0; display: none; flex-direction: column; gap: 0; overflow: hidden; }
 #view-panel.active { display: flex; animation: panel-popin 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
 @keyframes panel-popin {
   from { opacity: 0; transform: scale(0.88) translateX(16px); }
   to   { opacity: 1; transform: scale(1)    translateX(0); }
 }
-#view-body.slide-left  { animation: slide-left  0.18s ease both; }
-#view-body.slide-right { animation: slide-right 0.18s ease both; }
-@keyframes slide-left {
-  from { opacity: 0; transform: translateX(24px); }
-  to   { opacity: 1; transform: translateX(0); }
+/* Tab strip */
+#panel-tabs { display: flex; border-bottom: 1px solid var(--gold-border); margin-bottom: 6px; flex-shrink: 0; }
+.panel-tab { flex: 1; padding: 4px 6px; font-size: 11px; font-weight: bold; letter-spacing: .05em; text-transform: uppercase; text-align: center; cursor: pointer; color: var(--cream-dim); background: none; border: none; border-bottom: 2px solid transparent; }
+.panel-tab.active { color: var(--gold-bright); border-bottom-color: var(--gold); }
+.panel-tab:hover:not(.active) { color: var(--cream); }
+/* Per-tab content areas */
+.tab-pane { display: none; flex-direction: column; flex: 1; overflow-y: auto; min-height: 0; }
+.tab-pane.active { display: flex; }
+/* View list — wrapping flex row of capped-width cards */
+#view-list { display: flex; flex-direction: row; flex-wrap: wrap; align-content: flex-start; gap: 10px; padding-bottom: 8px; }
+.view-entry { flex: 0 1 380px; max-width: 380px; min-width: 0; animation: view-in 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) both; transform-origin: 50% 30%; }
+@keyframes view-in {
+  from { opacity: 0; transform: scale(0.78); }
+  to   { opacity: 1; transform: scale(1); }
 }
-@keyframes slide-right {
-  from { opacity: 0; transform: translateX(-24px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
-#view-header { display: flex; align-items: center; gap: 4px; border-bottom: 1px solid var(--gold-border); padding-bottom: 4px; margin-bottom: 2px; }
-#view-title { font-size: 13px; font-weight: bold; color: var(--gold-bright); flex: 1; }
-#view-nav { display: flex; gap: 2px; }
-#view-nav button { background: var(--navy-mid); border: 1px solid var(--navy-border); border-radius: 2px; cursor: pointer; font-size: 12px; padding: 1px 6px; color: var(--cream-dim); line-height: 1.4; }
-#view-nav button:hover { border-color: var(--gold-border); color: var(--gold); }
-#view-nav button:disabled { color: var(--navy-border); border-color: var(--navy-border); cursor: default; }
 .member-card { background: var(--navy-raised); border: 1px solid var(--navy-border); border-radius: 3px; padding: 8px; font-size: 12px; }
 .member-name { font-weight: bold; font-size: 13px; color: var(--gold-bright); margin-bottom: 3px; }
 .member-meta { color: var(--cream-dim); margin-bottom: 4px; }
@@ -59,29 +93,35 @@
 .stat-chip { font-size: 11px; }
 
 @media (max-width: 600px) {
-  #page { flex-direction: column; }
-  #view-panel { width: 100%; max-height: 40vh; }
+  #chat-wrap { flex: 1 1 100%; }
+  #view-panel { min-width: 100%; max-height: 40vh; }
 }
 </style>
 
 <div id="page">
-  <div id="chat-wrap">
+  <div id="chat-wrap" data-resizable>
     <div id="messages"></div>
-    <div id="status"><button id="clear-btn" onclick="clearHistory()">clear history</button></div>
+    <div id="status"></div>
+    <div id="input-resizer" title="Drag to resize input"></div>
     <div id="input-row">
-      <input id="user-input" type="text" placeholder="Ask the ptm agent…" autocomplete="off">
+      <textarea id="user-input" rows="2" placeholder="Chat with Sable…  (Enter to send, Shift+Enter for newline)" autocomplete="off"></textarea>
       <button id="send-btn" onclick="send()">Send</button>
     </div>
   </div>
+  <div id="col-resizer" title="Drag to resize chat width"></div>
   <div id="view-panel">
-    <div id="view-header">
-      <div id="view-title"></div>
-      <div id="view-nav">
-        <button id="nav-prev" onclick="navView(-1)" disabled>‹</button>
-        <button id="nav-next" onclick="navView(1)" disabled>›</button>
-      </div>
+    <div id="panel-tabs">
+      <button class="panel-tab active" onclick="switchTab('entity')">Views</button>
+      <button class="panel-tab" onclick="switchTab('context')">Context</button>
     </div>
-    <div id="view-body"></div>
+    <!-- View tab — scrollable list of cards -->
+    <div id="tab-entity" class="tab-pane active">
+      <div id="view-list"></div>
+    </div>
+    <!-- Context tab (history + KB) -->
+    <div id="tab-context" class="tab-pane">
+      <div id="context-body"></div>
+    </div>
   </div>
 </div>
 
@@ -165,64 +205,62 @@ function renderHeuristics(ev) {
     </div>`;
 }
 
-const msgsEl   = document.getElementById('messages');
-const inputEl  = document.getElementById('user-input');
-const btnEl    = document.getElementById('send-btn');
-const statusEl = document.getElementById('status');
-const panelEl  = document.getElementById('view-panel');
-const titleEl  = document.getElementById('view-title');
-const bodyEl   = document.getElementById('view-body');
-const prevBtn  = document.getElementById('nav-prev');
-const nextBtn  = document.getElementById('nav-next');
-const clearBtn = '<button id="clear-btn" onclick="clearHistory()">clear history</button>';
+const msgsEl      = document.getElementById('messages');
+const inputEl     = document.getElementById('user-input');
+const btnEl       = document.getElementById('send-btn');
+const statusEl    = document.getElementById('status');
+const panelEl     = document.getElementById('view-panel');
+const viewList    = document.getElementById('view-list');
+const contextBody = document.getElementById('context-body');
 
-// View history stack
-const viewHistory = [];
-let viewCursor = -1;
-
-function pushView(renderFn, label) {
-  viewHistory.splice(viewCursor + 1);
-  viewHistory.push({renderFn, label});
-  viewCursor = viewHistory.length - 1;
-  renderFn();
-  animateBody('slide-left');
-  updateNavButtons();
+function switchTab(name) {
+  document.querySelectorAll('.panel-tab').forEach((t, i) => {
+    t.classList.toggle('active', ['entity','context'][i] === name);
+  });
+  document.getElementById('tab-entity').classList.toggle('active', name === 'entity');
+  document.getElementById('tab-context').classList.toggle('active', name === 'context');
 }
 
-function navView(delta) {
-  const next = viewCursor + delta;
-  if (next < 0 || next >= viewHistory.length) return;
-  const dir = delta > 0 ? 'slide-left' : 'slide-right';
-  viewCursor = next;
-  viewHistory[viewCursor].renderFn();
-  animateBody(dir);
-  updateNavButtons();
+// Append a rendered card to the scrollable view list, or update in place if a
+// card with the same id already exists. id de-dupes repeat emissions for the
+// same entity (e.g. multiple `show_pokemon` calls for the same species mid-turn).
+function appendView(html, label, id) {
+  const dismissBtn = `<button onclick="this.closest('.view-entry').remove()" title="Dismiss" style="background:none;border:none;cursor:pointer;color:var(--cream-dim);font-size:13px;padding:0;line-height:1;float:right;margin-left:6px" aria-label="dismiss">✕</button>`;
+  const header = label
+    ? `<div style="font-size:10px;font-weight:bold;letter-spacing:.06em;color:var(--gold-dim);text-transform:uppercase;margin-bottom:4px;display:flex;align-items:center">${dismissBtn}<span>${label}</span></div>`
+    : `<div style="text-align:right">${dismissBtn}</div>`;
+  const body = header + html;
+
+  let entry = id ? viewList.querySelector(`[data-view-id="${CSS.escape(id)}"]`) : null;
+  if (entry) {
+    entry.innerHTML = body;
+    // re-trigger the entry animation so the user sees something changed
+    entry.style.animation = 'none';
+    void entry.offsetWidth;
+    entry.style.animation = '';
+  } else {
+    entry = document.createElement('div');
+    entry.className = 'view-entry';
+    if (id) entry.dataset.viewId = id;
+    entry.innerHTML = body;
+    viewList.appendChild(entry);
+  }
+  entry.scrollIntoView({behavior:'smooth', block:'nearest'});
+  panelEl.classList.add('active');
 }
 
-function animateBody(cls) {
-  bodyEl.classList.remove('slide-left', 'slide-right');
-  void bodyEl.offsetWidth; // force reflow so re-adding the class re-triggers
-  bodyEl.classList.add(cls);
-}
-
-function updateNavButtons() {
-  prevBtn.disabled = viewCursor <= 0;
-  nextBtn.disabled = viewCursor >= viewHistory.length - 1;
+// Dispatch an incoming view payload to the right renderer.
+function dispatchView(v) {
+  switchTab('entity');
+  if (v.type === 'team')     showTeam(v.team);
+  if (v.type === 'pokemon')  showPokemon(v.species, v.abilities, v.eval);
+  if (v.type === 'evaluate') showEvaluate(v.eval, v.member);
+  if (v.type === 'item')     showItem(v.item);
 }
 
 function showMessages(msgs) {
   msgsEl.innerHTML = '';
-  for (const m of msgs) {
-    const d = document.createElement('div');
-    d.className = 'msg msg-' + m.role;
-    if (m.role === 'tool' || m.role === 'error') {
-      d.textContent = m.content;
-    } else {
-      d.innerHTML = marked.parse(m.content);
-    }
-    msgsEl.appendChild(d);
-  }
-  msgsEl.scrollTop = msgsEl.scrollHeight;
+  for (const m of msgs) appendMsg(m.role, m.content || '', '', { animate: false });
 }
 
 function renderPokemon(sp, abilities, ev) {
@@ -248,154 +286,418 @@ function renderPokemon(sp, abilities, ev) {
       <span style="width:28px;font-size:11px;text-align:right;color:#f0e6c8">${val}</span>
     </div>`).join('');
 
-  titleEl.textContent = sp.name + (sp.form ? ` (${sp.form})` : '');
-  bodyEl.innerHTML = `
-    <div class="member-card">
-      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:4px">
-        ${typeBadges}${flagBadges ? ' ' + flagBadges : ''}
-        <span style="font-size:11px;color:var(--cream-dim);margin-left:auto">BST ${bst}</span>
-      </div>
-      <div style="margin-bottom:8px">${statBars}</div>
-      <div style="font-size:11px;font-weight:bold;letter-spacing:.06em;color:var(--gold-bright);margin-bottom:4px">ABILITIES</div>
-      <div style="font-size:12px">${abilityList || '—'}</div>
-      ${renderHeuristics(ev)}
-    </div>`;
-  panelEl.classList.add('active');
+  appendView(`<div class="member-card">
+    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:4px">
+      ${typeBadges}${flagBadges ? ' ' + flagBadges : ''}
+      <span style="font-size:11px;color:var(--cream-dim);margin-left:auto">BST ${bst}</span>
+    </div>
+    <div style="margin-bottom:8px">${statBars}</div>
+    <div style="font-size:11px;font-weight:bold;letter-spacing:.06em;color:var(--gold-bright);margin-bottom:4px">ABILITIES</div>
+    <div style="font-size:12px">${abilityList || '—'}</div>
+    ${renderHeuristics(ev)}
+  </div>`, sp.name + (sp.form ? ` (${sp.form})` : ''), `pokemon:${sp.slug || sp.name}`);
 }
 
-function showPokemon(sp, abilities, ev) {
-  pushView(() => renderPokemon(sp, abilities, ev), sp.name);
-}
+function showPokemon(sp, abilities, ev) { renderPokemon(sp, abilities, ev); }
 
 function renderTeam(team) {
-  titleEl.textContent = `${team.name} (Reg ${team.regulation})`;
-  bodyEl.innerHTML = '';
-  for (const m of (team.members || [])) {
-    if (!m.species) continue;
-    const card = document.createElement('div');
-    card.className = 'member-card';
-
-    const ability = m.ability ? m.ability.name : '—';
-    const item    = m.item    ? m.item.name    : '—';
-    const moves   = (m.moves || []).filter(Boolean).map(mv =>
-      `<span class="move-tag">${mv.name}</span>`).join('');
-
-    const evs = m.evs || {};
-    const statLine = [
-      evs.hp         ? `HP:${evs.hp}`         : '',
-      evs.attack     ? `Atk:${evs.attack}`     : '',
-      evs.defense    ? `Def:${evs.defense}`    : '',
-      evs.sp_attack  ? `SpA:${evs.sp_attack}`  : '',
-      evs.sp_defense ? `SpD:${evs.sp_defense}` : '',
-      evs.speed      ? `Spe:${evs.speed}`      : '',
-    ].filter(Boolean).map(s => `<span class="stat-chip">${s}</span>`).join('');
-
-    card.innerHTML = `
-      <div class="member-name">${m.species.name}${m.species.form ? ' ('+m.species.form+')' : ''}</div>
-      <div class="member-meta">${m.nature} · ${ability} · ${item}</div>
+  const members = (team.members || []).filter(m => m.config && m.config.species);
+  const memberHtml = members.map(m => {
+    const c      = m.config;
+    const ability = c.ability ? c.ability.name : '—';
+    const item    = c.item    ? c.item.name    : '—';
+    const moves   = (c.moves || []).filter(Boolean).map(mv => `<span class="move-tag">${mv.name}</span>`).join('');
+    const evs     = c.evs || {};
+    const statLine = ['hp','attack','defense','sp_attack','sp_defense','speed']
+      .filter(k => evs[k])
+      .map(k => `<span class="stat-chip">${k.replace('_','.').slice(0,3).toUpperCase()}:${evs[k]}</span>`)
+      .join('');
+    return `<div class="member-card" style="margin-bottom:6px">
+      <div class="member-name">${c.species.name}${c.species.form ? ' ('+c.species.form+')' : ''}</div>
+      <div class="member-meta">${c.nature} · ${ability} · ${item}</div>
       <div class="member-moves">${moves}</div>
       ${statLine ? `<div class="stat-row">${statLine}</div>` : ''}
-    `;
-    bodyEl.appendChild(card);
-  }
-  panelEl.classList.add('active');
+    </div>`;
+  }).join('');
+  appendView(memberHtml || '<div style="color:var(--cream-dim);font-size:12px">No members.</div>',
+    `${team.name} — ${team.regulation}`,
+    `team:${team.id}`);
 }
 
-function showTeam(team) {
-  pushView(() => renderTeam(team), team.name);
-}
+function showTeam(team) { renderTeam(team); }
 
 function renderEvaluate(ev, isMember) {
   const typeBadges = (ev.types || []).map(t => typeTag(t)).join(' ');
-
   let memberSection = '';
   if (isMember) {
     const flags = [
-      ev.has_priority_move && 'priority',
-      ev.has_setup_move    && 'setup',
-      ev.has_recovery_move && 'recovery',
-      ev.has_redirection   && 'redirection',
+      ev.has_priority_move && 'priority', ev.has_setup_move && 'setup',
+      ev.has_recovery_move && 'recovery', ev.has_redirection && 'redirection',
     ].filter(Boolean);
     const flagHtml = flags.length
       ? `<div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:4px">${flags.map(f =>
           `<span style="font-size:11px;border:1px solid var(--gold-border);border-radius:2px;padding:1px 5px;color:var(--gold-bright)">${f}</span>`
-        ).join('')}</div>`
-      : '';
+        ).join('')}</div>` : '';
     const evWarn = ev.move_stat_mismatch
       ? `<div style="font-size:12px;color:#f1948a;margin-top:2px">⚠ ${ev.ev_efficiency}</div>`
       : `<div style="font-size:12px;color:var(--cream-dim);margin-top:2px">EVs: ${ev.ev_efficiency}</div>`;
-    memberSection = `
-      <div style="border-top:1px solid var(--navy-border);margin-top:10px;padding-top:8px">
-        <div style="font-size:11px;font-weight:bold;letter-spacing:.06em;color:var(--gold-bright);margin-bottom:4px">SET FLAGS</div>
-        ${flagHtml || '<div style="font-size:12px;color:var(--cream-dim);margin-bottom:4px">none</div>'}
-        ${evWarn}
-      </div>`;
+    memberSection = `<div style="border-top:1px solid var(--navy-border);margin-top:10px;padding-top:8px">
+      <div style="font-size:11px;font-weight:bold;letter-spacing:.06em;color:var(--gold-bright);margin-bottom:4px">SET FLAGS</div>
+      ${flagHtml || '<div style="font-size:12px;color:var(--cream-dim);margin-bottom:4px">none</div>'}
+      ${evWarn}</div>`;
   }
+  appendView(`<div class="member-card">
+    <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">${typeBadges}</div>
+    ${renderHeuristics(ev)}${memberSection}
+  </div>`, ev.name, `eval:${ev.name}:${isMember ? 'm' : 's'}`);
+}
 
-  titleEl.textContent = ev.name;
-  bodyEl.innerHTML = `
-    <div class="member-card">
-      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px">${typeBadges}</div>
-      ${renderHeuristics(ev)}
-      ${memberSection}
-    </div>`;
+function showEvaluate(ev, isMember) { renderEvaluate(ev, isMember); }
+
+function showItem(it) {
+  if (!it) return;
+  const flags = [];
+  if (it.is_banned) flags.push(`<span style="font-size:10px;color:var(--red-danger);border:1px solid var(--red-danger);border-radius:2px;padding:1px 4px">BANNED</span>`);
+  if (it.owned)     flags.push(`<span style="font-size:10px;color:var(--gold-bright);border:1px solid var(--gold-border);border-radius:2px;padding:1px 4px">OWNED</span>`);
+  const flagBadges = flags.join(' ');
+  const vp = it.vp_cost != null ? `<span style="font-size:11px;color:var(--cream-dim);margin-left:auto">${it.vp_cost} VP</span>` : '';
+  appendView(`<div class="member-card">
+    <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:6px">
+      ${flagBadges}${vp}
+    </div>
+    <div style="font-size:12px;color:var(--cream);white-space:pre-wrap">${it.description || '—'}</div>
+  </div>`, it.name, `item:${it.slug || it.name}`);
+}
+
+function showAgentContext(ctx) {
+  const hist = ctx.history || [];
+  const kb   = ctx.knowledge || [];
+  const histHtml = hist.length === 0
+    ? '<div style="color:var(--cream-dim);font-size:12px">No history retrieved.</div>'
+    : hist.map(m => {
+        const roleColor = m.role === 'user' ? 'var(--gold)' : 'var(--cream-dim)';
+        const text = (m.content || '').length > 300 ? m.content.slice(0,300)+'…' : m.content;
+        return `<div style="margin-bottom:8px;border-left:2px solid ${roleColor};padding-left:6px">
+          <div style="font-size:10px;font-weight:bold;color:${roleColor};margin-bottom:2px;text-transform:uppercase">${m.role}</div>
+          <div style="font-size:11px;color:var(--cream);white-space:pre-wrap;word-break:break-word">${text}</div>
+        </div>`;
+      }).join('');
+  const kbHtml = kb.length === 0
+    ? '<div style="color:var(--cream-dim);font-size:12px">No knowledge matched.</div>'
+    : kb.map(r => {
+        const snippet = (r.content||'').length > 250 ? r.content.slice(0,250)+'…' : r.content;
+        const score = r.rank != null ? ` <span style="color:var(--gold-dim)">${(+r.rank).toFixed(3)}</span>` : '';
+        return `<div style="margin-bottom:8px;border:1px solid var(--navy-border);border-radius:3px;padding:6px">
+          <div style="font-size:10px;font-weight:bold;color:var(--gold-bright);margin-bottom:3px">${r.title||r.source}${score}</div>
+          <div style="font-size:11px;color:var(--cream-dim);white-space:pre-wrap;word-break:break-word">${snippet}</div>
+        </div>`;
+      }).join('');
+  contextBody.innerHTML = `<div class="member-card">
+    <div style="font-size:11px;font-weight:bold;letter-spacing:.06em;color:var(--gold-bright);margin-bottom:6px">HISTORY (${hist.length})</div>
+    ${histHtml}
+    <div style="font-size:11px;font-weight:bold;letter-spacing:.06em;color:var(--gold-bright);margin:10px 0 6px;border-top:1px solid var(--navy-border);padding-top:8px">KNOWLEDGE (${kb.length})</div>
+    ${kbHtml}
+  </div>`;
   panelEl.classList.add('active');
 }
 
-function showEvaluate(ev, isMember) {
-  pushView(() => renderEvaluate(ev, isMember), ev.name);
+
+// ── #43: localStorage pending message ────────────────────────────────────────
+const PENDING_KEY = 'ptm_pending_msg';
+
+function savePending(text) {
+  localStorage.setItem(PENDING_KEY, JSON.stringify({text, ts: Date.now()}));
+}
+function clearPending() {
+  localStorage.removeItem(PENDING_KEY);
+}
+function loadPending() {
+  try {
+    const raw = localStorage.getItem(PENDING_KEY);
+    if (!raw) return null;
+    const p = JSON.parse(raw);
+    // Discard if older than 10 minutes — server turn is long gone
+    if (Date.now() - p.ts > 10 * 60 * 1000) { clearPending(); return null; }
+    return p.text;
+  } catch { return null; }
 }
 
-function handleResponse(data) {
-  if (data.error) {
-    const d = document.createElement('div');
-    d.className = 'msg msg-error';
-    d.textContent = data.error;
-    msgsEl.appendChild(d);
+// ── #42: thinking indicator ───────────────────────────────────────────────────
+let thinkingEl = null;
+
+function showThinkingIndicator() {
+  if (thinkingEl) return;
+  thinkingEl = document.createElement('div');
+  thinkingEl.id = 'thinking-indicator';
+  thinkingEl.style.cssText = 'padding:8px 10px;background:rgba(201,168,76,.07);border-left:3px solid var(--gold-dim);font-size:12px;color:var(--cream-dim);display:flex;align-items:center;gap:10px;margin:4px 0';
+  thinkingEl.innerHTML = '<span style="animation:pulse 1.2s ease-in-out infinite;display:inline-block">⟳</span> Agent was interrupted mid-turn — response may be incomplete. <button onclick="cancelThinking()" style="background:none;border:1px solid var(--red-danger);color:var(--red-danger);border-radius:2px;padding:1px 8px;cursor:pointer;font-size:11px;margin-left:auto">Dismiss</button>';
+  msgsEl.appendChild(thinkingEl);
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+}
+
+function removeThinkingIndicator() {
+  if (thinkingEl) { thinkingEl.remove(); thinkingEl = null; }
+}
+
+async function cancelThinking() {
+  await fetch('/api/chat/cancel', {method: 'POST'});
+  removeThinkingIndicator();
+  clearPending();
+}
+
+// ── Message rendering ─────────────────────────────────────────────────────────
+// opts.animate (default true) toggles the slide-in pop. Pass {animate:false}
+// when batch-rendering history on page load — animating the entire scrollback
+// at once is a "page wash" that obscures rather than highlights.
+function appendMsg(role, content, extra, opts) {
+  opts = opts || {};
+  const animate = opts.animate !== false;
+  const d = document.createElement('div');
+  d.className = 'msg msg-' + role + (extra ? ' ' + extra : '') + (animate ? ' msg-fresh' : '');
+  if (role === 'tool' || role === 'error') {
+    d.textContent = content;
   } else {
-    showMessages(data.messages);
-    if (data.view) {
-      if (data.view.type === 'team')     showTeam(data.view.team);
-      if (data.view.type === 'pokemon')  showPokemon(data.view.species, data.view.abilities, data.view.eval);
-      if (data.view.type === 'evaluate') showEvaluate(data.view.eval, data.view.member);
-    }
+    d.innerHTML = marked.parse(content);
   }
+  msgsEl.appendChild(d);
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+  return d;
 }
 
-async function clearHistory() {
-  if (!confirm('Clear all chat history?')) return;
-  await fetch('/api/chat/history', {method: 'DELETE'});
-  msgsEl.innerHTML = '';
-}
-
+// ── Send ──────────────────────────────────────────────────────────────────────
 async function send() {
   const text = inputEl.value.trim();
   if (!text) return;
   inputEl.value = '';
   btnEl.disabled = true;
-  statusEl.innerHTML = 'Thinking… ' + clearBtn;
+  statusEl.textContent = 'Thinking…';
+
+  // #43 — optimistic render: show immediately, before fetch opens
+  removeThinkingIndicator();
+  clearPending();
+  savePending(text);
+  const optimisticEl = appendMsg('user', text, 'msg-optimistic');
 
   try {
-    const data = await fetch('/api/chat', {
+    const resp = await fetch('/api/chat', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({message: text}),
-    }).then(r => r.json());
-    handleResponse(data);
+    });
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = '';
+    let serverEchoedUser = false;
+
+    while (true) {
+      const {done, value} = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, {stream: true});
+      const parts = buf.split('\n\n');
+      buf = parts.pop();
+      for (const part of parts) {
+        const line = part.trim();
+        if (!line.startsWith('data: ')) continue;
+        let ev;
+        try { ev = JSON.parse(line.slice(6)); } catch { continue; }
+
+        if (ev.type === 'done') {
+          clearPending();
+          if (ev.agent_context) showAgentContext(ev.agent_context);
+          if (ev.view) dispatchView(ev.view);
+        } else if (ev.type === 'view' && ev.view) {
+          dispatchView(ev.view);
+        } else if (ev.role === 'user' && !serverEchoedUser) {
+          // Server confirmed our optimistic message — remove pending style
+          serverEchoedUser = true;
+          optimisticEl.classList.remove('msg-optimistic');
+        } else if (ev.role) {
+          appendMsg(ev.role, ev.content || '');
+        }
+      }
+    }
   } catch (e) {
-    const d = document.createElement('div');
-    d.className = 'msg msg-error';
-    d.textContent = 'Request failed: ' + e;
-    msgsEl.appendChild(d);
+    optimisticEl.classList.remove('msg-optimistic');
+    appendMsg('error', 'Request failed: ' + e);
   }
 
-  statusEl.innerHTML = clearBtn;
+  statusEl.textContent = '';
   btnEl.disabled = false;
   inputEl.focus();
 }
 
-inputEl.addEventListener('keydown', e => { if (e.key === 'Enter') send(); });
-fetch('/api/chat/history').then(r => r.json()).then(d => showMessages(d.messages || []));
+inputEl.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    send();
+  }
+});
+
+// Drag the vertical divider between chat and view panel to resize the chat
+// column width. Persisted to localStorage so it sticks across reloads.
+(function() {
+  const colResizer = document.getElementById('col-resizer');
+  const wrap = document.getElementById('chat-wrap');
+  if (!colResizer || !wrap) return;
+  let dragging = false, startX = 0, startW = 0;
+  colResizer.addEventListener('mousedown', e => {
+    dragging = true;
+    startX = e.clientX;
+    startW = wrap.offsetWidth;
+    colResizer.classList.add('dragging');
+    document.body.style.cursor = 'ew-resize';
+    document.body.style.userSelect = 'none';
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const newW = Math.max(280, startW + (e.clientX - startX));
+    wrap.style.flex = '0 0 ' + newW + 'px';
+    localStorage.setItem('ptm_chat_width', newW);
+  });
+  document.addEventListener('mouseup', () => {
+    if (!dragging) return;
+    dragging = false;
+    colResizer.classList.remove('dragging');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  });
+  const saved = parseInt(localStorage.getItem('ptm_chat_width'), 10);
+  if (saved && saved >= 280) wrap.style.flex = '0 0 ' + saved + 'px';
+})();
+
+// Drag the divider above the input row to resize the textarea (and thus shrink
+// the chat scrollback above it).
+(function() {
+  const resizer = document.getElementById('input-resizer');
+  const ta = inputEl;
+  let dragging = false, startY = 0, startH = 0;
+  resizer.addEventListener('mousedown', e => {
+    dragging = true;
+    startY = e.clientY;
+    startH = ta.offsetHeight;
+    resizer.classList.add('dragging');
+    document.body.style.cursor = 'ns-resize';
+    document.body.style.userSelect = 'none';
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    // Dragging up = bigger input; down = smaller. startY - clientY > 0 means up.
+    const newH = Math.max(28, startH + (startY - e.clientY));
+    ta.style.height = newH + 'px';
+  });
+  document.addEventListener('mouseup', () => {
+    if (!dragging) return;
+    dragging = false;
+    resizer.classList.remove('dragging');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  });
+})();
+
+// ── On page load: restore state ───────────────────────────────────────────────
+fetch('/api/chat/history').then(r => r.json()).then(d => {
+  showMessages(d.messages || []);
+
+  // #42: show thinking indicator if server was interrupted
+  if (d.thinking) {
+    showThinkingIndicator();
+  }
+
+  // #43: restore pending message if server didn't echo it yet
+  if (!d.thinking) {
+    const pending = loadPending();
+    if (pending) {
+      appendMsg('user', pending, 'msg-optimistic');
+      clearPending(); // stale — server already processed or dropped it
+    }
+  }
+});
+
 inputEl.focus();
 </script>
+
+<!-- Page-local settings drawer: Ollama / Agent / Chat history.
+     Pure-CSS toggle; styles live in base.html. -->
+<input type="checkbox" id="settings-toggle" class="settings-toggle">
+<label for="settings-toggle" class="settings-fab" title="Chat settings" aria-label="Open chat settings">⚙</label>
+<div class="settings-drawer" role="dialog" aria-label="Chat settings">
+  <div class="settings-drawer-head">
+    <span>Chat Settings</span>
+    <label for="settings-toggle" class="settings-close" aria-label="Close settings">×</label>
+  </div>
+  <div class="settings-drawer-body">
+    {{if .SettingsSaved}}<div class="flash-ok" style="margin-bottom:8px">Saved.</div>{{end}}
+    {{if .ChatArchived}}<div class="flash-ok" style="margin-bottom:8px">Archived {{.ChatArchived}} message(s).</div>{{end}}
+
+    <form method="POST" action="/settings" id="chat-settings-form">
+      <div class="drawer-section">
+        <h3>Ollama</h3>
+        <div class="form-row">
+          <div>
+            <label>URL</label>
+            <input type="text" name="ollama_url" value="{{.Cfg.OllamaURL}}">
+          </div>
+          <div>
+            <label>Model</label>
+            <input type="text" name="ollama_model" value="{{.Cfg.Model}}">
+          </div>
+        </div>
+        <div class="form-row-3">
+          <div>
+            <label>num_ctx</label>
+            <input type="number" name="ollama_num_ctx" value="{{.Cfg.NumCtx}}" min="512" max="131072">
+          </div>
+          <div>
+            <label>Keep alive</label>
+            <input type="text" name="ollama_keep_alive" value="{{.Cfg.KeepAlive}}">
+            <div class="field-hint">e.g. 5m, 1h, -1</div>
+          </div>
+          <div>
+            <label>Temperature</label>
+            <input type="number" name="ollama_temp" value="{{.Cfg.Temperature}}" step="0.05" min="0" max="2">
+          </div>
+        </div>
+        <div class="form-row-3">
+          <div>
+            <label>Top P</label>
+            <input type="number" name="ollama_top_p" value="{{.Cfg.TopP}}" step="0.05" min="0" max="1">
+          </div>
+          <div>
+            <label>Top K</label>
+            <input type="number" name="ollama_top_k" value="{{.Cfg.TopK}}" min="1" max="200">
+          </div>
+          <div>
+            <label>Repeat penalty</label>
+            <input type="number" name="ollama_repeat" value="{{.Cfg.Repeat}}" step="0.05" min="0.5" max="2">
+          </div>
+        </div>
+      </div>
+
+      <div class="drawer-section">
+        <h3>Agent</h3>
+        <label>Lookback (messages)</label>
+        <input type="number" name="agent_lookback" value="{{.Cfg.Lookback}}" min="1" max="100" style="width:100px">
+        <div class="field-hint">Non-tool messages to keep in context per turn.</div>
+        <label>System prompt</label>
+        <textarea name="agent_prompt">{{.Cfg.Prompt}}</textarea>
+      </div>
+    </form>
+
+    <div class="drawer-section">
+      <h3>Chat history</h3>
+      <div>Live messages: <strong>{{.ChatCount}}</strong></div>
+      <div class="field-hint">Archive moves every live message into <code>chat_messages_archive</code> under a fresh archive_id, then clears the live tables. Nothing is permanently deleted.</div>
+      <form method="POST" action="/api/chat/archive" style="margin-top:6px"
+            onsubmit="return confirm('Archive {{.ChatCount}} live message(s) and start fresh?');">
+        <button type="submit" class="btn btn-primary btn-sm" {{if eq .ChatCount 0}}disabled{{end}}>Archive &amp; clear</button>
+      </form>
+    </div>
+  </div>
+  <div class="settings-drawer-foot">
+    <button type="submit" form="chat-settings-form" class="btn btn-primary btn-sm">Save settings</button>
+  </div>
+</div>
 {{end}}

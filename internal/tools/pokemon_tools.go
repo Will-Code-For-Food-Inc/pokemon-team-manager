@@ -29,19 +29,19 @@ func registerPokemonTools(s *server.MCPServer, svc *Services) {
 			return errResult(err.Error()), nil
 		}
 		if len(results) == 0 {
-			return textResult("No owned Pokemon found with that name. If you're looking for candidates to fill a role, use find_pokemon_by_filters instead."), nil
+			return textResult("No owned Pokemon found. For discovery use find_pokemon_by_filters."), nil
 		}
 		return jsonResult(results), nil
 	})
 
 	s.AddTool(mcp.NewTool("find_pokemon_by_filters",
-		mcp.WithDescription("Discover owned Pokemon candidates by type, role, and speed tier. Use this for coverage gaps and team building — never guess names."),
+		mcp.WithDescription("Discover owned Pokemon candidates by type, role, and speed tier."),
 		mcp.WithString("type", mcp.Description("Filter by type (e.g. 'fire', 'steel')")),
 		mcp.WithString("role", mcp.Description("'physical attacker'|'special attacker'|'mixed attacker'|'support'|'tank'")),
 		mcp.WithString("speed_tier", mcp.Description("'fast' (>100 base)|'mid' (70-100)|'slow' (<70)")),
 		mcp.WithBoolean("legendary", mcp.Description("Filter by legendary status")),
 		mcp.WithBoolean("final_evo_only", mcp.Description("Only final evolutions")),
-		mcp.WithBoolean("owned", mcp.Description("Default true (owned only); false to search all")),
+		mcp.WithBoolean("owned", mcp.Description("Default true; false to search all")),
 		mcp.WithNumber("limit", mcp.Description("Max results (default 20)")),
 	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		args := req.GetArguments()
@@ -78,12 +78,12 @@ func registerPokemonTools(s *server.MCPServer, svc *Services) {
 		if err != nil {
 			return errResult(err.Error()), nil
 		}
-		abilities, _ := svc.Pokemon.GetAbilitiesForSpecies(sp.ID)
+		abilities, _ := svc.Pokemon.GetAbilitiesForSpecies(sp.Slug)
 		return jsonResult(map[string]any{"species": sp, "abilities": abilities}), nil
 	})
 
 	s.AddTool(mcp.NewTool("get_moves",
-		mcp.WithDescription("Get the full learnset (all moves a Pokemon can learn) for a species."),
+		mcp.WithDescription("Get the Champions-format learnset for a species (the curated legal move pool)."),
 		mcp.WithString("pokemon_name", mcp.Required(), mcp.Description("Pokemon name")),
 	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		name := getString(req.GetArguments(), "pokemon_name")
@@ -91,45 +91,25 @@ func registerPokemonTools(s *server.MCPServer, svc *Services) {
 		if err != nil {
 			return errResult(err.Error()), nil
 		}
-		moves, err := svc.Pokemon.GetLearnset(sp.ID)
+		moves, err := svc.Pokemon.GetChampionsLearnset(sp.Slug)
 		if err != nil {
 			return errResult(err.Error()), nil
 		}
 		if len(moves) == 0 {
-			return textResult(fmt.Sprintf("No learnset data for %s. Use add_learnset_move to populate it as you discover moves in-game.", sp.Name)), nil
+			return textResult(fmt.Sprintf("No Champions learnset data seeded for %s. The data is curated externally — surface this to the user and stop.", sp.Name)), nil
 		}
 		return jsonResult(moves), nil
 	})
 
-	s.AddTool(mcp.NewTool("add_learnset_move",
-		mcp.WithDescription("Add a move to a species' Champions learnset. Use this when the user confirms a move is available in-game."),
-		mcp.WithString("pokemon_name", mcp.Required(), mcp.Description("Species name")),
-		mcp.WithString("move_name", mcp.Required(), mcp.Description("Move name")),
-	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		args := req.GetArguments()
-		sp, err := svc.Pokemon.GetSpeciesByName(getString(args, "pokemon_name"))
-		if err != nil {
-			return errResult(err.Error()), nil
-		}
-		mv, err := svc.Pokemon.GetMoveByName(getString(args, "move_name"))
-		if err != nil {
-			return errResult(err.Error()), nil
-		}
-		if err := svc.Pokemon.AddLearnsetMove(sp.ID, mv.ID); err != nil {
-			return errResult(err.Error()), nil
-		}
-		return textResult(fmt.Sprintf("Added %s to %s's learnset.", mv.Name, sp.Name)), nil
-	})
-
 	s.AddTool(mcp.NewTool("search_moves",
-		mcp.WithDescription("Search moves by name/description with optional filters for type, category, power, and priority."),
-		mcp.WithString("query", mcp.Required(), mcp.Description("Name or description fragment (use empty string to list all)")),
-		mcp.WithString("type", mcp.Description("Filter by type (e.g. 'fire', 'water')")),
-		mcp.WithString("category", mcp.Description("Filter by category: physical, special, or status")),
+		mcp.WithDescription("Search moves by name/description with optional type, category, power, and priority filters."),
+		mcp.WithString("query", mcp.Required(), mcp.Description("Name or description fragment")),
+		mcp.WithString("type", mcp.Description("Filter by type (e.g. 'fire')")),
+		mcp.WithString("category", mcp.Description("physical, special, or status")),
 		mcp.WithNumber("min_power", mcp.Description("Minimum base power")),
 		mcp.WithNumber("max_power", mcp.Description("Maximum base power")),
 		mcp.WithNumber("min_accuracy", mcp.Description("Minimum accuracy")),
-		mcp.WithNumber("priority", mcp.Description("Exact priority value (e.g. 1 for Quick Attack, -1 for Trick Room)")),
+		mcp.WithNumber("priority", mcp.Description("Exact priority value")),
 		mcp.WithNumber("limit", mcp.Description("Max results (default 20)")),
 	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		args := req.GetArguments()
@@ -153,7 +133,7 @@ func registerPokemonTools(s *server.MCPServer, svc *Services) {
 
 	s.AddTool(mcp.NewTool("get_item",
 		mcp.WithDescription("Get details for a held item by name."),
-		mcp.WithString("name", mcp.Required(), mcp.Description("Item name (e.g. 'Choice Specs')")),
+		mcp.WithString("name", mcp.Required(), mcp.Description("Item name")),
 	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		item, err := svc.Pokemon.GetItemByName(getString(req.GetArguments(), "name"))
 		if err != nil {
@@ -163,10 +143,10 @@ func registerPokemonTools(s *server.MCPServer, svc *Services) {
 	})
 
 	s.AddTool(mcp.NewTool("search_items",
-		mcp.WithDescription("Search held items by name or effect description, optionally filtered by owned or banned status."),
-		mcp.WithString("query", mcp.Required(), mcp.Description("Search term (use empty string to list all)")),
-		mcp.WithBoolean("owned", mcp.Description("If true/false, filter to owned or unowned items only")),
-		mcp.WithBoolean("banned", mcp.Description("If true/false, filter to banned or legal items only")),
+		mcp.WithDescription("Search held items by name or effect, optionally filtered by owned or banned status."),
+		mcp.WithString("query", mcp.Required(), mcp.Description("Search term")),
+		mcp.WithBoolean("owned", mcp.Description("Filter to owned/unowned items")),
+		mcp.WithBoolean("banned", mcp.Description("Filter to banned/legal items")),
 		mcp.WithNumber("limit", mcp.Description("Max results (default 20)")),
 	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		args := req.GetArguments()
@@ -187,7 +167,7 @@ func registerPokemonTools(s *server.MCPServer, svc *Services) {
 	})
 
 	s.AddTool(mcp.NewTool("set_owned",
-		mcp.WithDescription("Mark a Pokemon or item as owned (or unowned). Use this when the user says they have or don't have a specific Pokemon or item."),
+		mcp.WithDescription("Mark a Pokemon or item as owned (or unowned)."),
 		mcp.WithString("type", mcp.Required(), mcp.Description("'pokemon' or 'item'")),
 		mcp.WithString("name", mcp.Required(), mcp.Description("Species or item name")),
 		mcp.WithBoolean("owned", mcp.Required(), mcp.Description("true to mark owned, false to unmark")),

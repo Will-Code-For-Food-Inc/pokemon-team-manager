@@ -1,6 +1,8 @@
 {{template "base" .}}
 {{define "title"}}{{.Species.Name}}{{end}}
 {{define "content"}}
+{{with .Flash}}<div class="flash">{{.}}</div>{{end}}
+{{with .Error}}<div class="flash-err">{{.}}</div>{{end}}
 <div class="panel">
   <div class="panel-head">
     #{{.Species.DexID}} — {{.Species.Name}}
@@ -23,16 +25,25 @@
           <tr><th>Final Evo</th><td>{{if .Species.IsFinalEvo}}Yes{{else}}No{{end}}</td></tr>
           <tr><th>Restricted</th><td>{{if .Species.IsRestricted}}Yes{{else}}No{{end}}</td></tr>
         </table>
-        {{if .Abilities}}
         <div style="margin-top:10px">
           <strong>Abilities</strong>
           <ul style="margin-top:4px;padding-left:16px">
             {{range .Abilities}}
-            <li style="margin:3px 0"><strong>{{.Name}}</strong>{{if .Description}} — <span style="color:#555;font-size:12px">{{.Description}}</span>{{end}}</li>
+            <li style="margin:3px 0;display:flex;align-items:baseline;gap:8px">
+              <span><strong>{{.Name}}</strong>{{if .Description}} — <span style="color:#555;font-size:12px">{{.Description}}</span>{{end}}</span>
+              <form method="POST" action="/pokemon/{{$.Species.Name}}/abilities/remove" style="display:inline">
+                <input type="hidden" name="ability_slug" value="{{.Slug}}">
+                <button class="btn btn-danger btn-sm" style="padding:1px 6px;font-size:10px" onclick="return confirm('Remove {{.Name}}?')">✕</button>
+              </form>
+            </li>
             {{end}}
           </ul>
+          <form method="POST" action="/pokemon/{{.Species.Name}}/abilities/add" style="margin-top:6px;display:flex;gap:6px">
+            <input type="text" name="ability_name" placeholder="Ability name" style="font-size:12px;padding:3px 6px;border:1px solid #bdc3c7;border-radius:3px">
+            <input type="text" name="description" placeholder="Description (optional)" style="font-size:12px;padding:3px 6px;border:1px solid #bdc3c7;border-radius:3px;flex:1">
+            <button class="btn btn-primary btn-sm">Add Ability</button>
+          </form>
         </div>
-        {{end}}
       </div>
       <div>
         <table style="width:auto">
@@ -62,24 +73,24 @@
         <strong><a href="/teams/{{.TeamID}}">{{.TeamName}}</a></strong>
         <span style="color:#888;font-size:12px"> — Regulation {{.Regulation}} / Slot {{.Member.Slot}}</span>
       </div>
+      {{if .Member.Config}}
       <div class="form-row">
         <div>
           <table style="width:auto">
-            <tr><th>Ability</th><td>{{if .Member.Ability}}{{.Member.Ability.Name}}{{else}}—{{end}}</td></tr>
-            <tr><th>Item</th><td>{{if .Member.Item}}{{.Member.Item.Name}}{{else}}—{{end}}</td></tr>
-            <tr><th>Nature</th><td>{{if .Member.Nature}}{{.Member.Nature}}{{else}}—{{end}}</td></tr>
-            <tr><th>Tera Type</th><td>{{if .Member.TeraType}}{{.Member.TeraType}}{{else}}—{{end}}</td></tr>
-            <tr><th>Role</th><td>{{if .Member.Role}}{{.Member.Role}}{{else}}—{{end}}</td></tr>
+            <tr><th>Ability</th><td>{{if .Member.Config.Ability}}{{.Member.Config.Ability.Name}}{{else}}—{{end}}</td></tr>
+            <tr><th>Item</th><td>{{if .Member.Config.Item}}{{.Member.Config.Item.Name}}{{else}}—{{end}}</td></tr>
+            <tr><th>Nature</th><td>{{if .Member.Config.Nature}}{{.Member.Config.Nature}}{{else}}—{{end}}</td></tr>
+            <tr><th>Role</th><td>{{if .Member.Config.Role}}{{.Member.Config.Role}}{{else}}—{{end}}</td></tr>
           </table>
         </div>
         <div>
           <strong>Stat Points:</strong>
-          HP {{.Member.EVs.HP}} / Atk {{.Member.EVs.Atk}} / Def {{.Member.EVs.Def}} / SpA {{.Member.EVs.SpA}} / SpD {{.Member.EVs.SpD}} / Spe {{.Member.EVs.Spe}}
-          <em style="color:#888">({{.Member.EVs.Total}}/66)</em>
-          {{if .Member.Moves}}
+          HP {{.Member.Config.EVs.HP}} / Atk {{.Member.Config.EVs.Atk}} / Def {{.Member.Config.EVs.Def}} / SpA {{.Member.Config.EVs.SpA}} / SpD {{.Member.Config.EVs.SpD}} / Spe {{.Member.Config.EVs.Spe}}
+          <em style="color:#888">({{.Member.Config.EVs.Total}}/66)</em>
+          {{if .Member.Config.Moves}}
           <div style="margin-top:6px">
             <strong>Moves:</strong>
-            {{range .Member.Moves}}
+            {{range .Member.Config.Moves}}
               <span class="type type-{{.Type}}" title="{{.Category}}">{{.Name}}</span>
             {{end}}
           </div>
@@ -87,20 +98,21 @@
         </div>
       </div>
       <div style="margin-top:6px">
-        <a href="/teams/{{.TeamID}}/members/{{.Member.ID}}/edit" class="btn btn-primary btn-sm">Edit</a>
+        <a href="/teams/{{.TeamID}}/configs/{{.Member.ConfigID}}/edit" class="btn btn-primary btn-sm">Edit</a>
       </div>
+      {{end}}
     </div>
     {{end}}
   </div>
 </div>
 {{end}}
 
-{{if .Learnset}}
 <div class="panel">
-  <div class="panel-head">Learnset ({{len .Learnset}} moves)</div>
+  <div class="panel-head">Champions Learnset ({{len .Learnset}} moves)</div>
   <div class="panel-body">
+    {{if .Learnset}}
     <table>
-      <tr><th>Move</th><th>Type</th><th>Category</th><th>Power</th><th>Accuracy</th><th>PP</th></tr>
+      <tr><th>Move</th><th>Type</th><th>Category</th><th>Power</th><th>Accuracy</th><th>PP</th><th></th></tr>
       {{range .Learnset}}
       <tr>
         <td>{{.Name}}</td>
@@ -109,10 +121,26 @@
         <td>{{if .Power}}{{.Power}}{{else}}—{{end}}</td>
         <td>{{if .Accuracy}}{{.Accuracy}}{{else}}—{{end}}</td>
         <td>{{.PP}}</td>
+        <td>
+          <form method="POST" action="/pokemon/{{$.Species.Name}}/learnset/remove" style="display:inline">
+            <input type="hidden" name="move_slug" value="{{.Slug}}">
+            <button class="btn btn-danger btn-sm" style="padding:1px 6px;font-size:10px" onclick="return confirm('Remove {{.Name}} from learnset?')">✕</button>
+          </form>
+        </td>
       </tr>
       {{end}}
     </table>
+    {{else}}
+    <p style="color:#888;font-size:13px">No Champions learnset data yet.</p>
+    {{end}}
+    <form method="POST" action="/pokemon/{{.Species.Name}}/learnset/add" style="margin-top:10px;display:flex;gap:6px;align-items:center">
+      <input type="text" name="move_name" list="all-moves-list" placeholder="Search moves…" autocomplete="off"
+             style="font-size:12px;padding:4px 8px;border:1px solid #bdc3c7;border-radius:3px;width:260px">
+      <button class="btn btn-primary btn-sm">Add Move</button>
+    </form>
+    <datalist id="all-moves-list">
+      {{range .AllMoves}}<option value="{{.Name}}">{{end}}
+    </datalist>
   </div>
 </div>
-{{end}}
 {{end}}

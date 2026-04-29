@@ -12,59 +12,52 @@ func ExportMarkdown(t *Team) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "# %s\n\n", t.Name)
 	fmt.Fprintf(&b, "**Regulation:** %s  \n", t.Regulation)
-	if t.Notes != "" {
-		fmt.Fprintf(&b, "**Notes:** %s  \n", t.Notes)
+	if t.Strategy != "" {
+		fmt.Fprintf(&b, "**Strategy:** %s  \n", t.Strategy)
 	}
 	fmt.Fprintf(&b, "\n---\n\n")
 
 	for _, m := range t.Members {
-		if m.Species == nil {
+		if m.Config == nil || m.Config.Species == nil {
 			continue
 		}
-		name := m.Species.Name
-		if m.Nickname != "" {
-			name = fmt.Sprintf("%s (%s)", m.Nickname, m.Species.Name)
+		c := m.Config
+		sp := c.Species
+
+		name := sp.Name
+		if c.Nickname != "" {
+			name = fmt.Sprintf("%s (%s)", c.Nickname, sp.Name)
 		}
 		item := "No item"
-		if m.Item != nil {
-			item = m.Item.Name
+		if c.Item != nil {
+			item = c.Item.Name
 		}
 		ability := "Unknown"
-		if m.Ability != nil {
-			ability = m.Ability.Name
+		if c.Ability != nil {
+			ability = c.Ability.Name
 		}
-		types := strings.Join(typesAsStrings(m.Species.Types()), " / ")
+		types := strings.Join(typesAsStrings(sp.Types()), " / ")
 
 		fmt.Fprintf(&b, "## Slot %d — %s\n\n", m.Slot, name)
 		fmt.Fprintf(&b, "| | |\n|---|---|\n")
 		fmt.Fprintf(&b, "| **Type** | %s |\n", types)
 		fmt.Fprintf(&b, "| **Ability** | %s |\n", ability)
 		fmt.Fprintf(&b, "| **Item** | %s |\n", item)
-		fmt.Fprintf(&b, "| **Nature** | %s |\n", m.Nature)
-		if m.TeraType != "" {
-			fmt.Fprintf(&b, "| **Tera Type** | %s |\n", m.TeraType)
-		}
-		if m.Role != "" {
-			fmt.Fprintf(&b, "| **Role** | %s |\n", m.Role)
+		fmt.Fprintf(&b, "| **Nature** | %s |\n", c.Nature)
+		if c.Role != "" {
+			fmt.Fprintf(&b, "| **Role** | %s |\n", c.Role)
 		}
 		fmt.Fprintf(&b, "\n")
 
-		// Base stats
-		if m.Species != nil {
-			fmt.Fprintf(&b, "**Base Stats:** HP %d / Atk %d / Def %d / SpA %d / SpD %d / Spe %d (BST %d)\n\n",
-				m.Species.HP, m.Species.Attack, m.Species.Defense,
-				m.Species.SpAttack, m.Species.SpDefense, m.Species.Speed, m.Species.BST())
-		}
+		fmt.Fprintf(&b, "**Base Stats:** HP %d / Atk %d / Def %d / SpA %d / SpD %d / Spe %d (BST %d)\n\n",
+			sp.HP, sp.Attack, sp.Defense, sp.SpAttack, sp.SpDefense, sp.Speed, sp.BST())
 
-		// EVs / IVs
 		fmt.Fprintf(&b, "**EVs:** HP %d / Atk %d / Def %d / SpA %d / SpD %d / Spe %d (%d total)\n\n",
-			m.EVs.HP, m.EVs.Atk, m.EVs.Def, m.EVs.SpA, m.EVs.SpD, m.EVs.Spe, m.EVs.Total())
+			c.EVs.HP, c.EVs.Atk, c.EVs.Def, c.EVs.SpA, c.EVs.SpD, c.EVs.Spe, c.EVs.Total())
 
-
-		// Moves
-		if len(m.Moves) > 0 {
+		if len(c.Moves) > 0 {
 			fmt.Fprintf(&b, "**Moves:**\n\n")
-			for _, mv := range m.Moves {
+			for _, mv := range c.Moves {
 				if mv == nil {
 					continue
 				}
@@ -82,8 +75,8 @@ func ExportMarkdown(t *Team) string {
 			fmt.Fprintf(&b, "\n")
 		}
 
-		if m.Notes != "" {
-			fmt.Fprintf(&b, "> %s\n\n", m.Notes)
+		if c.Notes != "" {
+			fmt.Fprintf(&b, "> %s\n\n", c.Notes)
 		}
 
 		fmt.Fprintf(&b, "---\n\n")
@@ -91,7 +84,7 @@ func ExportMarkdown(t *Team) string {
 	return b.String()
 }
 
-func typesAsStrings(types []pokemon.Type) []string { //nolint:unused
+func typesAsStrings(types []pokemon.Type) []string {
 	out := make([]string, len(types))
 	for i, t := range types {
 		out[i] = string(t)

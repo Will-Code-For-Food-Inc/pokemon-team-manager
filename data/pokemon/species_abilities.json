@@ -79,33 +79,2528 @@
     "ability_id": 201,
     "slot": 1
   },
-  {"species_id": 38, "form": "", "ability_id": 18, "slot": 1},
-  {"species_id": 38, "form": "", "ability_id": 70, "slot": 3},
-  {"species_id": 38, "form": "Alolan", "ability_id": 81, "slot": 1},
-  {"species_id": 38, "form": "Alolan", "ability_id": 117, "slot": 3},
-  {"species_id": 128, "form": "", "ability_id": 22, "slot": 1},
-  {"species_id": 128, "form": "", "ability_id": 83, "slot": 2},
-  {"species_id": 128, "form": "", "ability_id": 125, "slot": 3},
-  {"species_id": 128, "form": "Paldean-Combat", "ability_id": 22, "slot": 1},
-  {"species_id": 128, "form": "Paldean-Combat", "ability_id": 39, "slot": 2},
-  {"species_id": 128, "form": "Paldean-Combat", "ability_id": 277, "slot": 3},
-  {"species_id": 128, "form": "Paldean-Blaze", "ability_id": 22, "slot": 1},
-  {"species_id": 128, "form": "Paldean-Blaze", "ability_id": 39, "slot": 2},
-  {"species_id": 128, "form": "Paldean-Blaze", "ability_id": 277, "slot": 3},
-  {"species_id": 128, "form": "Paldean-Aqua", "ability_id": 22, "slot": 1},
-  {"species_id": 128, "form": "Paldean-Aqua", "ability_id": 39, "slot": 2},
-  {"species_id": 128, "form": "Paldean-Aqua", "ability_id": 277, "slot": 3},
-  {"species_id": 937, "form": "", "ability_id": 18, "slot": 1},
-  {"species_id": 937, "form": "", "ability_id": 173, "slot": 3},
-  {"species_id": 724, "form": "", "ability_id": 65, "slot": 1},
-  {"species_id": 724, "form": "", "ability_id": 167, "slot": 3},
-  {"species_id": 160, "form": "", "ability_id": 259, "slot": 1},
-  {"species_id": 160, "form": "", "ability_id": 125, "slot": 3},
-  {"species_id": 727, "form": "", "ability_id": 258, "slot": 1},
-  {"species_id": 727, "form": "", "ability_id": 22, "slot": 2},
-  {"species_id": 623, "form": "", "ability_id": 89, "slot": 1},
-  {"species_id": 623, "form": "", "ability_id": 103, "slot": 2},
-  {"species_id": 623, "form": "", "ability_id": 99, "slot": 3},
-  {"species_id": 282, "form": "", "ability_id": 28, "slot": 1},
-  {"species_id": 282, "form": "", "ability_id": 36, "slot": 2}
+  {
+    "species_id": 38,
+    "form": "",
+    "ability_id": 18,
+    "slot": 1
+  },
+  {
+    "species_id": 38,
+    "form": "",
+    "ability_id": 70,
+    "slot": 3
+  },
+  {
+    "species_id": 38,
+    "form": "Alolan",
+    "ability_id": 81,
+    "slot": 1
+  },
+  {
+    "species_id": 38,
+    "form": "Alolan",
+    "ability_id": 117,
+    "slot": 3
+  },
+  {
+    "species_id": 128,
+    "form": "",
+    "ability_id": 22,
+    "slot": 1
+  },
+  {
+    "species_id": 128,
+    "form": "",
+    "ability_id": 83,
+    "slot": 2
+  },
+  {
+    "species_id": 128,
+    "form": "",
+    "ability_id": 125,
+    "slot": 3
+  },
+  {
+    "species_id": 128,
+    "form": "Paldean-Combat",
+    "ability_id": 22,
+    "slot": 1
+  },
+  {
+    "species_id": 128,
+    "form": "Paldean-Combat",
+    "ability_id": 39,
+    "slot": 2
+  },
+  {
+    "species_id": 128,
+    "form": "Paldean-Combat",
+    "ability_id": 277,
+    "slot": 3
+  },
+  {
+    "species_id": 128,
+    "form": "Paldean-Blaze",
+    "ability_id": 22,
+    "slot": 1
+  },
+  {
+    "species_id": 128,
+    "form": "Paldean-Blaze",
+    "ability_id": 39,
+    "slot": 2
+  },
+  {
+    "species_id": 128,
+    "form": "Paldean-Blaze",
+    "ability_id": 277,
+    "slot": 3
+  },
+  {
+    "species_id": 128,
+    "form": "Paldean-Aqua",
+    "ability_id": 22,
+    "slot": 1
+  },
+  {
+    "species_id": 128,
+    "form": "Paldean-Aqua",
+    "ability_id": 39,
+    "slot": 2
+  },
+  {
+    "species_id": 128,
+    "form": "Paldean-Aqua",
+    "ability_id": 277,
+    "slot": 3
+  },
+  {
+    "species_id": 937,
+    "form": "",
+    "ability_id": 18,
+    "slot": 1
+  },
+  {
+    "species_id": 937,
+    "form": "",
+    "ability_id": 173,
+    "slot": 3
+  },
+  {
+    "species_id": 724,
+    "form": "",
+    "ability_id": 65,
+    "slot": 1
+  },
+  {
+    "species_id": 724,
+    "form": "",
+    "ability_id": 167,
+    "slot": 3
+  },
+  {
+    "species_id": 160,
+    "form": "",
+    "ability_id": 259,
+    "slot": 1
+  },
+  {
+    "species_id": 160,
+    "form": "",
+    "ability_id": 125,
+    "slot": 3
+  },
+  {
+    "species_id": 727,
+    "form": "",
+    "ability_id": 258,
+    "slot": 1
+  },
+  {
+    "species_id": 727,
+    "form": "",
+    "ability_id": 22,
+    "slot": 2
+  },
+  {
+    "species_id": 623,
+    "form": "",
+    "ability_id": 89,
+    "slot": 1
+  },
+  {
+    "species_id": 623,
+    "form": "",
+    "ability_id": 103,
+    "slot": 2
+  },
+  {
+    "species_id": 623,
+    "form": "",
+    "ability_id": 99,
+    "slot": 3
+  },
+  {
+    "species_id": 282,
+    "form": "",
+    "ability_id": 28,
+    "slot": 1
+  },
+  {
+    "species_id": 282,
+    "form": "",
+    "ability_id": 36,
+    "slot": 2
+  },
+  {
+    "species_id": 1891,
+    "ability_id": 278,
+    "slot": 1
+  },
+  {
+    "species_id": 1891,
+    "ability_id": 279,
+    "slot": 2
+  },
+  {
+    "species_id": 1891,
+    "ability_id": 280,
+    "slot": 3
+  },
+  {
+    "species_id": 1873,
+    "ability_id": 65,
+    "slot": 1
+  },
+  {
+    "species_id": 1873,
+    "ability_id": 283,
+    "slot": 2
+  },
+  {
+    "species_id": 1869,
+    "ability_id": 281,
+    "slot": 1
+  },
+  {
+    "species_id": 1869,
+    "ability_id": 282,
+    "slot": 2
+  },
+  {
+    "species_id": 1869,
+    "ability_id": 5,
+    "slot": 3
+  },
+  {
+    "species_id": 1870,
+    "ability_id": 281,
+    "slot": 1
+  },
+  {
+    "species_id": 1870,
+    "ability_id": 282,
+    "slot": 2
+  },
+  {
+    "species_id": 1870,
+    "ability_id": 5,
+    "slot": 3
+  },
+  {
+    "species_id": 1796,
+    "ability_id": 117,
+    "slot": 1
+  },
+  {
+    "species_id": 1796,
+    "ability_id": 284,
+    "slot": 3
+  },
+  {
+    "species_id": 1781,
+    "ability_id": 278,
+    "slot": 1
+  },
+  {
+    "species_id": 1781,
+    "ability_id": 285,
+    "slot": 2
+  },
+  {
+    "species_id": 1781,
+    "ability_id": 154,
+    "slot": 3
+  },
+  {
+    "species_id": 1851,
+    "ability_id": 286,
+    "slot": 1
+  },
+  {
+    "species_id": 1745,
+    "ability_id": 69,
+    "slot": 1
+  },
+  {
+    "species_id": 1745,
+    "ability_id": 278,
+    "slot": 2
+  },
+  {
+    "species_id": 1745,
+    "ability_id": 279,
+    "slot": 3
+  },
+  {
+    "species_id": 1727,
+    "ability_id": 28,
+    "slot": 1
+  },
+  {
+    "species_id": 1727,
+    "ability_id": 39,
+    "slot": 2
+  },
+  {
+    "species_id": 1727,
+    "ability_id": 287,
+    "slot": 3
+  },
+  {
+    "species_id": 1899,
+    "ability_id": 288,
+    "slot": 1
+  },
+  {
+    "species_id": 1899,
+    "ability_id": 289,
+    "slot": 3
+  },
+  {
+    "species_id": 1776,
+    "ability_id": 290,
+    "slot": 1
+  },
+  {
+    "species_id": 1776,
+    "ability_id": 291,
+    "slot": 3
+  },
+  {
+    "species_id": 1753,
+    "ability_id": 292,
+    "slot": 1
+  },
+  {
+    "species_id": 1753,
+    "ability_id": 293,
+    "slot": 3
+  },
+  {
+    "species_id": 1893,
+    "ability_id": 294,
+    "slot": 1
+  },
+  {
+    "species_id": 1893,
+    "ability_id": 295,
+    "slot": 2
+  },
+  {
+    "species_id": 1893,
+    "ability_id": 296,
+    "slot": 3
+  },
+  {
+    "species_id": 1883,
+    "ability_id": 297,
+    "slot": 1
+  },
+  {
+    "species_id": 1883,
+    "ability_id": 298,
+    "slot": 3
+  },
+  {
+    "species_id": 1718,
+    "ability_id": 22,
+    "slot": 1
+  },
+  {
+    "species_id": 1718,
+    "ability_id": 61,
+    "slot": 2
+  },
+  {
+    "species_id": 1718,
+    "ability_id": 279,
+    "slot": 3
+  },
+  {
+    "species_id": 1726,
+    "ability_id": 22,
+    "slot": 1
+  },
+  {
+    "species_id": 1726,
+    "ability_id": 18,
+    "slot": 2
+  },
+  {
+    "species_id": 1726,
+    "ability_id": 154,
+    "slot": 3
+  },
+  {
+    "species_id": 1925,
+    "ability_id": 299,
+    "slot": 1
+  },
+  {
+    "species_id": 1925,
+    "ability_id": 5,
+    "slot": 2
+  },
+  {
+    "species_id": 1925,
+    "ability_id": 300,
+    "slot": 3
+  },
+  {
+    "species_id": 1752,
+    "ability_id": 301,
+    "slot": 1
+  },
+  {
+    "species_id": 1752,
+    "ability_id": 302,
+    "slot": 2
+  },
+  {
+    "species_id": 1752,
+    "ability_id": 303,
+    "slot": 3
+  },
+  {
+    "species_id": 1912,
+    "ability_id": 18,
+    "slot": 1
+  },
+  {
+    "species_id": 1912,
+    "ability_id": 173,
+    "slot": 3
+  },
+  {
+    "species_id": 1852,
+    "ability_id": 304,
+    "slot": 1
+  },
+  {
+    "species_id": 1852,
+    "ability_id": 289,
+    "slot": 3
+  },
+  {
+    "species_id": 1821,
+    "ability_id": 304,
+    "slot": 1
+  },
+  {
+    "species_id": 1821,
+    "ability_id": 305,
+    "slot": 2
+  },
+  {
+    "species_id": 1821,
+    "ability_id": 103,
+    "slot": 3
+  },
+  {
+    "species_id": 1857,
+    "ability_id": 306,
+    "slot": 1
+  },
+  {
+    "species_id": 1857,
+    "ability_id": 117,
+    "slot": 3
+  },
+  {
+    "species_id": 1754,
+    "ability_id": 296,
+    "slot": 1
+  },
+  {
+    "species_id": 1754,
+    "ability_id": 307,
+    "slot": 2
+  },
+  {
+    "species_id": 1754,
+    "ability_id": 308,
+    "slot": 3
+  },
+  {
+    "species_id": 1779,
+    "ability_id": 302,
+    "slot": 1
+  },
+  {
+    "species_id": 1779,
+    "ability_id": 309,
+    "slot": 2
+  },
+  {
+    "species_id": 1779,
+    "ability_id": 310,
+    "slot": 3
+  },
+  {
+    "species_id": 1904,
+    "ability_id": 311,
+    "slot": 1
+  },
+  {
+    "species_id": 1904,
+    "ability_id": 312,
+    "slot": 2
+  },
+  {
+    "species_id": 1904,
+    "ability_id": 313,
+    "slot": 3
+  },
+  {
+    "species_id": 1905,
+    "ability_id": 311,
+    "slot": 1
+  },
+  {
+    "species_id": 1905,
+    "ability_id": 312,
+    "slot": 2
+  },
+  {
+    "species_id": 1905,
+    "ability_id": 313,
+    "slot": 3
+  },
+  {
+    "species_id": 1789,
+    "ability_id": 5,
+    "slot": 1
+  },
+  {
+    "species_id": 1789,
+    "ability_id": 284,
+    "slot": 3
+  },
+  {
+    "species_id": 1833,
+    "ability_id": 81,
+    "slot": 1
+  },
+  {
+    "species_id": 1833,
+    "ability_id": 314,
+    "slot": 2
+  },
+  {
+    "species_id": 1833,
+    "ability_id": 311,
+    "slot": 3
+  },
+  {
+    "species_id": 1716,
+    "ability_id": 301,
+    "slot": 1
+  },
+  {
+    "species_id": 1716,
+    "ability_id": 303,
+    "slot": 3
+  },
+  {
+    "species_id": 1914,
+    "ability_id": 315,
+    "slot": 1
+  },
+  {
+    "species_id": 1914,
+    "ability_id": 292,
+    "slot": 2
+  },
+  {
+    "species_id": 1914,
+    "ability_id": 316,
+    "slot": 3
+  },
+  {
+    "species_id": 1715,
+    "ability_id": 259,
+    "slot": 1
+  },
+  {
+    "species_id": 1715,
+    "ability_id": 317,
+    "slot": 3
+  },
+  {
+    "species_id": 1774,
+    "ability_id": 318,
+    "slot": 1
+  },
+  {
+    "species_id": 1774,
+    "ability_id": 319,
+    "slot": 2
+  },
+  {
+    "species_id": 1774,
+    "ability_id": 83,
+    "slot": 3
+  },
+  {
+    "species_id": 1778,
+    "ability_id": 320,
+    "slot": 1
+  },
+  {
+    "species_id": 1832,
+    "ability_id": 18,
+    "slot": 1
+  },
+  {
+    "species_id": 1832,
+    "ability_id": 321,
+    "slot": 2
+  },
+  {
+    "species_id": 1832,
+    "ability_id": 322,
+    "slot": 3
+  },
+  {
+    "species_id": 1714,
+    "ability_id": 258,
+    "slot": 1
+  },
+  {
+    "species_id": 1714,
+    "ability_id": 323,
+    "slot": 3
+  },
+  {
+    "species_id": 1839,
+    "ability_id": 65,
+    "slot": 1
+  },
+  {
+    "species_id": 1839,
+    "ability_id": 324,
+    "slot": 3
+  },
+  {
+    "species_id": 1780,
+    "ability_id": 325,
+    "slot": 1
+  },
+  {
+    "species_id": 1854,
+    "ability_id": 326,
+    "slot": 1
+  },
+  {
+    "species_id": 1722,
+    "ability_id": 56,
+    "slot": 1
+  },
+  {
+    "species_id": 1722,
+    "ability_id": 287,
+    "slot": 2
+  },
+  {
+    "species_id": 1722,
+    "ability_id": 327,
+    "slot": 3
+  },
+  {
+    "species_id": 1825,
+    "ability_id": 328,
+    "slot": 1
+  },
+  {
+    "species_id": 1822,
+    "ability_id": 329,
+    "slot": 1
+  },
+  {
+    "species_id": 1822,
+    "ability_id": 125,
+    "slot": 2
+  },
+  {
+    "species_id": 1822,
+    "ability_id": 89,
+    "slot": 3
+  },
+  {
+    "species_id": 1877,
+    "ability_id": 330,
+    "slot": 1
+  },
+  {
+    "species_id": 1877,
+    "ability_id": 89,
+    "slot": 2
+  },
+  {
+    "species_id": 1877,
+    "ability_id": 83,
+    "slot": 3
+  },
+  {
+    "species_id": 1860,
+    "ability_id": 331,
+    "slot": 1
+  },
+  {
+    "species_id": 1860,
+    "ability_id": 332,
+    "slot": 2
+  },
+  {
+    "species_id": 1860,
+    "ability_id": 293,
+    "slot": 3
+  },
+  {
+    "species_id": 1840,
+    "ability_id": 258,
+    "slot": 1
+  },
+  {
+    "species_id": 1840,
+    "ability_id": 333,
+    "slot": 3
+  },
+  {
+    "species_id": 1842,
+    "ability_id": 332,
+    "slot": 1
+  },
+  {
+    "species_id": 1842,
+    "ability_id": 331,
+    "slot": 2
+  },
+  {
+    "species_id": 1842,
+    "ability_id": 307,
+    "slot": 3
+  },
+  {
+    "species_id": 1741,
+    "ability_id": 334,
+    "slot": 1
+  },
+  {
+    "species_id": 1741,
+    "ability_id": 335,
+    "slot": 3
+  },
+  {
+    "species_id": 1901,
+    "ability_id": 336,
+    "slot": 1
+  },
+  {
+    "species_id": 1901,
+    "ability_id": 322,
+    "slot": 2
+  },
+  {
+    "species_id": 1901,
+    "ability_id": 310,
+    "slot": 3
+  },
+  {
+    "species_id": 1812,
+    "ability_id": 258,
+    "slot": 1
+  },
+  {
+    "species_id": 1812,
+    "ability_id": 337,
+    "slot": 3
+  },
+  {
+    "species_id": 1831,
+    "ability_id": 292,
+    "slot": 1
+  },
+  {
+    "species_id": 1831,
+    "ability_id": 338,
+    "slot": 3
+  },
+  {
+    "species_id": 1785,
+    "ability_id": 259,
+    "slot": 1
+  },
+  {
+    "species_id": 1785,
+    "ability_id": 339,
+    "slot": 3
+  },
+  {
+    "species_id": 1916,
+    "ability_id": 340,
+    "slot": 1
+  },
+  {
+    "species_id": 1916,
+    "ability_id": 309,
+    "slot": 2
+  },
+  {
+    "species_id": 1916,
+    "ability_id": 341,
+    "slot": 3
+  },
+  {
+    "species_id": 1756,
+    "ability_id": 28,
+    "slot": 1
+  },
+  {
+    "species_id": 1756,
+    "ability_id": 342,
+    "slot": 3
+  },
+  {
+    "species_id": 1820,
+    "ability_id": 343,
+    "slot": 1
+  },
+  {
+    "species_id": 1820,
+    "ability_id": 344,
+    "slot": 2
+  },
+  {
+    "species_id": 1820,
+    "ability_id": 313,
+    "slot": 3
+  },
+  {
+    "species_id": 1922,
+    "ability_id": 277,
+    "slot": 1
+  },
+  {
+    "species_id": 1922,
+    "ability_id": 345,
+    "slot": 2
+  },
+  {
+    "species_id": 1922,
+    "ability_id": 308,
+    "slot": 3
+  },
+  {
+    "species_id": 1892,
+    "ability_id": 294,
+    "slot": 1
+  },
+  {
+    "species_id": 1892,
+    "ability_id": 295,
+    "slot": 2
+  },
+  {
+    "species_id": 1892,
+    "ability_id": 346,
+    "slot": 3
+  },
+  {
+    "species_id": 1744,
+    "ability_id": 18,
+    "slot": 1
+  },
+  {
+    "species_id": 1744,
+    "ability_id": 329,
+    "slot": 3
+  },
+  {
+    "species_id": 1845,
+    "ability_id": 347,
+    "slot": 1
+  },
+  {
+    "species_id": 1845,
+    "ability_id": 348,
+    "slot": 3
+  },
+  {
+    "species_id": 1846,
+    "ability_id": 347,
+    "slot": 1
+  },
+  {
+    "species_id": 1846,
+    "ability_id": 348,
+    "slot": 3
+  },
+  {
+    "species_id": 1760,
+    "ability_id": 5,
+    "slot": 1
+  },
+  {
+    "species_id": 1760,
+    "ability_id": 349,
+    "slot": 3
+  },
+  {
+    "species_id": 1804,
+    "ability_id": 81,
+    "slot": 1
+  },
+  {
+    "species_id": 1804,
+    "ability_id": 310,
+    "slot": 3
+  },
+  {
+    "species_id": 1848,
+    "ability_id": 350,
+    "slot": 1
+  },
+  {
+    "species_id": 1803,
+    "ability_id": 351,
+    "slot": 1
+  },
+  {
+    "species_id": 1803,
+    "ability_id": 352,
+    "slot": 2
+  },
+  {
+    "species_id": 1803,
+    "ability_id": 154,
+    "slot": 3
+  },
+  {
+    "species_id": 1826,
+    "ability_id": 353,
+    "slot": 1
+  },
+  {
+    "species_id": 1826,
+    "ability_id": 173,
+    "slot": 2
+  },
+  {
+    "species_id": 1826,
+    "ability_id": 354,
+    "slot": 3
+  },
+  {
+    "species_id": 1792,
+    "ability_id": 8,
+    "slot": 1
+  },
+  {
+    "species_id": 1792,
+    "ability_id": 355,
+    "slot": 3
+  },
+  {
+    "species_id": 1911,
+    "ability_id": 356,
+    "slot": 1
+  },
+  {
+    "species_id": 1911,
+    "ability_id": 5,
+    "slot": 2
+  },
+  {
+    "species_id": 1911,
+    "ability_id": 336,
+    "slot": 3
+  },
+  {
+    "species_id": 1732,
+    "ability_id": 310,
+    "slot": 1
+  },
+  {
+    "species_id": 1800,
+    "ability_id": 81,
+    "slot": 1
+  },
+  {
+    "species_id": 1800,
+    "ability_id": 282,
+    "slot": 3
+  },
+  {
+    "species_id": 1782,
+    "ability_id": 39,
+    "slot": 1
+  },
+  {
+    "species_id": 1782,
+    "ability_id": 282,
+    "slot": 2
+  },
+  {
+    "species_id": 1782,
+    "ability_id": 357,
+    "slot": 3
+  },
+  {
+    "species_id": 1921,
+    "ability_id": 358,
+    "slot": 1
+  },
+  {
+    "species_id": 1921,
+    "ability_id": 359,
+    "slot": 3
+  },
+  {
+    "species_id": 1801,
+    "ability_id": 330,
+    "slot": 1
+  },
+  {
+    "species_id": 1801,
+    "ability_id": 8,
+    "slot": 2
+  },
+  {
+    "species_id": 1801,
+    "ability_id": 360,
+    "slot": 3
+  },
+  {
+    "species_id": 1861,
+    "ability_id": 308,
+    "slot": 1
+  },
+  {
+    "species_id": 1861,
+    "ability_id": 361,
+    "slot": 2
+  },
+  {
+    "species_id": 1861,
+    "ability_id": 362,
+    "slot": 3
+  },
+  {
+    "species_id": 1862,
+    "ability_id": 308,
+    "slot": 1
+  },
+  {
+    "species_id": 1862,
+    "ability_id": 361,
+    "slot": 2
+  },
+  {
+    "species_id": 1862,
+    "ability_id": 362,
+    "slot": 3
+  },
+  {
+    "species_id": 1841,
+    "ability_id": 259,
+    "slot": 1
+  },
+  {
+    "species_id": 1841,
+    "ability_id": 363,
+    "slot": 3
+  },
+  {
+    "species_id": 1740,
+    "ability_id": 22,
+    "slot": 1
+  },
+  {
+    "species_id": 1740,
+    "ability_id": 364,
+    "slot": 3
+  },
+  {
+    "species_id": 1896,
+    "ability_id": 304,
+    "slot": 1
+  },
+  {
+    "species_id": 1896,
+    "ability_id": 365,
+    "slot": 2
+  },
+  {
+    "species_id": 1896,
+    "ability_id": 342,
+    "slot": 3
+  },
+  {
+    "species_id": 1859,
+    "ability_id": 334,
+    "slot": 1
+  },
+  {
+    "species_id": 1859,
+    "ability_id": 366,
+    "slot": 2
+  },
+  {
+    "species_id": 1859,
+    "ability_id": 313,
+    "slot": 3
+  },
+  {
+    "species_id": 1855,
+    "ability_id": 367,
+    "slot": 1
+  },
+  {
+    "species_id": 1855,
+    "ability_id": 8,
+    "slot": 2
+  },
+  {
+    "species_id": 1855,
+    "ability_id": 323,
+    "slot": 3
+  },
+  {
+    "species_id": 1763,
+    "ability_id": 301,
+    "slot": 1
+  },
+  {
+    "species_id": 1763,
+    "ability_id": 329,
+    "slot": 2
+  },
+  {
+    "species_id": 1763,
+    "ability_id": 364,
+    "slot": 3
+  },
+  {
+    "species_id": 1794,
+    "ability_id": 45,
+    "slot": 1
+  },
+  {
+    "species_id": 1794,
+    "ability_id": 344,
+    "slot": 3
+  },
+  {
+    "species_id": 1765,
+    "ability_id": 368,
+    "slot": 1
+  },
+  {
+    "species_id": 1765,
+    "ability_id": 18,
+    "slot": 2
+  },
+  {
+    "species_id": 1765,
+    "ability_id": 279,
+    "slot": 3
+  },
+  {
+    "species_id": 1926,
+    "ability_id": 369,
+    "slot": 1
+  },
+  {
+    "species_id": 1926,
+    "ability_id": 305,
+    "slot": 2
+  },
+  {
+    "species_id": 1926,
+    "ability_id": 370,
+    "slot": 3
+  },
+  {
+    "species_id": 1837,
+    "ability_id": 325,
+    "slot": 1
+  },
+  {
+    "species_id": 1784,
+    "ability_id": 258,
+    "slot": 1
+  },
+  {
+    "species_id": 1784,
+    "ability_id": 89,
+    "slot": 3
+  },
+  {
+    "species_id": 1743,
+    "ability_id": 371,
+    "slot": 1
+  },
+  {
+    "species_id": 1743,
+    "ability_id": 372,
+    "slot": 3
+  },
+  {
+    "species_id": 1733,
+    "ability_id": 368,
+    "slot": 1
+  },
+  {
+    "species_id": 1733,
+    "ability_id": 283,
+    "slot": 2
+  },
+  {
+    "species_id": 1733,
+    "ability_id": 39,
+    "slot": 3
+  },
+  {
+    "species_id": 1923,
+    "ability_id": 373,
+    "slot": 1
+  },
+  {
+    "species_id": 1923,
+    "ability_id": 374,
+    "slot": 2
+  },
+  {
+    "species_id": 1923,
+    "ability_id": 278,
+    "slot": 3
+  },
+  {
+    "species_id": 1903,
+    "ability_id": 301,
+    "slot": 1
+  },
+  {
+    "species_id": 1903,
+    "ability_id": 125,
+    "slot": 2
+  },
+  {
+    "species_id": 1903,
+    "ability_id": 352,
+    "slot": 3
+  },
+  {
+    "species_id": 1863,
+    "ability_id": 158,
+    "slot": 1
+  },
+  {
+    "species_id": 1863,
+    "ability_id": 333,
+    "slot": 3
+  },
+  {
+    "species_id": 1890,
+    "ability_id": 324,
+    "slot": 1
+  },
+  {
+    "species_id": 1890,
+    "ability_id": 284,
+    "slot": 2
+  },
+  {
+    "species_id": 1890,
+    "ability_id": 349,
+    "slot": 3
+  },
+  {
+    "species_id": 1824,
+    "ability_id": 22,
+    "slot": 1
+  },
+  {
+    "species_id": 1824,
+    "ability_id": 364,
+    "slot": 2
+  },
+  {
+    "species_id": 1824,
+    "ability_id": 83,
+    "slot": 3
+  },
+  {
+    "species_id": 1799,
+    "ability_id": 375,
+    "slot": 1
+  },
+  {
+    "species_id": 1799,
+    "ability_id": 376,
+    "slot": 3
+  },
+  {
+    "species_id": 1816,
+    "ability_id": 334,
+    "slot": 1
+  },
+  {
+    "species_id": 1816,
+    "ability_id": 366,
+    "slot": 2
+  },
+  {
+    "species_id": 1816,
+    "ability_id": 158,
+    "slot": 3
+  },
+  {
+    "species_id": 1790,
+    "ability_id": 56,
+    "slot": 1
+  },
+  {
+    "species_id": 1790,
+    "ability_id": 103,
+    "slot": 2
+  },
+  {
+    "species_id": 1790,
+    "ability_id": 334,
+    "slot": 3
+  },
+  {
+    "species_id": 1793,
+    "ability_id": 351,
+    "slot": 1
+  },
+  {
+    "species_id": 1793,
+    "ability_id": 39,
+    "slot": 2
+  },
+  {
+    "species_id": 1793,
+    "ability_id": 154,
+    "slot": 3
+  },
+  {
+    "species_id": 1786,
+    "ability_id": 377,
+    "slot": 1
+  },
+  {
+    "species_id": 1786,
+    "ability_id": 22,
+    "slot": 2
+  },
+  {
+    "species_id": 1786,
+    "ability_id": 329,
+    "slot": 3
+  },
+  {
+    "species_id": 1878,
+    "ability_id": 378,
+    "slot": 1
+  },
+  {
+    "species_id": 1878,
+    "ability_id": 343,
+    "slot": 2
+  },
+  {
+    "species_id": 1878,
+    "ability_id": 351,
+    "slot": 3
+  },
+  {
+    "species_id": 1879,
+    "ability_id": 378,
+    "slot": 1
+  },
+  {
+    "species_id": 1879,
+    "ability_id": 343,
+    "slot": 2
+  },
+  {
+    "species_id": 1879,
+    "ability_id": 351,
+    "slot": 3
+  },
+  {
+    "species_id": 1880,
+    "ability_id": 378,
+    "slot": 1
+  },
+  {
+    "species_id": 1880,
+    "ability_id": 343,
+    "slot": 2
+  },
+  {
+    "species_id": 1880,
+    "ability_id": 351,
+    "slot": 3
+  },
+  {
+    "species_id": 1728,
+    "ability_id": 329,
+    "slot": 1
+  },
+  {
+    "species_id": 1728,
+    "ability_id": 99,
+    "slot": 2
+  },
+  {
+    "species_id": 1728,
+    "ability_id": 351,
+    "slot": 3
+  },
+  {
+    "species_id": 1802,
+    "ability_id": 379,
+    "slot": 1
+  },
+  {
+    "species_id": 1802,
+    "ability_id": 81,
+    "slot": 2
+  },
+  {
+    "species_id": 1802,
+    "ability_id": 296,
+    "slot": 3
+  },
+  {
+    "species_id": 1772,
+    "ability_id": 292,
+    "slot": 1
+  },
+  {
+    "species_id": 1772,
+    "ability_id": 380,
+    "slot": 2
+  },
+  {
+    "species_id": 1772,
+    "ability_id": 381,
+    "slot": 3
+  },
+  {
+    "species_id": 1771,
+    "ability_id": 382,
+    "slot": 1
+  },
+  {
+    "species_id": 1771,
+    "ability_id": 383,
+    "slot": 3
+  },
+  {
+    "species_id": 1748,
+    "ability_id": 65,
+    "slot": 1
+  },
+  {
+    "species_id": 1748,
+    "ability_id": 375,
+    "slot": 3
+  },
+  {
+    "species_id": 1907,
+    "ability_id": 65,
+    "slot": 1
+  },
+  {
+    "species_id": 1907,
+    "ability_id": 363,
+    "slot": 3
+  },
+  {
+    "species_id": 1849,
+    "ability_id": 378,
+    "slot": 1
+  },
+  {
+    "species_id": 1849,
+    "ability_id": 322,
+    "slot": 2
+  },
+  {
+    "species_id": 1849,
+    "ability_id": 158,
+    "slot": 3
+  },
+  {
+    "species_id": 1850,
+    "ability_id": 378,
+    "slot": 1
+  },
+  {
+    "species_id": 1850,
+    "ability_id": 322,
+    "slot": 2
+  },
+  {
+    "species_id": 1850,
+    "ability_id": 158,
+    "slot": 3
+  },
+  {
+    "species_id": 1777,
+    "ability_id": 384,
+    "slot": 1
+  },
+  {
+    "species_id": 1777,
+    "ability_id": 339,
+    "slot": 2
+  },
+  {
+    "species_id": 1777,
+    "ability_id": 56,
+    "slot": 3
+  },
+  {
+    "species_id": 1897,
+    "ability_id": 385,
+    "slot": 1
+  },
+  {
+    "species_id": 1897,
+    "ability_id": 386,
+    "slot": 2
+  },
+  {
+    "species_id": 1897,
+    "ability_id": 282,
+    "slot": 3
+  },
+  {
+    "species_id": 1882,
+    "ability_id": 281,
+    "slot": 1
+  },
+  {
+    "species_id": 1882,
+    "ability_id": 299,
+    "slot": 2
+  },
+  {
+    "species_id": 1882,
+    "ability_id": 39,
+    "slot": 3
+  },
+  {
+    "species_id": 1871,
+    "ability_id": 309,
+    "slot": 1
+  },
+  {
+    "species_id": 1871,
+    "ability_id": 322,
+    "slot": 2
+  },
+  {
+    "species_id": 1871,
+    "ability_id": 383,
+    "slot": 3
+  },
+  {
+    "species_id": 1886,
+    "ability_id": 39,
+    "slot": 1
+  },
+  {
+    "species_id": 1886,
+    "ability_id": 383,
+    "slot": 2
+  },
+  {
+    "species_id": 1886,
+    "ability_id": 348,
+    "slot": 3
+  },
+  {
+    "species_id": 1920,
+    "ability_id": 387,
+    "slot": 1
+  },
+  {
+    "species_id": 1920,
+    "ability_id": 8,
+    "slot": 3
+  },
+  {
+    "species_id": 1918,
+    "ability_id": 388,
+    "slot": 1
+  },
+  {
+    "species_id": 1919,
+    "ability_id": 388,
+    "slot": 1
+  },
+  {
+    "species_id": 1847,
+    "ability_id": 89,
+    "slot": 1
+  },
+  {
+    "species_id": 1847,
+    "ability_id": 313,
+    "slot": 2
+  },
+  {
+    "species_id": 1847,
+    "ability_id": 283,
+    "slot": 3
+  },
+  {
+    "species_id": 1887,
+    "ability_id": 389,
+    "slot": 1
+  },
+  {
+    "species_id": 1887,
+    "ability_id": 373,
+    "slot": 3
+  },
+  {
+    "species_id": 1767,
+    "ability_id": 378,
+    "slot": 1
+  },
+  {
+    "species_id": 1767,
+    "ability_id": 390,
+    "slot": 2
+  },
+  {
+    "species_id": 1767,
+    "ability_id": 317,
+    "slot": 3
+  },
+  {
+    "species_id": 1717,
+    "ability_id": 378,
+    "slot": 1
+  },
+  {
+    "species_id": 1717,
+    "ability_id": 385,
+    "slot": 2
+  },
+  {
+    "species_id": 1717,
+    "ability_id": 391,
+    "slot": 3
+  },
+  {
+    "species_id": 1719,
+    "ability_id": 292,
+    "slot": 1
+  },
+  {
+    "species_id": 1719,
+    "ability_id": 380,
+    "slot": 3
+  },
+  {
+    "species_id": 1735,
+    "ability_id": 330,
+    "slot": 1
+  },
+  {
+    "species_id": 1735,
+    "ability_id": 313,
+    "slot": 2
+  },
+  {
+    "species_id": 1735,
+    "ability_id": 364,
+    "slot": 3
+  },
+  {
+    "species_id": 1755,
+    "ability_id": 298,
+    "slot": 1
+  },
+  {
+    "species_id": 1755,
+    "ability_id": 316,
+    "slot": 2
+  },
+  {
+    "species_id": 1755,
+    "ability_id": 390,
+    "slot": 3
+  },
+  {
+    "species_id": 1895,
+    "ability_id": 173,
+    "slot": 1
+  },
+  {
+    "species_id": 1895,
+    "ability_id": 310,
+    "slot": 3
+  },
+  {
+    "species_id": 1875,
+    "ability_id": 259,
+    "slot": 1
+  },
+  {
+    "species_id": 1875,
+    "ability_id": 392,
+    "slot": 3
+  },
+  {
+    "species_id": 1909,
+    "ability_id": 259,
+    "slot": 1
+  },
+  {
+    "species_id": 1909,
+    "ability_id": 364,
+    "slot": 3
+  },
+  {
+    "species_id": 1720,
+    "ability_id": 292,
+    "slot": 1
+  },
+  {
+    "species_id": 1720,
+    "ability_id": 380,
+    "slot": 3
+  },
+  {
+    "species_id": 1721,
+    "ability_id": 292,
+    "slot": 1
+  },
+  {
+    "species_id": 1721,
+    "ability_id": 380,
+    "slot": 3
+  },
+  {
+    "species_id": 1788,
+    "ability_id": 313,
+    "slot": 1
+  },
+  {
+    "species_id": 1788,
+    "ability_id": 125,
+    "slot": 3
+  },
+  {
+    "species_id": 1829,
+    "ability_id": 349,
+    "slot": 1
+  },
+  {
+    "species_id": 1829,
+    "ability_id": 287,
+    "slot": 2
+  },
+  {
+    "species_id": 1829,
+    "ability_id": 305,
+    "slot": 3
+  },
+  {
+    "species_id": 1798,
+    "ability_id": 380,
+    "slot": 1
+  },
+  {
+    "species_id": 1798,
+    "ability_id": 319,
+    "slot": 2
+  },
+  {
+    "species_id": 1798,
+    "ability_id": 337,
+    "slot": 3
+  },
+  {
+    "species_id": 1787,
+    "ability_id": 290,
+    "slot": 1
+  },
+  {
+    "species_id": 1787,
+    "ability_id": 393,
+    "slot": 2
+  },
+  {
+    "species_id": 1787,
+    "ability_id": 394,
+    "slot": 3
+  },
+  {
+    "species_id": 1805,
+    "ability_id": 325,
+    "slot": 1
+  },
+  {
+    "species_id": 1806,
+    "ability_id": 325,
+    "slot": 1
+  },
+  {
+    "species_id": 1807,
+    "ability_id": 325,
+    "slot": 1
+  },
+  {
+    "species_id": 1808,
+    "ability_id": 325,
+    "slot": 1
+  },
+  {
+    "species_id": 1809,
+    "ability_id": 325,
+    "slot": 1
+  },
+  {
+    "species_id": 1810,
+    "ability_id": 325,
+    "slot": 1
+  },
+  {
+    "species_id": 1898,
+    "ability_id": 395,
+    "slot": 1
+  },
+  {
+    "species_id": 1769,
+    "ability_id": 378,
+    "slot": 1
+  },
+  {
+    "species_id": 1769,
+    "ability_id": 396,
+    "slot": 2
+  },
+  {
+    "species_id": 1769,
+    "ability_id": 158,
+    "slot": 3
+  },
+  {
+    "species_id": 1884,
+    "ability_id": 359,
+    "slot": 1
+  },
+  {
+    "species_id": 1884,
+    "ability_id": 379,
+    "slot": 3
+  },
+  {
+    "species_id": 1813,
+    "ability_id": 259,
+    "slot": 1
+  },
+  {
+    "species_id": 1813,
+    "ability_id": 397,
+    "slot": 3
+  },
+  {
+    "species_id": 1814,
+    "ability_id": 259,
+    "slot": 1
+  },
+  {
+    "species_id": 1814,
+    "ability_id": 397,
+    "slot": 3
+  },
+  {
+    "species_id": 1762,
+    "ability_id": 301,
+    "slot": 1
+  },
+  {
+    "species_id": 1762,
+    "ability_id": 394,
+    "slot": 2
+  },
+  {
+    "species_id": 1762,
+    "ability_id": 398,
+    "slot": 3
+  },
+  {
+    "species_id": 1915,
+    "ability_id": 376,
+    "slot": 1
+  },
+  {
+    "species_id": 1915,
+    "ability_id": 302,
+    "slot": 2
+  },
+  {
+    "species_id": 1915,
+    "ability_id": 357,
+    "slot": 3
+  },
+  {
+    "species_id": 1811,
+    "ability_id": 65,
+    "slot": 1
+  },
+  {
+    "species_id": 1811,
+    "ability_id": 399,
+    "slot": 3
+  },
+  {
+    "species_id": 1773,
+    "ability_id": 355,
+    "slot": 1
+  },
+  {
+    "species_id": 1773,
+    "ability_id": 341,
+    "slot": 3
+  },
+  {
+    "species_id": 1819,
+    "ability_id": 295,
+    "slot": 1
+  },
+  {
+    "species_id": 1819,
+    "ability_id": 259,
+    "slot": 3
+  },
+  {
+    "species_id": 1817,
+    "ability_id": 295,
+    "slot": 1
+  },
+  {
+    "species_id": 1817,
+    "ability_id": 65,
+    "slot": 3
+  },
+  {
+    "species_id": 1818,
+    "ability_id": 295,
+    "slot": 1
+  },
+  {
+    "species_id": 1818,
+    "ability_id": 258,
+    "slot": 3
+  },
+  {
+    "species_id": 1924,
+    "ability_id": 400,
+    "slot": 1
+  },
+  {
+    "species_id": 1924,
+    "ability_id": 401,
+    "slot": 3
+  },
+  {
+    "species_id": 1764,
+    "ability_id": 378,
+    "slot": 1
+  },
+  {
+    "species_id": 1764,
+    "ability_id": 5,
+    "slot": 2
+  },
+  {
+    "species_id": 1764,
+    "ability_id": 173,
+    "slot": 3
+  },
+  {
+    "species_id": 1908,
+    "ability_id": 258,
+    "slot": 1
+  },
+  {
+    "species_id": 1908,
+    "ability_id": 327,
+    "slot": 3
+  },
+  {
+    "species_id": 1730,
+    "ability_id": 379,
+    "slot": 1
+  },
+  {
+    "species_id": 1730,
+    "ability_id": 281,
+    "slot": 2
+  },
+  {
+    "species_id": 1730,
+    "ability_id": 305,
+    "slot": 3
+  },
+  {
+    "species_id": 1731,
+    "ability_id": 379,
+    "slot": 1
+  },
+  {
+    "species_id": 1731,
+    "ability_id": 281,
+    "slot": 2
+  },
+  {
+    "species_id": 1731,
+    "ability_id": 305,
+    "slot": 3
+  },
+  {
+    "species_id": 1758,
+    "ability_id": 379,
+    "slot": 1
+  },
+  {
+    "species_id": 1758,
+    "ability_id": 281,
+    "slot": 2
+  },
+  {
+    "species_id": 1758,
+    "ability_id": 305,
+    "slot": 3
+  },
+  {
+    "species_id": 1759,
+    "ability_id": 379,
+    "slot": 1
+  },
+  {
+    "species_id": 1759,
+    "ability_id": 281,
+    "slot": 2
+  },
+  {
+    "species_id": 1759,
+    "ability_id": 305,
+    "slot": 3
+  },
+  {
+    "species_id": 1853,
+    "ability_id": 288,
+    "slot": 1
+  },
+  {
+    "species_id": 1853,
+    "ability_id": 366,
+    "slot": 3
+  },
+  {
+    "species_id": 1906,
+    "ability_id": 278,
+    "slot": 1
+  },
+  {
+    "species_id": 1906,
+    "ability_id": 366,
+    "slot": 2
+  },
+  {
+    "species_id": 1906,
+    "ability_id": 402,
+    "slot": 3
+  },
+  {
+    "species_id": 1746,
+    "ability_id": 403,
+    "slot": 1
+  },
+  {
+    "species_id": 1746,
+    "ability_id": 296,
+    "slot": 2
+  },
+  {
+    "species_id": 1746,
+    "ability_id": 295,
+    "slot": 3
+  },
+  {
+    "species_id": 1791,
+    "ability_id": 278,
+    "slot": 1
+  },
+  {
+    "species_id": 1791,
+    "ability_id": 322,
+    "slot": 3
+  },
+  {
+    "species_id": 1734,
+    "ability_id": 404,
+    "slot": 1
+  },
+  {
+    "species_id": 1734,
+    "ability_id": 290,
+    "slot": 2
+  },
+  {
+    "species_id": 1734,
+    "ability_id": 405,
+    "slot": 3
+  },
+  {
+    "species_id": 1761,
+    "ability_id": 69,
+    "slot": 1
+  },
+  {
+    "species_id": 1761,
+    "ability_id": 5,
+    "slot": 2
+  },
+  {
+    "species_id": 1761,
+    "ability_id": 125,
+    "slot": 3
+  },
+  {
+    "species_id": 1834,
+    "ability_id": 292,
+    "slot": 1
+  },
+  {
+    "species_id": 1834,
+    "ability_id": 334,
+    "slot": 2
+  },
+  {
+    "species_id": 1834,
+    "ability_id": 8,
+    "slot": 3
+  },
+  {
+    "species_id": 1835,
+    "ability_id": 292,
+    "slot": 1
+  },
+  {
+    "species_id": 1835,
+    "ability_id": 334,
+    "slot": 2
+  },
+  {
+    "species_id": 1835,
+    "ability_id": 8,
+    "slot": 3
+  },
+  {
+    "species_id": 1843,
+    "ability_id": 321,
+    "slot": 1
+  },
+  {
+    "species_id": 1843,
+    "ability_id": 406,
+    "slot": 3
+  },
+  {
+    "species_id": 1917,
+    "ability_id": 313,
+    "slot": 1
+  },
+  {
+    "species_id": 1917,
+    "ability_id": 281,
+    "slot": 2
+  },
+  {
+    "species_id": 1917,
+    "ability_id": 407,
+    "slot": 3
+  },
+  {
+    "species_id": 1775,
+    "ability_id": 408,
+    "slot": 1
+  },
+  {
+    "species_id": 1775,
+    "ability_id": 70,
+    "slot": 2
+  },
+  {
+    "species_id": 1775,
+    "ability_id": 397,
+    "slot": 3
+  },
+  {
+    "species_id": 1783,
+    "ability_id": 65,
+    "slot": 1
+  },
+  {
+    "species_id": 1783,
+    "ability_id": 397,
+    "slot": 3
+  },
+  {
+    "species_id": 1876,
+    "ability_id": 378,
+    "slot": 1
+  },
+  {
+    "species_id": 1876,
+    "ability_id": 409,
+    "slot": 2
+  },
+  {
+    "species_id": 1876,
+    "ability_id": 125,
+    "slot": 3
+  },
+  {
+    "species_id": 1881,
+    "ability_id": 410,
+    "slot": 1
+  },
+  {
+    "species_id": 1881,
+    "ability_id": 334,
+    "slot": 2
+  },
+  {
+    "species_id": 1881,
+    "ability_id": 305,
+    "slot": 3
+  },
+  {
+    "species_id": 1795,
+    "ability_id": 365,
+    "slot": 1
+  },
+  {
+    "species_id": 1795,
+    "ability_id": 367,
+    "slot": 2
+  },
+  {
+    "species_id": 1795,
+    "ability_id": 402,
+    "slot": 3
+  },
+  {
+    "species_id": 1864,
+    "ability_id": 290,
+    "slot": 1
+  },
+  {
+    "species_id": 1864,
+    "ability_id": 309,
+    "slot": 2
+  },
+  {
+    "species_id": 1864,
+    "ability_id": 411,
+    "slot": 3
+  },
+  {
+    "species_id": 1885,
+    "ability_id": 375,
+    "slot": 1
+  },
+  {
+    "species_id": 1885,
+    "ability_id": 412,
+    "slot": 2
+  },
+  {
+    "species_id": 1885,
+    "ability_id": 288,
+    "slot": 3
+  },
+  {
+    "species_id": 1749,
+    "ability_id": 258,
+    "slot": 1
+  },
+  {
+    "species_id": 1749,
+    "ability_id": 18,
+    "slot": 3
+  },
+  {
+    "species_id": 1750,
+    "ability_id": 258,
+    "slot": 1
+  },
+  {
+    "species_id": 1750,
+    "ability_id": 18,
+    "slot": 3
+  },
+  {
+    "species_id": 1856,
+    "ability_id": 413,
+    "slot": 1
+  },
+  {
+    "species_id": 1856,
+    "ability_id": 69,
+    "slot": 3
+  },
+  {
+    "species_id": 1757,
+    "ability_id": 28,
+    "slot": 1
+  },
+  {
+    "species_id": 1757,
+    "ability_id": 39,
+    "slot": 3
+  },
+  {
+    "species_id": 1830,
+    "ability_id": 282,
+    "slot": 1
+  },
+  {
+    "species_id": 1830,
+    "ability_id": 117,
+    "slot": 2
+  },
+  {
+    "species_id": 1830,
+    "ability_id": 173,
+    "slot": 3
+  },
+  {
+    "species_id": 1742,
+    "ability_id": 298,
+    "slot": 1
+  },
+  {
+    "species_id": 1742,
+    "ability_id": 361,
+    "slot": 3
+  },
+  {
+    "species_id": 1713,
+    "ability_id": 65,
+    "slot": 1
+  },
+  {
+    "species_id": 1713,
+    "ability_id": 376,
+    "slot": 3
+  },
+  {
+    "species_id": 1729,
+    "ability_id": 376,
+    "slot": 1
+  },
+  {
+    "species_id": 1729,
+    "ability_id": 295,
+    "slot": 3
+  },
+  {
+    "species_id": 1844,
+    "ability_id": 414,
+    "slot": 1
+  },
+  {
+    "species_id": 1844,
+    "ability_id": 415,
+    "slot": 2
+  },
+  {
+    "species_id": 1844,
+    "ability_id": 416,
+    "slot": 3
+  },
+  {
+    "species_id": 1838,
+    "ability_id": 321,
+    "slot": 1
+  },
+  {
+    "species_id": 1838,
+    "ability_id": 301,
+    "slot": 3
+  },
+  {
+    "species_id": 1815,
+    "ability_id": 404,
+    "slot": 1
+  },
+  {
+    "species_id": 1815,
+    "ability_id": 378,
+    "slot": 2
+  },
+  {
+    "species_id": 1815,
+    "ability_id": 405,
+    "slot": 3
+  },
+  {
+    "species_id": 1797,
+    "ability_id": 278,
+    "slot": 1
+  },
+  {
+    "species_id": 1797,
+    "ability_id": 407,
+    "slot": 3
+  },
+  {
+    "species_id": 1902,
+    "ability_id": 22,
+    "slot": 1
+  },
+  {
+    "species_id": 1902,
+    "ability_id": 309,
+    "slot": 2
+  },
+  {
+    "species_id": 1902,
+    "ability_id": 308,
+    "slot": 3
+  },
+  {
+    "species_id": 1827,
+    "ability_id": 417,
+    "slot": 1
+  },
+  {
+    "species_id": 1828,
+    "ability_id": 417,
+    "slot": 1
+  },
+  {
+    "species_id": 1865,
+    "ability_id": 332,
+    "slot": 1
+  },
+  {
+    "species_id": 1865,
+    "ability_id": 309,
+    "slot": 2
+  },
+  {
+    "species_id": 1865,
+    "ability_id": 302,
+    "slot": 3
+  },
+  {
+    "species_id": 1866,
+    "ability_id": 332,
+    "slot": 1
+  },
+  {
+    "species_id": 1866,
+    "ability_id": 309,
+    "slot": 2
+  },
+  {
+    "species_id": 1866,
+    "ability_id": 302,
+    "slot": 3
+  },
+  {
+    "species_id": 1867,
+    "ability_id": 332,
+    "slot": 1
+  },
+  {
+    "species_id": 1867,
+    "ability_id": 309,
+    "slot": 2
+  },
+  {
+    "species_id": 1867,
+    "ability_id": 302,
+    "slot": 3
+  },
+  {
+    "species_id": 1868,
+    "ability_id": 332,
+    "slot": 1
+  },
+  {
+    "species_id": 1868,
+    "ability_id": 309,
+    "slot": 2
+  },
+  {
+    "species_id": 1868,
+    "ability_id": 302,
+    "slot": 3
+  },
+  {
+    "species_id": 1910,
+    "ability_id": 416,
+    "slot": 1
+  },
+  {
+    "species_id": 1910,
+    "ability_id": 331,
+    "slot": 2
+  },
+  {
+    "species_id": 1910,
+    "ability_id": 394,
+    "slot": 3
+  },
+  {
+    "species_id": 1888,
+    "ability_id": 418,
+    "slot": 1
+  },
+  {
+    "species_id": 1900,
+    "ability_id": 419,
+    "slot": 1
+  }
 ]

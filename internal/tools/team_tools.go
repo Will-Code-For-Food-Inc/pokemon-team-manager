@@ -15,7 +15,7 @@ func registerTeamTools(s *server.MCPServer, svc *Services) {
 	s.AddTool(mcp.NewTool("create_team",
 		mcp.WithDescription("Create a new empty VGC team."),
 		mcp.WithString("name", mcp.Required(), mcp.Description("Team name")),
-		mcp.WithString("regulation", mcp.Required(), mcp.Description("Regulation set ID (e.g. 'I2')")),
+		mcp.WithString("regulation", mcp.Required(), mcp.Description("Regulation set ID (e.g. 'M-A')")),
 	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		args := req.GetArguments()
 		id, err := svc.Team.CreateTeam(getString(args, "name"), getString(args, "regulation"))
@@ -50,7 +50,7 @@ func registerTeamTools(s *server.MCPServer, svc *Services) {
 	})
 
 	s.AddTool(mcp.NewTool("add_pokemon",
-		mcp.WithDescription("Add a Pokemon to a team by species name. The Pokemon is placed in the next open slot (max 6). The first legal ability for the species is assigned automatically."),
+		mcp.WithDescription("Add a Pokemon to a team. Placed in the next open slot (max 6)."),
 		mcp.WithNumber("team_id", mcp.Required(), mcp.Description("Team ID")),
 		mcp.WithString("pokemon_name", mcp.Required(), mcp.Description("Species name (e.g. 'Garchomp')")),
 		mcp.WithString("ability", mcp.Description("Ability name — uses first available if omitted")),
@@ -67,30 +67,27 @@ func registerTeamTools(s *server.MCPServer, svc *Services) {
 			return errResult(sp.Name + " is not a final evolution"), nil
 		}
 
-		abilities, err := svc.Pokemon.GetAbilitiesForSpecies(sp.ID)
-		if err != nil {
-			return errResult(err.Error()), nil
+		abilities, err := svc.Pokemon.GetAbilitiesForSpecies(sp.Slug)
+		if err != nil || len(abilities) == 0 {
+			return errResult(sp.Name + " has no abilities configured — use add_species_ability first"), nil
 		}
-		if len(abilities) == 0 {
-			return errResult(sp.Name + " has no abilities configured — use add_learnset_move or seed ability data first"), nil
-		}
-		abilityID := abilities[0].ID
+		abilitySlug := abilities[0].Slug
 		if abName := getString(args, "ability"); abName != "" {
 			ab, err := svc.Pokemon.GetAbilityByName(abName)
 			if err != nil {
 				return errResult(err.Error()), nil
 			}
-			if ok, _ := svc.Pokemon.HasAbility(sp.ID, ab.ID); !ok {
+			if ok, _ := svc.Pokemon.HasAbility(sp.Slug, ab.Slug); !ok {
 				return errResult(abName + " is not a valid ability for " + sp.Name), nil
 			}
-			abilityID = ab.ID
+			abilitySlug = ab.Slug
 		}
 
-		memberID, err := svc.Team.AddMember(teamID, sp.ID, abilityID)
+		configID, err := svc.Team.AddMember(teamID, sp.Slug, abilitySlug)
 		if err != nil {
 			return errResult(err.Error()), nil
 		}
-		return textResult(fmt.Sprintf("Added %s to team %d as member ID %d.", sp.Name, teamID, memberID)), nil
+		return textResult(fmt.Sprintf("Added %s to team %d (config ID %d).", sp.Name, teamID, configID)), nil
 	})
 
 	s.AddTool(mcp.NewTool("remove_pokemon",
@@ -99,18 +96,18 @@ func registerTeamTools(s *server.MCPServer, svc *Services) {
 		mcp.WithString("pokemon_name", mcp.Required(), mcp.Description("Species name to remove")),
 	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		args := req.GetArguments()
-		memberID, err := svc.Team.GetMemberByTeamAndSpecies(getInt(args, "team_id"), getString(args, "pokemon_name"))
+		configID, err := svc.Team.GetConfigByTeamAndSpecies(getInt(args, "team_id"), getString(args, "pokemon_name"))
 		if err != nil {
 			return errResult(err.Error()), nil
 		}
-		if err := svc.Team.RemoveMember(memberID); err != nil {
+		if err := svc.Team.RemoveMember(configID); err != nil {
 			return errResult(err.Error()), nil
 		}
 		return textResult(fmt.Sprintf("Removed %s from team.", getString(args, "pokemon_name"))), nil
 	})
 
 	s.AddTool(mcp.NewTool("set_ability",
-		mcp.WithDescription("Set the ability for a Pokemon on a team. The ability must be legal for that species."),
+		mcp.WithDescription("Set the ability for a Pokemon on a team."),
 		mcp.WithNumber("team_id", mcp.Required(), mcp.Description("Team ID")),
 		mcp.WithString("pokemon_name", mcp.Required(), mcp.Description("Species name")),
 		mcp.WithString("ability", mcp.Required(), mcp.Description("Ability name")),
@@ -119,7 +116,7 @@ func registerTeamTools(s *server.MCPServer, svc *Services) {
 		teamID := getInt(args, "team_id")
 		pokeName := getString(args, "pokemon_name")
 
-		memberID, err := svc.Team.GetMemberByTeamAndSpecies(teamID, pokeName)
+		configID, err := svc.Team.GetConfigByTeamAndSpecies(teamID, pokeName)
 		if err != nil {
 			return errResult(err.Error()), nil
 		}
@@ -129,46 +126,45 @@ func registerTeamTools(s *server.MCPServer, svc *Services) {
 			return errResult(err.Error()), nil
 		}
 		if sp != nil {
-			if ok, _ := svc.Pokemon.HasAbility(sp.ID, ab.ID); !ok {
+			if ok, _ := svc.Pokemon.HasAbility(sp.Slug, ab.Slug); !ok {
 				return errResult(ab.Name + " is not a valid ability for " + pokeName), nil
 			}
 		}
-		if err := svc.Team.SetAbility(memberID, ab.ID); err != nil {
+		if err := svc.Team.SetAbility(configID, ab.Slug); err != nil {
 			return errResult(err.Error()), nil
 		}
 		return textResult(fmt.Sprintf("Set %s's ability to %s.", pokeName, ab.Name)), nil
 	})
 
 	s.AddTool(mcp.NewTool("set_nature",
-		mcp.WithDescription("Set the nature for a Pokemon on a team. Nature boosts one stat by 10% and reduces another by 10%."),
+		mcp.WithDescription("Set the nature for a Pokemon on a team."),
 		mcp.WithNumber("team_id", mcp.Required(), mcp.Description("Team ID")),
 		mcp.WithString("pokemon_name", mcp.Required(), mcp.Description("Species name")),
 		mcp.WithString("nature", mcp.Required(), mcp.Description("Nature name (e.g. 'Timid', 'Adamant')")),
 	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		args := req.GetArguments()
 		nature := getString(args, "nature")
-		removed := map[string]bool{"hardy": true, "docile": true, "bashful": true, "quirky": true}
-		if removed[strings.ToLower(nature)] {
-			return errf("%s is not a valid Stat Alignment in Pokemon Champions", nature), nil
-		}
 		if !pokemon.ValidNature(nature) {
-			return errf("%q is not a valid nature.", nature), nil
+			return errf("%q is not a valid nature in Pokemon Champions.", nature), nil
 		}
-		memberID, err := svc.Team.GetMemberByTeamAndSpecies(getInt(args, "team_id"), getString(args, "pokemon_name"))
+		if strings.EqualFold(nature, "Serious") {
+			return errResult("Serious is the default placeholder nature (free, no stat changes). Don't set it explicitly — leave the slot alone, or pick a real nature with a beneficial +/- spread (Timid, Modest, Adamant, Jolly, Bold, Calm, Quiet, Brave, etc.)."), nil
+		}
+		configID, err := svc.Team.GetConfigByTeamAndSpecies(getInt(args, "team_id"), getString(args, "pokemon_name"))
 		if err != nil {
 			return errResult(err.Error()), nil
 		}
-		if err := svc.Team.SetNature(memberID, nature); err != nil {
+		if err := svc.Team.SetNature(configID, nature); err != nil {
 			return errResult(err.Error()), nil
 		}
 		return textResult(fmt.Sprintf("Set nature to %s.", nature)), nil
 	})
 
 	s.AddTool(mcp.NewTool("set_item",
-		mcp.WithDescription("Set the held item for a Pokemon on a team. No two Pokemon on the same team can hold the same item."),
+		mcp.WithDescription("Set the held item for a Pokemon on a team. Item clause enforced."),
 		mcp.WithNumber("team_id", mcp.Required(), mcp.Description("Team ID")),
 		mcp.WithString("pokemon_name", mcp.Required(), mcp.Description("Species name")),
-		mcp.WithString("item", mcp.Required(), mcp.Description("Item name (e.g. 'Life Orb')")),
+		mcp.WithString("item", mcp.Required(), mcp.Description("Item name (e.g. 'Focus Band')")),
 	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		args := req.GetArguments()
 		teamID := getInt(args, "team_id")
@@ -187,44 +183,45 @@ func registerTeamTools(s *server.MCPServer, svc *Services) {
 			return errResult(err.Error()), nil
 		}
 		for _, m := range t.Members {
-			if m.Item != nil && m.Item.ID == item.ID && !strings.EqualFold(m.Species.Name, pokeName) {
-				return errResult("item clause: " + item.Name + " already held by " + m.Species.Name), nil
+			if m.Config == nil || m.Config.Item == nil {
+				continue
+			}
+			if m.Config.Item.Slug == item.Slug && m.Config.Species != nil && !strings.EqualFold(m.Config.Species.Name, pokeName) {
+				return errResult("item clause: " + item.Name + " already held by " + m.Config.Species.Name), nil
 			}
 		}
 
-		memberID, err := svc.Team.GetMemberByTeamAndSpecies(teamID, pokeName)
+		configID, err := svc.Team.GetConfigByTeamAndSpecies(teamID, pokeName)
 		if err != nil {
 			return errResult(err.Error()), nil
 		}
-		if err := svc.Team.SetItem(memberID, item.ID); err != nil {
+		if err := svc.Team.SetItem(configID, item.Slug); err != nil {
 			return errResult(err.Error()), nil
 		}
 		return textResult(fmt.Sprintf("Set %s's item to %s.", pokeName, item.Name)), nil
 	})
 
 	s.AddTool(mcp.NewTool("set_moves",
-		mcp.WithDescription("Set up to 4 moves for a Pokemon. All moves must be in the species' learnset. Use force=true to bypass learnset validation when the user has confirmed a move is available in-game."),
+		mcp.WithDescription("Set up to 4 moves for a Pokemon. All moves must be in the species' Champions learnset."),
 		mcp.WithNumber("team_id", mcp.Required(), mcp.Description("Team ID")),
 		mcp.WithString("pokemon_name", mcp.Required(), mcp.Description("Species name")),
 		mcp.WithString("move1", mcp.Required(), mcp.Description("First move name")),
 		mcp.WithString("move2", mcp.Description("Second move name")),
 		mcp.WithString("move3", mcp.Description("Third move name")),
 		mcp.WithString("move4", mcp.Description("Fourth move name")),
-		mcp.WithBoolean("force", mcp.Description("Skip learnset validation (use when user confirms move is available in-game)")),
 	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		args := req.GetArguments()
 		teamID := getInt(args, "team_id")
 		pokeName := getString(args, "pokemon_name")
-		force := getBool(args, "force")
 
 		sp, err := svc.Pokemon.GetSpeciesByName(pokeName)
 		if err != nil {
 			return errResult(err.Error()), nil
 		}
 
-		moveNames := []string{getString(args, "move1"), getString(args, "move2"), getString(args, "move3"), getString(args, "move4")}
-		var moveIDs []int
-		for _, name := range moveNames {
+		var moveSlugs []string
+		for _, key := range []string{"move1", "move2", "move3", "move4"} {
+			name := getString(args, key)
 			if name == "" {
 				continue
 			}
@@ -232,31 +229,25 @@ func registerTeamTools(s *server.MCPServer, svc *Services) {
 			if err != nil {
 				return errResult(err.Error()), nil
 			}
-			if !force {
-				ok, lerr := svc.Pokemon.CanLearnMove(sp.ID, mv.ID)
-				if !ok {
-					msg := name + " is not in " + pokeName + "'s learnset"
-					if lerr != nil {
-						msg = lerr.Error()
-					}
-					return errResult(msg), nil
-				}
+			ok, _ := svc.Pokemon.CanLearnMove(sp.Slug, mv.Slug)
+			if !ok {
+				return errResult(name + " is not in " + pokeName + "'s Champions learnset. Call get_moves to see what IS legal and pick an alternative. Do NOT call add_learnset_move — the data is fixed externally. If no legal alternative fits, return that fact to the caller."), nil
 			}
-			moveIDs = append(moveIDs, mv.ID)
+			moveSlugs = append(moveSlugs, mv.Slug)
 		}
 
-		memberID, err := svc.Team.GetMemberByTeamAndSpecies(teamID, pokeName)
+		configID, err := svc.Team.GetConfigByTeamAndSpecies(teamID, pokeName)
 		if err != nil {
 			return errResult(err.Error()), nil
 		}
-		if err := svc.Team.SetMoves(memberID, moveIDs); err != nil {
+		if err := svc.Team.SetMoves(configID, moveSlugs); err != nil {
 			return errResult(err.Error()), nil
 		}
-		return textResult(fmt.Sprintf("Set %d move(s) for %s.", len(moveIDs), pokeName)), nil
+		return textResult(fmt.Sprintf("Set %d move(s) for %s.", len(moveSlugs), pokeName)), nil
 	})
 
 	s.AddTool(mcp.NewTool("set_stats",
-		mcp.WithDescription("Set stat points for a Pokemon (Champions: 66 total, max 32/stat). Provide explicit points per stat; omitted stats get 0."),
+		mcp.WithDescription("Set stat points for a Pokemon (Champions: 66 total, max 32/stat)."),
 		mcp.WithNumber("team_id", mcp.Required(), mcp.Description("Team ID")),
 		mcp.WithString("pokemon_name", mcp.Required(), mcp.Description("Species name")),
 		mcp.WithNumber("hp", mcp.Description("HP points (0-32)")),
@@ -276,11 +267,11 @@ func registerTeamTools(s *server.MCPServer, svc *Services) {
 		if t := evs.Total(); t > 66 {
 			return errf("total %d exceeds 66-point pool", t), nil
 		}
-		memberID, err := svc.Team.GetMemberByTeamAndSpecies(getInt(args, "team_id"), getString(args, "pokemon_name"))
+		configID, err := svc.Team.GetConfigByTeamAndSpecies(getInt(args, "team_id"), getString(args, "pokemon_name"))
 		if err != nil {
 			return errResult(err.Error()), nil
 		}
-		if err := svc.Team.SetEVs(memberID, evs); err != nil {
+		if err := svc.Team.SetEVs(configID, evs); err != nil {
 			return errResult(err.Error()), nil
 		}
 		remaining := 66 - evs.Total()
@@ -289,49 +280,49 @@ func registerTeamTools(s *server.MCPServer, svc *Services) {
 	})
 
 	s.AddTool(mcp.NewTool("set_role",
-		mcp.WithDescription("Set a strategic role label for a Pokemon (e.g. 'special_attacker', 'trick_room_setter', 'lead')."),
+		mcp.WithDescription("Set a strategic role label for a Pokemon (e.g. 'trick_room_setter', 'lead')."),
 		mcp.WithNumber("team_id", mcp.Required(), mcp.Description("Team ID")),
 		mcp.WithString("pokemon_name", mcp.Required(), mcp.Description("Species name")),
 		mcp.WithString("role", mcp.Required(), mcp.Description("Role label")),
 	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		args := req.GetArguments()
-		memberID, err := svc.Team.GetMemberByTeamAndSpecies(getInt(args, "team_id"), getString(args, "pokemon_name"))
+		configID, err := svc.Team.GetConfigByTeamAndSpecies(getInt(args, "team_id"), getString(args, "pokemon_name"))
 		if err != nil {
 			return errResult(err.Error()), nil
 		}
-		if err := svc.Team.SetRole(memberID, getString(args, "role")); err != nil {
+		if err := svc.Team.SetRole(configID, getString(args, "role")); err != nil {
 			return errResult(err.Error()), nil
 		}
 		return textResult("Role updated."), nil
 	})
 
 	s.AddTool(mcp.NewTool("set_notes",
-		mcp.WithDescription("Set free-text notes on a team member (strategy tips, EV justification, etc.)."),
+		mcp.WithDescription("Set build notes on a team member (EV justification, matchup tips). Use set_team_notes for team-wide strategy."),
 		mcp.WithNumber("team_id", mcp.Required(), mcp.Description("Team ID")),
 		mcp.WithString("pokemon_name", mcp.Required(), mcp.Description("Species name")),
 		mcp.WithString("notes", mcp.Required(), mcp.Description("Notes text")),
 	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		args := req.GetArguments()
-		memberID, err := svc.Team.GetMemberByTeamAndSpecies(getInt(args, "team_id"), getString(args, "pokemon_name"))
+		configID, err := svc.Team.GetConfigByTeamAndSpecies(getInt(args, "team_id"), getString(args, "pokemon_name"))
 		if err != nil {
 			return errResult(err.Error()), nil
 		}
-		if err := svc.Team.SetMemberNotes(memberID, getString(args, "notes")); err != nil {
+		if err := svc.Team.SetConfigNotes(configID, getString(args, "notes")); err != nil {
 			return errResult(err.Error()), nil
 		}
 		return textResult("Notes updated."), nil
 	})
 
 	s.AddTool(mcp.NewTool("set_team_notes",
-		mcp.WithDescription("Set the strategy notes for a team (markdown supported)."),
+		mcp.WithDescription("Set the team-level strategy: gameplan, key threats, synergy. Separate from per-member build notes."),
 		mcp.WithNumber("team_id", mcp.Required(), mcp.Description("Team ID")),
-		mcp.WithString("notes", mcp.Required(), mcp.Description("Markdown notes text")),
+		mcp.WithString("strategy", mcp.Required(), mcp.Description("Markdown strategy text")),
 	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		args := req.GetArguments()
-		if err := svc.Team.UpdateTeamNotes(getInt(args, "team_id"), getString(args, "notes")); err != nil {
+		if err := svc.Team.UpdateTeamStrategy(getInt(args, "team_id"), getString(args, "strategy")); err != nil {
 			return errResult(err.Error()), nil
 		}
-		return textResult("Team notes updated."), nil
+		return textResult("Team strategy updated."), nil
 	})
 
 	s.AddTool(mcp.NewTool("rename_team",
@@ -346,23 +337,6 @@ func registerTeamTools(s *server.MCPServer, svc *Services) {
 		return textResult("Team renamed to " + getString(args, "name") + "."), nil
 	})
 
-	s.AddTool(mcp.NewTool("set_tera_type",
-		mcp.WithDescription("Set the Tera Type for a Pokemon on a team."),
-		mcp.WithNumber("team_id", mcp.Required(), mcp.Description("Team ID")),
-		mcp.WithString("pokemon_name", mcp.Required(), mcp.Description("Species name")),
-		mcp.WithString("tera_type", mcp.Required(), mcp.Description("Type name (e.g. 'fire', 'fairy')")),
-	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		args := req.GetArguments()
-		memberID, err := svc.Team.GetMemberByTeamAndSpecies(getInt(args, "team_id"), getString(args, "pokemon_name"))
-		if err != nil {
-			return errResult(err.Error()), nil
-		}
-		if err := svc.Team.SetTeraType(memberID, getString(args, "tera_type")); err != nil {
-			return errResult(err.Error()), nil
-		}
-		return textResult(fmt.Sprintf("Set Tera Type to %s.", getString(args, "tera_type"))), nil
-	})
-
 	s.AddTool(mcp.NewTool("set_nickname",
 		mcp.WithDescription("Set a nickname for a Pokemon on a team."),
 		mcp.WithNumber("team_id", mcp.Required(), mcp.Description("Team ID")),
@@ -370,11 +344,11 @@ func registerTeamTools(s *server.MCPServer, svc *Services) {
 		mcp.WithString("nickname", mcp.Required(), mcp.Description("Nickname (empty string to clear)")),
 	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		args := req.GetArguments()
-		memberID, err := svc.Team.GetMemberByTeamAndSpecies(getInt(args, "team_id"), getString(args, "pokemon_name"))
+		configID, err := svc.Team.GetConfigByTeamAndSpecies(getInt(args, "team_id"), getString(args, "pokemon_name"))
 		if err != nil {
 			return errResult(err.Error()), nil
 		}
-		if err := svc.Team.SetNickname(memberID, getString(args, "nickname")); err != nil {
+		if err := svc.Team.SetNickname(configID, getString(args, "nickname")); err != nil {
 			return errResult(err.Error()), nil
 		}
 		return textResult("Nickname updated."), nil
@@ -406,14 +380,8 @@ func registerTeamTools(s *server.MCPServer, svc *Services) {
 		return textResult(fmt.Sprintf("Team copied as \"%s\" (ID %d).", getString(args, "name"), newID)), nil
 	})
 
-	s.AddTool(mcp.NewTool("delete_team",
-		mcp.WithDescription("Delete a team and all its members permanently."),
-		mcp.WithNumber("team_id", mcp.Required(), mcp.Description("Team ID to delete")),
-	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		id := getInt(req.GetArguments(), "team_id")
-		if err := svc.Team.DeleteTeam(id); err != nil {
-			return errResult(err.Error()), nil
-		}
-		return textResult(fmt.Sprintf("Team %d deleted.", id)), nil
-	})
+	// delete_team is intentionally NOT registered. Whole-team deletion is a
+	// user-only operation; agents (in-process or external MCP clients) cannot
+	// remove teams. The user removes teams via the /teams page in the web UI.
+	// See the matching note in internal/handlers/agent_tools.go.
 }

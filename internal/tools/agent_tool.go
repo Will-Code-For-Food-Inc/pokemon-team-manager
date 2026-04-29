@@ -27,22 +27,22 @@ func registerAgentTool(s *server.MCPServer, svc *Services) {
 		ollama := handlers.NewOllamaClient(cfg)
 		repo := &handlers.ChatRepo{DB: svc.DB}
 
-		fullCtx, err := repo.LoadContext()
-		if err != nil {
-			return errResult("loading context: " + err.Error()), nil
-		}
-		hist := fullCtx
-		if len(hist) > cfg.Lookback {
-			hist = hist[len(hist)-cfg.Lookback:]
-		}
-
 		msg := getString(req.GetArguments(), "message")
-		produced, newCtx, _ := handlers.RunAgent(ollama, svc, hist, msg)
 
-		_, _ = repo.AppendMessage("user", msg)
-		for _, m := range produced {
-			_, _ = repo.AppendMessage(m.Role, m.Content)
+		queryVec, _ := ollama.Embed(msg)
+		hist, _ := repo.SemanticHistory(queryVec, cfg.Lookback, cfg.Lookback)
+
+		produced, newCtx, _ := handlers.RunAgent(ollama, svc, hist, msg, nil)
+
+		if userID, err := repo.AppendMessage("user", msg); err == nil {
+			go handlers.EmbedAndSave(ollama, repo, userID, msg)
 		}
+		for _, m := range produced {
+			if id, err := repo.AppendMessage(m.Role, m.Content); err == nil && (m.Role == "assistant" || m.Role == "tool") {
+				go handlers.EmbedAndSave(ollama, repo, id, m.Content)
+			}
+		}
+		fullCtx, _ := repo.LoadContext()
 		_ = repo.SaveContext(append(fullCtx, newCtx...))
 
 		// Return a readable summary of what the agent did.

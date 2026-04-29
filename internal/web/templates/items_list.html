@@ -19,7 +19,7 @@
       <tr>
         <td style="text-align:center">
           <input type="checkbox" {{if .Owned}}checked{{end}}
-            onchange="toggleOwned({{.ID}}, this.checked)">
+            onchange="toggleOwned('{{.Slug}}', this.checked)">
         </td>
         <td>{{.Name}}</td>
         <td style="font-size:12px">{{.Description}}</td>
@@ -31,9 +31,13 @@
 </div>
 {{end}}
 <script>
-function toggleOwned(id, owned) {
-  const params = new URLSearchParams({id, owned: owned ? '1' : '0'});
-  fetch('/api/items/owned?' + params, {method: 'POST'});
+async function toggleOwned(slug, owned) {
+  const params = new URLSearchParams({slug, owned: owned ? '1' : '0'});
+  const r = await fetch('/api/items/owned?' + params, {method: 'POST'});
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || j.error) {
+    alert('Failed to save ownership for ' + slug + ': ' + (j.error || r.statusText));
+  }
 }
 </script>
 {{end}}

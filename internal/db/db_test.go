@@ -21,7 +21,7 @@ func TestOpenMemory(t *testing.T) {
 	assert.GreaterOrEqual(t, count, 1) // at least the squashed init migration
 
 	// Verify core tables exist.
-	for _, table := range []string{"species", "moves", "abilities", "items", "teams", "team_members", "kb_documents"} {
+	for _, table := range []string{"species", "moves", "abilities", "items", "teams", "team_slots", "pokemon_configs", "kb_documents"} {
 		var n int
 		err := sqlDB.QueryRow(`SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name=?`, table).Scan(&n)
 		assert.NoError(t, err, "checking table %s", table)

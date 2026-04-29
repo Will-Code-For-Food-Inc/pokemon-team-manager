@@ -16,48 +16,89 @@ func NewRepo(db *sql.DB) *Repo {
 	return &Repo{db: db}
 }
 
-// GetSpeciesByName returns a species by name (case-insensitive).
+// GetSpeciesByName looks up a species by name with form-aware matching.
+// Form Pokémon (Rotom-Wash, Indeedee-F, Tauros-Paldean-Combat) are stored as
+// (name="Rotom", form="Wash"), so a literal name match on "Rotom-Wash" misses.
+// We try, in order:
+//  1. exact name match — base form preferred when ambiguous (Rotom → rotom).
+//  2. slug normalisation — "Rotom-Wash" / "Rotom Wash" → "rotom-wash".
+//  3. concatenated name+form — matches "Rotom Wash" against name||' '||form.
+//
+// Returns a "species not found" error if all three fail.
 func (r *Repo) GetSpeciesByName(name string) (*Species, error) {
-	return r.scanSpecies(r.db.QueryRow(`
-		SELECT id, dex_id, name, form, type1, COALESCE(type2,''), hp, attack, defense,
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return nil, fmt.Errorf("species name is empty")
+	}
+	const cols = `slug, dex_id, name, form, type1, COALESCE(type2,''), hp, attack, defense,
 		       sp_attack, sp_defense, speed, generation,
-		       is_legendary, is_mythical, is_final_evo, is_restricted, owned
-		FROM species WHERE lower(name) = lower(?)`, name))
+		       is_legendary, is_mythical, is_final_evo, is_restricted, owned`
+
+	// 1. Exact name. ORDER BY puts base form (form='') first when multiple rows
+	//    share a name (every Rotom row has name='Rotom').
+	if sp, err := r.scanSpecies(r.db.QueryRow(
+		`SELECT `+cols+` FROM species WHERE lower(name) = lower(?)
+		 ORDER BY (form = '') DESC, slug LIMIT 1`, name)); err == nil {
+		return sp, nil
+	}
+
+	// 2. Slug normalisation: "Rotom-Wash" → "rotom-wash", "Rotom Wash" → "rotom-wash".
+	slug := strings.ToLower(strings.ReplaceAll(name, " ", "-"))
+	if sp, err := r.GetSpeciesBySlug(slug); err == nil {
+		return sp, nil
+	}
+
+	// 3. name+form concat — handles inputs that don't match the slug exactly,
+	//    e.g. species whose form has spaces ("Tauros Paldean Combat").
+	if sp, err := r.scanSpecies(r.db.QueryRow(
+		`SELECT `+cols+` FROM species
+		 WHERE form != ''
+		   AND (lower(name || '-' || form) = lower(?)
+		     OR lower(name || ' ' || form) = lower(?))
+		 LIMIT 1`, name, name)); err == nil {
+		return sp, nil
+	}
+
+	return nil, fmt.Errorf("species %q not found", name)
 }
 
-// GetSpeciesByID returns a species by its National Dex number.
-func (r *Repo) GetSpeciesByID(id int) (*Species, error) {
+// GetSpeciesBySlug returns a species by its slug (primary key).
+func (r *Repo) GetSpeciesBySlug(slug string) (*Species, error) {
 	return r.scanSpecies(r.db.QueryRow(`
-		SELECT id, dex_id, name, form, type1, COALESCE(type2,''), hp, attack, defense,
+		SELECT slug, dex_id, name, form, type1, COALESCE(type2,''), hp, attack, defense,
 		       sp_attack, sp_defense, speed, generation,
 		       is_legendary, is_mythical, is_final_evo, is_restricted, owned
-		FROM species WHERE id = ?`, id))
+		FROM species WHERE slug = ?`, slug))
+}
+
+// GetSpeciesByDexID returns a species by its national dex number.
+func (r *Repo) GetSpeciesByDexID(dexID int) (*Species, error) {
+	return r.scanSpecies(r.db.QueryRow(`
+		SELECT slug, dex_id, name, form, type1, COALESCE(type2,''), hp, attack, defense,
+		       sp_attack, sp_defense, speed, generation,
+		       is_legendary, is_mythical, is_final_evo, is_restricted, owned
+		FROM species WHERE dex_id = ? AND form = ''`, dexID))
 }
 
 // SpeciesFilter holds optional filters for SearchSpecies.
 type SpeciesFilter struct {
-	Type         string // filter by type1 or type2
-	Generation   int    // filter by generation (0 = any)
-	Owned        *bool  // nil = any, true/false = owned status
-	Legendary    *bool  // nil = any
-	Restricted   *bool  // nil = any
-	FinalEvoOnly bool   // if true, only final evolutions
-	// Heuristic filters — derived from base stats at query time.
-	// Role: "physical attacker", "special attacker", "mixed attacker", "support", "tank"
-	Role      string
-	// SpeedTier: "fast" (>100), "mid" (70-100), "slow" (<70)
-	SpeedTier string
+	Type         string
+	Generation   int
+	Owned        *bool
+	Legendary    *bool
+	Restricted   *bool
+	FinalEvoOnly bool
+	Role         string // "physical attacker", "special attacker", "mixed attacker", "support", "tank"
+	SpeedTier    string // "fast" (>100), "mid" (70-100), "slow" (<70)
 }
 
 // SearchSpecies performs a case-insensitive fuzzy search over species names
-// with optional filters. Each whitespace-separated word in name must appear
-// somewhere in the species name (AND semantics). Results are ordered by name.
-// limit <= 0 returns up to 20.
+// with optional filters. limit <= 0 returns up to 20.
 func (r *Repo) SearchSpecies(name string, limit int, f SpeciesFilter) ([]Species, error) {
 	if limit <= 0 {
 		limit = 20
 	}
-	q := `SELECT id, dex_id, name, form, type1, COALESCE(type2,''), hp, attack, defense,
+	q := `SELECT slug, dex_id, name, form, type1, COALESCE(type2,''), hp, attack, defense,
 		       sp_attack, sp_defense, speed, generation,
 		       is_legendary, is_mythical, is_final_evo, is_restricted, owned
 		FROM species WHERE 1=1`
@@ -66,7 +107,6 @@ func (r *Repo) SearchSpecies(name string, limit int, f SpeciesFilter) ([]Species
 		q += " AND lower(name) LIKE lower(?)"
 		args = append(args, "%"+word+"%")
 	}
-
 	if f.Type != "" {
 		q += " AND (lower(type1) = lower(?) OR lower(type2) = lower(?))"
 		args = append(args, f.Type, f.Type)
@@ -133,9 +173,7 @@ func (r *Repo) SearchSpecies(name string, limit int, f SpeciesFilter) ([]Species
 	return r.scanSpeciesRows(rows)
 }
 
-// GetAbilitiesForSpecies returns all abilities (slots 1, 2, 3) for a species.
-// SearchSpeciesForAgent applies agent-facing defaults before calling SearchSpecies:
-// owned=true if unspecified, limit=20 if <= 0.
+// SearchSpeciesForAgent applies agent defaults (owned=true) before calling SearchSpecies.
 func (r *Repo) SearchSpeciesForAgent(name string, limit int, f SpeciesFilter) ([]Species, error) {
 	if f.Owned == nil {
 		t := true
@@ -147,13 +185,14 @@ func (r *Repo) SearchSpeciesForAgent(name string, limit int, f SpeciesFilter) ([
 	return r.SearchSpecies(name, limit, f)
 }
 
-func (r *Repo) GetAbilitiesForSpecies(speciesID int) ([]Ability, error) {
+// GetAbilitiesForSpecies returns all abilities (slots 1, 2, 3) for a species by slug.
+func (r *Repo) GetAbilitiesForSpecies(speciesSlug string) ([]Ability, error) {
 	rows, err := r.db.Query(`
-		SELECT a.id, a.name, a.description
+		SELECT a.id, a.slug, a.name, a.description
 		FROM abilities a
-		JOIN species_abilities sa ON sa.ability_id = a.id
-		WHERE sa.species_id = ?
-		ORDER BY sa.slot`, speciesID)
+		JOIN species_abilities sa ON sa.ability_slug = a.slug
+		WHERE sa.species_slug = ?
+		ORDER BY sa.slot`, speciesSlug)
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +200,7 @@ func (r *Repo) GetAbilitiesForSpecies(speciesID int) ([]Ability, error) {
 	var out []Ability
 	for rows.Next() {
 		var a Ability
-		if err := rows.Scan(&a.ID, &a.Name, &a.Description); err != nil {
+		if err := rows.Scan(&a.ID, &a.Slug, &a.Name, &a.Description); err != nil {
 			return nil, err
 		}
 		out = append(out, a)
@@ -169,15 +208,56 @@ func (r *Repo) GetAbilitiesForSpecies(speciesID int) ([]Ability, error) {
 	return out, rows.Err()
 }
 
-// GetLearnset returns all moves a species can learn.
-func (r *Repo) GetLearnset(speciesID int) ([]Move, error) {
+// GetChampionsLearnset returns the Champions-specific curated move list for a species.
+// Uses LEFT JOIN so moves not yet in the moves table still appear (slug-only).
+func (r *Repo) GetChampionsLearnset(speciesSlug string) ([]Move, error) {
 	rows, err := r.db.Query(`
-		SELECT DISTINCT m.id, m.name, m.type, m.category,
+		SELECT cl.move_slug,
+		       COALESCE(m.id, 0),
+		       COALESCE(m.name, cl.move_slug),
+		       COALESCE(m.type, ''),
+		       COALESCE(m.category, 'status'),
+		       m.power, m.accuracy,
+		       COALESCE(m.pp, 0),
+		       COALESCE(m.priority, 0),
+		       COALESCE(m.target, ''),
+		       COALESCE(m.description, '')
+		FROM champions_learnsets cl
+		LEFT JOIN moves m ON m.slug = cl.move_slug
+		WHERE cl.species_slug = ?
+		ORDER BY cl.move_slug`, speciesSlug)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []Move
+	for rows.Next() {
+		var m Move
+		var power, accuracy sql.NullInt64
+		if err := rows.Scan(&m.Slug, &m.ID, &m.Name, &m.Type, &m.Category,
+			&power, &accuracy, &m.PP, &m.Priority, &m.Target, &m.Description); err != nil {
+			return nil, err
+		}
+		if power.Valid {
+			v := int(power.Int64); m.Power = &v
+		}
+		if accuracy.Valid {
+			v := int(accuracy.Int64); m.Accuracy = &v
+		}
+		out = append(out, m)
+	}
+	return out, rows.Err()
+}
+
+// GetLearnset returns all moves a species can learn (PokeAPI learnset, fallback).
+func (r *Repo) GetLearnset(speciesSlug string) ([]Move, error) {
+	rows, err := r.db.Query(`
+		SELECT DISTINCT m.id, m.slug, m.name, m.type, m.category,
 		       m.power, m.accuracy, m.pp, m.priority, m.target, m.description
 		FROM moves m
-		JOIN learnsets l ON l.move_id = m.id
-		WHERE l.species_id = ?
-		ORDER BY m.name`, speciesID)
+		JOIN learnsets l ON l.move_slug = m.slug
+		WHERE l.species_slug = ?
+		ORDER BY m.name`, speciesSlug)
 	if err != nil {
 		return nil, err
 	}
@@ -185,46 +265,51 @@ func (r *Repo) GetLearnset(speciesID int) ([]Move, error) {
 	return r.scanMoveRows(rows)
 }
 
-// CanLearnMove returns true if the species can learn the move by any method.
-func (r *Repo) CanLearnMove(speciesID, moveID int) (bool, error) {
+// CanLearnMove returns true if the species can learn the move in Champions format.
+// Checks the champions_learnsets table (authoritative).
+func (r *Repo) CanLearnMove(speciesSlug, moveSlug string) (bool, error) {
 	var n int
-	err := r.db.QueryRow(`SELECT COUNT(*) FROM learnsets WHERE species_id=? AND move_id=?`,
-		speciesID, moveID).Scan(&n)
+	err := r.db.QueryRow(
+		`SELECT COUNT(*) FROM champions_learnsets WHERE species_slug=? AND move_slug=?`,
+		speciesSlug, moveSlug).Scan(&n)
 	return n > 0, err
 }
 
-// HasAbility returns true if the ability is legal for the species.
-func (r *Repo) HasAbility(speciesID, abilityID int) (bool, error) {
+// HasAbility returns true if the ability is available for the species.
+func (r *Repo) HasAbility(speciesSlug, abilitySlug string) (bool, error) {
 	var n int
-	err := r.db.QueryRow(`SELECT COUNT(*) FROM species_abilities WHERE species_id=? AND ability_id=?`,
-		speciesID, abilityID).Scan(&n)
+	err := r.db.QueryRow(
+		`SELECT COUNT(*) FROM species_abilities WHERE species_slug=? AND ability_slug=?`,
+		speciesSlug, abilitySlug).Scan(&n)
 	return n > 0, err
 }
 
 // GetMoveByName returns a move by name (case-insensitive).
 func (r *Repo) GetMoveByName(name string) (*Move, error) {
-	row := r.db.QueryRow(`
-		SELECT id, name, type, category, power, accuracy, pp, priority, target, description
-		FROM moves WHERE lower(name) = lower(?)`, name)
-	return r.scanMove(row)
+	mv, err := r.scanMove(r.db.QueryRow(`
+		SELECT id, slug, name, type, category, power, accuracy, pp, priority, target, description
+		FROM moves WHERE lower(name) = lower(?)`, name))
+	if err != nil && err.Error() == "move not found" {
+		return nil, fmt.Errorf("move %q not found in the Champions move set", name)
+	}
+	return mv, err
 }
 
-// GetMoveByID returns a move by ID.
-func (r *Repo) GetMoveByID(id int) (*Move, error) {
-	row := r.db.QueryRow(`
-		SELECT id, name, type, category, power, accuracy, pp, priority, target, description
-		FROM moves WHERE id = ?`, id)
-	return r.scanMove(row)
+// GetMoveBySlug returns a move by slug.
+func (r *Repo) GetMoveBySlug(slug string) (*Move, error) {
+	return r.scanMove(r.db.QueryRow(`
+		SELECT id, slug, name, type, category, power, accuracy, pp, priority, target, description
+		FROM moves WHERE slug = ?`, slug))
 }
 
 // MoveFilter holds optional filters for SearchMoves.
 type MoveFilter struct {
-	Type        string // filter by type
-	Category    string // physical, special, status
-	MinPower    int    // 0 = no minimum
-	MaxPower    int    // 0 = no maximum
-	MinAccuracy int    // 0 = no minimum
-	Priority    *int   // nil = any
+	Type        string
+	Category    string
+	MinPower    int
+	MaxPower    int
+	MinAccuracy int
+	Priority    *int
 }
 
 // SearchMoves searches moves by name/description substring with optional filters.
@@ -233,7 +318,7 @@ func (r *Repo) SearchMoves(query string, limit int, f MoveFilter) ([]Move, error
 		limit = 20
 	}
 	like := "%" + strings.ToLower(query) + "%"
-	q := `SELECT id, name, type, category, power, accuracy, pp, priority, target, description
+	q := `SELECT id, slug, name, type, category, power, accuracy, pp, priority, target, description
 		FROM moves WHERE (lower(name) LIKE ? OR lower(description) LIKE ?)`
 	args := []any{like, like}
 
@@ -275,8 +360,9 @@ func (r *Repo) SearchMoves(query string, limit int, f MoveFilter) ([]Move, error
 // GetAbilityByName returns an ability by name (case-insensitive).
 func (r *Repo) GetAbilityByName(name string) (*Ability, error) {
 	var a Ability
-	err := r.db.QueryRow(`SELECT id, name, description FROM abilities WHERE lower(name) = lower(?)`, name).
-		Scan(&a.ID, &a.Name, &a.Description)
+	err := r.db.QueryRow(
+		`SELECT id, slug, name, description FROM abilities WHERE lower(name) = lower(?)`, name).
+		Scan(&a.ID, &a.Slug, &a.Name, &a.Description)
 	if err == sql.ErrNoRows {
 		return nil, fmt.Errorf("ability %q not found", name)
 	}
@@ -286,8 +372,9 @@ func (r *Repo) GetAbilityByName(name string) (*Ability, error) {
 // GetItemByName returns an item by name (case-insensitive).
 func (r *Repo) GetItemByName(name string) (*Item, error) {
 	var it Item
-	err := r.db.QueryRow(`SELECT id, name, description, is_banned, owned FROM items WHERE lower(name) = lower(?)`, name).
-		Scan(&it.ID, &it.Name, &it.Description, &it.IsBanned, &it.Owned)
+	err := r.db.QueryRow(
+		`SELECT id, slug, name, description, is_banned, vp_cost, owned FROM items WHERE lower(name) = lower(?)`, name).
+		Scan(&it.ID, &it.Slug, &it.Name, &it.Description, &it.IsBanned, &it.VPCost, &it.Owned)
 	if err == sql.ErrNoRows {
 		return nil, fmt.Errorf("item %q not found", name)
 	}
@@ -296,8 +383,8 @@ func (r *Repo) GetItemByName(name string) (*Item, error) {
 
 // ItemFilter holds optional filters for SearchItems.
 type ItemFilter struct {
-	Owned   *bool // nil = any
-	Banned  *bool // nil = any
+	Owned  *bool
+	Banned *bool
 }
 
 // SearchItems searches items by name/description substring with optional filters.
@@ -306,7 +393,7 @@ func (r *Repo) SearchItems(query string, limit int, f ItemFilter) ([]Item, error
 		limit = 20
 	}
 	like := "%" + query + "%"
-	q := `SELECT id, name, description, is_banned, owned FROM items
+	q := `SELECT id, slug, name, description, is_banned, vp_cost, owned FROM items
 		WHERE (lower(name) LIKE lower(?) OR lower(description) LIKE lower(?))`
 	args := []any{like, like}
 
@@ -337,7 +424,7 @@ func (r *Repo) SearchItems(query string, limit int, f ItemFilter) ([]Item, error
 	var out []Item
 	for rows.Next() {
 		var it Item
-		if err := rows.Scan(&it.ID, &it.Name, &it.Description, &it.IsBanned, &it.Owned); err != nil {
+		if err := rows.Scan(&it.ID, &it.Slug, &it.Name, &it.Description, &it.IsBanned, &it.VPCost, &it.Owned); err != nil {
 			return nil, err
 		}
 		out = append(out, it)
@@ -345,12 +432,120 @@ func (r *Repo) SearchItems(query string, limit int, f ItemFilter) ([]Item, error
 	return out, rows.Err()
 }
 
-// --- scan helpers ---
+// AddLearnsetMove appends a move to a species' Champions learnset and returns
+// the updated CSV row for the caller to append to champions_learnsets.csv.
+func (r *Repo) AddLearnsetMove(speciesSlug, moveSlug string) error {
+	_, err := r.db.Exec(
+		`INSERT OR IGNORE INTO champions_learnsets(species_slug, move_slug) VALUES(?, ?)`,
+		speciesSlug, moveSlug)
+	return err
+}
+
+// AddSpeciesAbility links an ability to a species (creates the ability if absent).
+// Returns the ability slug so the caller can append it to species_abilities.csv.
+func (r *Repo) AddSpeciesAbility(speciesSlug, abilityName, description string) (string, error) {
+	abilitySlug := strings.ToLower(strings.ReplaceAll(abilityName, " ", "-"))
+
+	// Upsert ability.
+	_, err := r.db.Exec(
+		`INSERT OR IGNORE INTO abilities(slug, name, description) VALUES(?, ?, ?)`,
+		abilitySlug, abilityName, description)
+	if err != nil {
+		return "", fmt.Errorf("insert ability: %w", err)
+	}
+
+	// Find next available slot.
+	slot := 1
+	r.db.QueryRow(
+		`SELECT COALESCE(MAX(slot),0)+1 FROM species_abilities WHERE species_slug=?`,
+		speciesSlug).Scan(&slot)
+
+	_, err = r.db.Exec(
+		`INSERT OR IGNORE INTO species_abilities(species_slug, ability_slug, slot) VALUES(?,?,?)`,
+		speciesSlug, abilitySlug, slot)
+	return abilitySlug, err
+}
+
+// SetSpeciesOwned sets the owned flag for a species by slug.
+func (r *Repo) SetSpeciesOwned(slug string, owned bool) error {
+	v := 0
+	if owned {
+		v = 1
+	}
+	res, err := r.db.Exec(`UPDATE species SET owned=? WHERE slug=?`, v, slug)
+	if err != nil {
+		return err
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		return fmt.Errorf("no species with slug %q", slug)
+	}
+	return nil
+}
+
+// SetItemOwned sets the owned flag for an item by slug.
+func (r *Repo) SetItemOwned(slug string, owned bool) error {
+	v := 0
+	if owned {
+		v = 1
+	}
+	res, err := r.db.Exec(`UPDATE items SET owned=? WHERE slug=?`, v, slug)
+	if err != nil {
+		return err
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		return fmt.Errorf("no item with slug %q", slug)
+	}
+	return nil
+}
+
+// GetAbilityByID returns an ability by its integer ID (used by web form handlers).
+func (r *Repo) GetAbilityByID(id int) (*Ability, error) {
+	var a Ability
+	err := r.db.QueryRow(
+		`SELECT id, slug, name, description FROM abilities WHERE id=?`, id).
+		Scan(&a.ID, &a.Slug, &a.Name, &a.Description)
+	if err == sql.ErrNoRows {
+		return nil, fmt.Errorf("ability ID %d not found", id)
+	}
+	return &a, err
+}
+
+// GetItemByID returns an item by its integer ID (used by web form handlers).
+func (r *Repo) GetItemByID(id int) (*Item, error) {
+	var it Item
+	err := r.db.QueryRow(
+		`SELECT id, slug, name, description, is_banned, vp_cost, owned FROM items WHERE id=?`, id).
+		Scan(&it.ID, &it.Slug, &it.Name, &it.Description, &it.IsBanned, &it.VPCost, &it.Owned)
+	if err == sql.ErrNoRows {
+		return nil, fmt.Errorf("item ID %d not found", id)
+	}
+	return &it, err
+}
+
+// RemoveLearnsetMove removes a move from a species' Champions learnset.
+func (r *Repo) RemoveLearnsetMove(speciesSlug, moveSlug string) error {
+	_, err := r.db.Exec(
+		`DELETE FROM champions_learnsets WHERE species_slug=? AND move_slug=?`,
+		speciesSlug, moveSlug)
+	return err
+}
+
+// RemoveSpeciesAbility removes an ability from a species' ability pool.
+func (r *Repo) RemoveSpeciesAbility(speciesSlug, abilitySlug string) error {
+	_, err := r.db.Exec(
+		`DELETE FROM species_abilities WHERE species_slug=? AND ability_slug=?`,
+		speciesSlug, abilitySlug)
+	return err
+}
+
+// ── Scan helpers ──────────────────────────────────────────────────────────────
 
 func (r *Repo) scanSpecies(row *sql.Row) (*Species, error) {
 	var s Species
 	var type2 string
-	err := row.Scan(&s.ID, &s.DexID, &s.Name, &s.Form, &s.Type1, &type2,
+	err := row.Scan(&s.Slug, &s.DexID, &s.Name, &s.Form, &s.Type1, &type2,
 		&s.HP, &s.Attack, &s.Defense, &s.SpAttack, &s.SpDefense, &s.Speed,
 		&s.Generation, &s.IsLegendary, &s.IsMythical, &s.IsFinalEvo, &s.IsRestricted, &s.Owned)
 	if err == sql.ErrNoRows {
@@ -359,6 +554,7 @@ func (r *Repo) scanSpecies(row *sql.Row) (*Species, error) {
 	if err != nil {
 		return nil, err
 	}
+	s.ID = s.DexID // keep ID populated for legacy compatibility
 	s.Type2 = Type(type2)
 	return &s, nil
 }
@@ -368,11 +564,12 @@ func (r *Repo) scanSpeciesRows(rows *sql.Rows) ([]Species, error) {
 	for rows.Next() {
 		var s Species
 		var type2 string
-		if err := rows.Scan(&s.ID, &s.DexID, &s.Name, &s.Form, &s.Type1, &type2,
+		if err := rows.Scan(&s.Slug, &s.DexID, &s.Name, &s.Form, &s.Type1, &type2,
 			&s.HP, &s.Attack, &s.Defense, &s.SpAttack, &s.SpDefense, &s.Speed,
 			&s.Generation, &s.IsLegendary, &s.IsMythical, &s.IsFinalEvo, &s.IsRestricted, &s.Owned); err != nil {
 			return nil, err
 		}
+		s.ID = s.DexID
 		s.Type2 = Type(type2)
 		out = append(out, s)
 	}
@@ -382,7 +579,7 @@ func (r *Repo) scanSpeciesRows(rows *sql.Rows) ([]Species, error) {
 func (r *Repo) scanMove(row *sql.Row) (*Move, error) {
 	var m Move
 	var power, accuracy sql.NullInt64
-	err := row.Scan(&m.ID, &m.Name, &m.Type, &m.Category,
+	err := row.Scan(&m.ID, &m.Slug, &m.Name, &m.Type, &m.Category,
 		&power, &accuracy, &m.PP, &m.Priority, &m.Target, &m.Description)
 	if err == sql.ErrNoRows {
 		return nil, fmt.Errorf("move not found")
@@ -391,12 +588,10 @@ func (r *Repo) scanMove(row *sql.Row) (*Move, error) {
 		return nil, err
 	}
 	if power.Valid {
-		v := int(power.Int64)
-		m.Power = &v
+		v := int(power.Int64); m.Power = &v
 	}
 	if accuracy.Valid {
-		v := int(accuracy.Int64)
-		m.Accuracy = &v
+		v := int(accuracy.Int64); m.Accuracy = &v
 	}
 	return &m, nil
 }
@@ -406,47 +601,17 @@ func (r *Repo) scanMoveRows(rows *sql.Rows) ([]Move, error) {
 	for rows.Next() {
 		var m Move
 		var power, accuracy sql.NullInt64
-		if err := rows.Scan(&m.ID, &m.Name, &m.Type, &m.Category,
+		if err := rows.Scan(&m.ID, &m.Slug, &m.Name, &m.Type, &m.Category,
 			&power, &accuracy, &m.PP, &m.Priority, &m.Target, &m.Description); err != nil {
 			return nil, err
 		}
 		if power.Valid {
-			v := int(power.Int64)
-			m.Power = &v
+			v := int(power.Int64); m.Power = &v
 		}
 		if accuracy.Valid {
-			v := int(accuracy.Int64)
-			m.Accuracy = &v
+			v := int(accuracy.Int64); m.Accuracy = &v
 		}
 		out = append(out, m)
 	}
 	return out, rows.Err()
-}
-
-// AddLearnsetMove adds a move to a species' learnset if not already present.
-func (r *Repo) AddLearnsetMove(speciesID, moveID int) error {
-	_, err := r.db.Exec(
-		`INSERT OR IGNORE INTO learnsets (species_id, move_id, learn_method) VALUES (?, ?, 'level-up')`,
-		speciesID, moveID)
-	return err
-}
-
-// SetSpeciesOwned sets the owned flag for a species by ID.
-func (r *Repo) SetSpeciesOwned(id int, owned bool) error {
-	v := 0
-	if owned {
-		v = 1
-	}
-	_, err := r.db.Exec(`UPDATE species SET owned=? WHERE id=?`, v, id)
-	return err
-}
-
-// SetItemOwned sets the owned flag for an item by ID.
-func (r *Repo) SetItemOwned(id int, owned bool) error {
-	v := 0
-	if owned {
-		v = 1
-	}
-	_, err := r.db.Exec(`UPDATE items SET owned=? WHERE id=?`, v, id)
-	return err
 }

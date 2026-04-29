@@ -1,0 +1,769 @@
+{
+  "venusaur": {
+    "stones": [
+      {
+        "stone": "Venusaurite",
+        "types": null,
+        "ability": "Thick Fat"
+      }
+    ]
+  },
+  "charizard": {
+    "stones": [
+      {
+        "stone": "Charizardite X",
+        "types": [
+          "fire",
+          "dragon"
+        ],
+        "ability": "Tough Claws"
+      },
+      {
+        "stone": "Charizardite Y",
+        "types": null,
+        "ability": "Drought"
+      }
+    ]
+  },
+  "blastoise": {
+    "stones": [
+      {
+        "stone": "Blastoisinite",
+        "types": null,
+        "ability": "Mega Launcher"
+      }
+    ]
+  },
+  "alakazam": {
+    "stones": [
+      {
+        "stone": "Alakazite",
+        "types": null,
+        "ability": "Trace"
+      }
+    ]
+  },
+  "gengar": {
+    "stones": [
+      {
+        "stone": "Gengarite",
+        "types": null,
+        "ability": "Shadow Tag"
+      }
+    ]
+  },
+  "kangaskhan": {
+    "stones": [
+      {
+        "stone": "Kangaskhanite",
+        "types": null,
+        "ability": "Parental Bond"
+      }
+    ]
+  },
+  "pinsir": {
+    "stones": [
+      {
+        "stone": "Pinsirite",
+        "types": [
+          "bug",
+          "flying"
+        ],
+        "ability": "Aerilate"
+      }
+    ]
+  },
+  "gyarados": {
+    "stones": [
+      {
+        "stone": "Gyaradosite",
+        "types": [
+          "water",
+          "dark"
+        ],
+        "ability": "Mold Breaker"
+      }
+    ]
+  },
+  "aerodactyl": {
+    "stones": [
+      {
+        "stone": "Aerodactylite",
+        "types": null,
+        "ability": "Tough Claws"
+      }
+    ]
+  },
+  "mewtwo": {
+    "stones": [
+      {
+        "stone": "Mewtwonite X",
+        "types": [
+          "psychic",
+          "fighting"
+        ],
+        "ability": "Steadfast"
+      },
+      {
+        "stone": "Mewtwonite Y",
+        "types": null,
+        "ability": "Insomnia"
+      }
+    ]
+  },
+  "ampharos": {
+    "stones": [
+      {
+        "stone": "Ampharosite",
+        "types": [
+          "electric",
+          "dragon"
+        ],
+        "ability": "Mold Breaker"
+      }
+    ]
+  },
+  "scizor": {
+    "stones": [
+      {
+        "stone": "Scizorite",
+        "types": null,
+        "ability": "Technician"
+      }
+    ]
+  },
+  "heracross": {
+    "stones": [
+      {
+        "stone": "Heracronite",
+        "types": null,
+        "ability": "Skill Link"
+      }
+    ]
+  },
+  "houndoom": {
+    "stones": [
+      {
+        "stone": "Houndoominite",
+        "types": null,
+        "ability": "Solar Power"
+      }
+    ]
+  },
+  "tyranitar": {
+    "stones": [
+      {
+        "stone": "Tyranitarite",
+        "types": null,
+        "ability": "Sand Stream"
+      }
+    ]
+  },
+  "blaziken": {
+    "stones": [
+      {
+        "stone": "Blazikenite",
+        "types": null,
+        "ability": "Speed Boost"
+      }
+    ]
+  },
+  "gardevoir": {
+    "stones": [
+      {
+        "stone": "Gardevoirite",
+        "types": null,
+        "ability": "Pixilate"
+      }
+    ]
+  },
+  "mawile": {
+    "stones": [
+      {
+        "stone": "Mawilite",
+        "types": null,
+        "ability": "Huge Power"
+      }
+    ]
+  },
+  "aggron": {
+    "stones": [
+      {
+        "stone": "Aggronite",
+        "types": [
+          "steel"
+        ],
+        "ability": "Filter"
+      }
+    ]
+  },
+  "medicham": {
+    "stones": [
+      {
+        "stone": "Medichamite",
+        "types": null,
+        "ability": "Pure Power"
+      }
+    ]
+  },
+  "manectric": {
+    "stones": [
+      {
+        "stone": "Manectite",
+        "types": null,
+        "ability": "Intimidate"
+      }
+    ]
+  },
+  "banette": {
+    "stones": [
+      {
+        "stone": "Banettite",
+        "types": null,
+        "ability": "Prankster"
+      }
+    ]
+  },
+  "absol": {
+    "stones": [
+      {
+        "stone": "Absolite",
+        "types": null,
+        "ability": "Magic Bounce"
+      }
+    ]
+  },
+  "latias": {
+    "stones": [
+      {
+        "stone": "Latiasite",
+        "types": null,
+        "ability": "Levitate"
+      }
+    ]
+  },
+  "latios": {
+    "stones": [
+      {
+        "stone": "Latiosite",
+        "types": null,
+        "ability": "Levitate"
+      }
+    ]
+  },
+  "garchomp": {
+    "stones": [
+      {
+        "stone": "Garchompite",
+        "types": null,
+        "ability": "Sand Force"
+      }
+    ]
+  },
+  "lucario": {
+    "stones": [
+      {
+        "stone": "Lucarionite",
+        "types": null,
+        "ability": "Adaptability"
+      }
+    ]
+  },
+  "abomasnow": {
+    "stones": [
+      {
+        "stone": "Abomasite",
+        "types": null,
+        "ability": "Snow Warning"
+      }
+    ]
+  },
+  "beedrill": {
+    "stones": [
+      {
+        "stone": "Beedrillite",
+        "types": null,
+        "ability": "Adaptability"
+      }
+    ]
+  },
+  "pidgeot": {
+    "stones": [
+      {
+        "stone": "Pidgeotite",
+        "types": null,
+        "ability": "No Guard"
+      }
+    ]
+  },
+  "slowbro": {
+    "stones": [
+      {
+        "stone": "Slowbronite",
+        "types": null,
+        "ability": "Shell Armor"
+      }
+    ]
+  },
+  "steelix": {
+    "stones": [
+      {
+        "stone": "Steelixite",
+        "types": null,
+        "ability": "Sand Force"
+      }
+    ]
+  },
+  "sceptile": {
+    "stones": [
+      {
+        "stone": "Sceptilite",
+        "types": [
+          "grass",
+          "dragon"
+        ],
+        "ability": "Lightning Rod"
+      }
+    ]
+  },
+  "swampert": {
+    "stones": [
+      {
+        "stone": "Swampertite",
+        "types": null,
+        "ability": "Swift Swim"
+      }
+    ]
+  },
+  "sableye": {
+    "stones": [
+      {
+        "stone": "Sablenite",
+        "types": null,
+        "ability": "Magic Bounce"
+      }
+    ]
+  },
+  "sharpedo": {
+    "stones": [
+      {
+        "stone": "Sharpedonite",
+        "types": null,
+        "ability": "Strong Jaw"
+      }
+    ]
+  },
+  "camerupt": {
+    "stones": [
+      {
+        "stone": "Cameruptite",
+        "types": null,
+        "ability": "Sheer Force"
+      }
+    ]
+  },
+  "altaria": {
+    "stones": [
+      {
+        "stone": "Altarianite",
+        "types": [
+          "dragon",
+          "fairy"
+        ],
+        "ability": "Pixilate"
+      }
+    ]
+  },
+  "glalie": {
+    "stones": [
+      {
+        "stone": "Glalitite",
+        "types": null,
+        "ability": "Refrigerate"
+      }
+    ]
+  },
+  "salamence": {
+    "stones": [
+      {
+        "stone": "Salamencite",
+        "types": null,
+        "ability": "Aerilate"
+      }
+    ]
+  },
+  "metagross": {
+    "stones": [
+      {
+        "stone": "Metagrossite",
+        "types": null,
+        "ability": "Tough Claws"
+      }
+    ]
+  },
+  "lopunny": {
+    "stones": [
+      {
+        "stone": "Lopunnite",
+        "types": [
+          "normal",
+          "fighting"
+        ],
+        "ability": "Scrappy"
+      }
+    ]
+  },
+  "gallade": {
+    "stones": [
+      {
+        "stone": "Galladite",
+        "types": null,
+        "ability": "Inner Focus"
+      }
+    ]
+  },
+  "audino": {
+    "stones": [
+      {
+        "stone": "Audinite",
+        "types": [
+          "normal",
+          "fairy"
+        ],
+        "ability": "Healer"
+      }
+    ]
+  },
+  "diancie": {
+    "stones": [
+      {
+        "stone": "Diancite",
+        "types": null,
+        "ability": "Magic Bounce"
+      }
+    ]
+  },
+  "chimecho": {
+    "stones": [
+      {
+        "stone": "Chimechite",
+        "types": null,
+        "ability": "Levitate"
+      }
+    ]
+  },
+  "clefable": {
+    "stones": [
+      {
+        "stone": "Clefablite",
+        "types": [
+          "fairy",
+          "flying"
+        ],
+        "ability": "Magic Bounce"
+      }
+    ]
+  },
+  "victreebel": {
+    "stones": [
+      {
+        "stone": "Victreebelite",
+        "types": null,
+        "ability": "Innards Out"
+      }
+    ]
+  },
+  "starmie": {
+    "stones": [
+      {
+        "stone": "Starminite",
+        "types": null,
+        "ability": "Huge Power"
+      }
+    ]
+  },
+  "dragonite": {
+    "stones": [
+      {
+        "stone": "Dragoninite",
+        "types": null,
+        "ability": "Multiscale"
+      }
+    ]
+  },
+  "meganium": {
+    "stones": [
+      {
+        "stone": "Meganiumite",
+        "types": [
+          "grass",
+          "fairy"
+        ],
+        "ability": "Mega Sol"
+      }
+    ]
+  },
+  "feraligatr": {
+    "stones": [
+      {
+        "stone": "Feraligite",
+        "types": [
+          "water",
+          "dragon"
+        ],
+        "ability": "Dragonize"
+      }
+    ]
+  },
+  "skarmory": {
+    "stones": [
+      {
+        "stone": "Skarmorite",
+        "types": null,
+        "ability": "Stalwart"
+      }
+    ]
+  },
+  "froslass": {
+    "stones": [
+      {
+        "stone": "Froslassite",
+        "types": null,
+        "ability": "Snow Warning"
+      }
+    ]
+  },
+  "emboar": {
+    "stones": [
+      {
+        "stone": "Emboarite",
+        "types": null,
+        "ability": "Mold Breaker"
+      }
+    ]
+  },
+  "excadrill": {
+    "stones": [
+      {
+        "stone": "Excadrite",
+        "types": null,
+        "ability": "Piercing Drill"
+      }
+    ]
+  },
+  "chandelure": {
+    "stones": [
+      {
+        "stone": "Chandelurite",
+        "types": null,
+        "ability": "Infiltrator"
+      }
+    ]
+  },
+  "golurk": {
+    "stones": [
+      {
+        "stone": "Golurkite",
+        "types": null,
+        "ability": null
+      }
+    ]
+  },
+  "chesnaught": {
+    "stones": [
+      {
+        "stone": "Chesnaughtite",
+        "types": null,
+        "ability": "Bulletproof"
+      }
+    ]
+  },
+  "delphox": {
+    "stones": [
+      {
+        "stone": "Delphoxite",
+        "types": null,
+        "ability": "Levitate"
+      }
+    ]
+  },
+  "greninja": {
+    "stones": [
+      {
+        "stone": "Greninjite",
+        "types": null,
+        "ability": "Protean"
+      }
+    ]
+  },
+  "floette": {
+    "stones": [
+      {
+        "stone": "Floettite",
+        "types": null,
+        "ability": "Fairy Aura"
+      }
+    ]
+  },
+  "meowstic": {
+    "stones": [
+      {
+        "stone": "Meowsticite",
+        "types": null,
+        "ability": "Trace"
+      }
+    ]
+  },
+  "hawlucha": {
+    "stones": [
+      {
+        "stone": "Hawluchanite",
+        "types": null,
+        "ability": "No Guard"
+      }
+    ]
+  },
+  "goodra": {
+    "stones": [
+      {
+        "stone": "Goodranite",
+        "types": null,
+        "ability": null
+      }
+    ]
+  },
+  "drampa": {
+    "stones": [
+      {
+        "stone": "Drampanite",
+        "types": null,
+        "ability": "Berserk"
+      }
+    ]
+  },
+  "barbaracle": {
+    "stones": [
+      {
+        "stone": "Barbaracite",
+        "types": [
+          "rock",
+          "fighting"
+        ],
+        "ability": null
+      }
+    ]
+  },
+  "dragalge": {
+    "stones": [
+      {
+        "stone": "Dragalgite",
+        "types": null,
+        "ability": null
+      }
+    ]
+  },
+  "raichu": {
+    "stones": [
+      {
+        "stone": "Raichunite X",
+        "types": null,
+        "ability": null
+      },
+      {
+        "stone": "Raichunite Y",
+        "types": null,
+        "ability": null
+      }
+    ]
+  },
+  "heatran": {
+    "stones": [
+      {
+        "stone": "Heatranite",
+        "types": null,
+        "ability": null
+      }
+    ]
+  },
+  "darkrai": {
+    "stones": [
+      {
+        "stone": "Darkranite",
+        "types": null,
+        "ability": null
+      }
+    ]
+  },
+  "crabominable": {
+    "stones": [
+      {
+        "stone": "Crabominite",
+        "types": null,
+        "ability": null
+      }
+    ]
+  },
+  "zeraora": {
+    "stones": [
+      {
+        "stone": "Zeraorite",
+        "types": null,
+        "ability": null
+      }
+    ]
+  },
+  "scovillain": {
+    "stones": [
+      {
+        "stone": "Scovillainite",
+        "types": null,
+        "ability": null
+      }
+    ]
+  },
+  "glimmora": {
+    "stones": [
+      {
+        "stone": "Glimmoranite",
+        "types": null,
+        "ability": null
+      }
+    ]
+  },
+  "tatsugiri": {
+    "stones": [
+      {
+        "stone": "Tatsugirinite",
+        "types": null,
+        "ability": null
+      }
+    ]
+  },
+  "baxcalibur": {
+    "stones": [
+      {
+        "stone": "Baxcalibrite",
+        "types": null,
+        "ability": null
+      }
+    ]
+  },
+  "staraptor": {
+    "stones": [
+      {
+        "stone": "Staraptite",
+        "types": null,
+        "ability": null
+      }
+    ]
+  },
+  "magearna": {
+    "stones": [
+      {
+        "stone": "Magearnite",
+        "types": null,
+        "ability": null
+      }
+    ]
+  }
+}

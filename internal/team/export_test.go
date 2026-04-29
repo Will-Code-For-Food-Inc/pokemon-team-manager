@@ -14,7 +14,7 @@ import (
 func TestExportMarkdown_ContainsTeamNameAndSpecies(t *testing.T) {
 	pr, tr := newTeamDB(t)
 
-	id, err := tr.CreateTeam("Export Test Team", "H")
+	id, err := tr.CreateTeam("Export Test Team", "I2")
 	require.NoError(t, err)
 
 	species := []string{"Tyranitar", "Sylveon", "Arcanine"}
@@ -24,7 +24,7 @@ func TestExportMarkdown_ContainsTeamNameAndSpecies(t *testing.T) {
 		require.NoError(t, err)
 		ab, err := pr.GetAbilityByName(abilities[i])
 		require.NoError(t, err)
-		_, err = tr.AddMember(int(id), sp.ID, ab.ID)
+		_, err = tr.AddMember(int(id), sp.Slug, ab.Slug)
 		require.NoError(t, err)
 	}
 
@@ -40,13 +40,14 @@ func TestExportMarkdown_ContainsTeamNameAndSpecies(t *testing.T) {
 }
 
 func TestExportMarkdown_Minimal(t *testing.T) {
-	sp := &pokemon.Species{ID: 1, Name: "Garchomp", IsFinalEvo: true, Type1: "dragon", HP: 108, Attack: 130, Defense: 95, SpAttack: 80, SpDefense: 85, Speed: 102}
+	sp := &pokemon.Species{Slug: "garchomp", ID: 1, Name: "Garchomp", IsFinalEvo: true,
+		Type1: "dragon", HP: 108, Attack: 130, Defense: 95, SpAttack: 80, SpDefense: 85, Speed: 102}
 	tr := &team.Team{
 		ID:         1,
 		Name:       "Minimal Team",
-		Regulation: "H",
+		Regulation: "I2",
 		Members: []team.Member{
-			{Slot: 1, Species: sp, Nature: "Jolly"},
+			{Slot: 1, Config: &team.Config{Species: sp, Nature: "Jolly"}},
 		},
 	}
 	md := team.ExportMarkdown(tr)

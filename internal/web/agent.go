@@ -9,8 +9,8 @@ type ollamaMessage = handlers.OllamaMessage
 type chatMessage = handlers.ChatMessage
 type agentView = handlers.AgentView
 
-func runAgent(ollama *handlers.OllamaClient, svc *Services, history []ollamaMessage, userMsg string) ([]chatMessage, []ollamaMessage, *agentView) {
-	return handlers.RunAgent(ollama, svc.Handlers(), history, userMsg)
+func runAgent(ollama *handlers.OllamaClient, svc *Services, history []ollamaMessage, userMsg string, onMsg func(chatMessage)) ([]chatMessage, []ollamaMessage, *agentView) {
+	return handlers.RunAgent(ollama, svc.Handlers(), history, userMsg, onMsg)
 }
 
 func newOllamaClient(cfg agentConfig) *handlers.OllamaClient {

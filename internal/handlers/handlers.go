@@ -62,7 +62,7 @@ func LoadConfig(db *sql.DB) AgentConfig {
 	return AgentConfig{
 		OllamaURL:   get("ollama_url", "http://localhost:11434"),
 		Model:       get("ollama_model", "qwen3.5:9b"),
-		NumCtx:      parseInt("ollama_num_ctx", 16000),
+		NumCtx:      parseInt("ollama_num_ctx", 20000),
 		Temperature: parseFloat("ollama_temp", 0.3),
 		TopP:        parseFloat("ollama_top_p", 0.7),
 		TopK:        parseInt("ollama_top_k", 20),
@@ -144,8 +144,7 @@ func AnalyseTeam(svc *Services, teamID int) (*team.Team, *team.Analysis, error) 
 	return t, team.Analyse(t), nil
 }
 
-// SetOwned marks a Pokemon or item as owned/unowned. kind must be "pokemon" or "item".
-// Returns a human-readable confirmation message.
+// SetOwned marks a Pokemon or item as owned/unowned by name.
 func SetOwned(svc *Services, kind, name string, owned bool) (string, error) {
 	status := "unowned"
 	if owned {
@@ -157,7 +156,7 @@ func SetOwned(svc *Services, kind, name string, owned bool) (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("Pokemon not found: %s", name)
 		}
-		if err := svc.Pokemon.SetSpeciesOwned(sp.ID, owned); err != nil {
+		if err := svc.Pokemon.SetSpeciesOwned(sp.Slug, owned); err != nil {
 			return "", err
 		}
 		return sp.Name + " marked as " + status, nil
@@ -166,7 +165,7 @@ func SetOwned(svc *Services, kind, name string, owned bool) (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("item not found: %s", name)
 		}
-		if err := svc.Pokemon.SetItemOwned(it.ID, owned); err != nil {
+		if err := svc.Pokemon.SetItemOwned(it.Slug, owned); err != nil {
 			return "", err
 		}
 		return it.Name + " marked as " + status, nil
@@ -175,8 +174,8 @@ func SetOwned(svc *Services, kind, name string, owned bool) (string, error) {
 	}
 }
 
-// SearchKnowledge searches the strategy knowledge base using vector similarity
-// if embeddings are available, falling back to FTS5. Default limit: 5.
+// SearchKnowledge searches the strategy knowledge base. Uses vector similarity
+// if embeddings exist, falls back to FTS5.
 func SearchKnowledge(svc *Services, query string, limit int) ([]knowledge.SearchResult, error) {
 	if limit <= 0 {
 		limit = 5
@@ -262,9 +261,9 @@ func CalcStats(svc *Services, speciesName string, spread team.StatSpread, nature
 type EvalKind int
 
 const (
-	EvalSpecies   EvalKind = iota // species-level evaluation
-	EvalMember                    // member-level (team slot found)
-	EvalNotOnTeam                 // team_id given but species not on that team
+	EvalSpecies   EvalKind = iota
+	EvalMember
+	EvalNotOnTeam
 )
 
 // EvalResult holds the output of EvaluatePokemon.
@@ -288,25 +287,26 @@ func EvaluatePokemon(svc *Services, speciesName string, teamID int) (*EvalResult
 			return nil, fmt.Errorf("loading team: %w", err)
 		}
 		for i := range t.Members {
-			if t.Members[i].Species != nil &&
-				strings.EqualFold(t.Members[i].Species.Name, sp.Name) {
-				ev := team.EvaluateMember(&t.Members[i])
+			m := &t.Members[i]
+			if m.Config != nil && m.Config.Species != nil &&
+				strings.EqualFold(m.Config.Species.Name, sp.Name) {
+				ev := team.EvaluateMember(m)
 				return &EvalResult{Kind: EvalMember, MemberEval: ev}, nil
 			}
 		}
 		return &EvalResult{Kind: EvalNotOnTeam, SpeciesName: sp.Name, TeamID: teamID}, nil
 	}
-	learnset, _ := svc.Pokemon.GetLearnset(sp.ID)
+	learnset, _ := svc.Pokemon.GetChampionsLearnset(sp.Slug)
 	ev := team.EvaluateSpecies(sp, learnset)
 	return &EvalResult{Kind: EvalSpecies, SpeciesEval: ev}, nil
 }
 
-// AddTeamLog appends a combat/session log entry and returns the new entry ID.
+// AddTeamLog appends a battle/session journal entry.
 func AddTeamLog(svc *Services, teamID int, entry string) (int64, error) {
 	return svc.Team.AddLog(teamID, entry)
 }
 
-// GetTeamLogs retrieves all log entries for a team, newest first.
+// GetTeamLogs retrieves all journal entries for a team, newest first.
 func GetTeamLogs(svc *Services, teamID int) ([]team.TeamLog, error) {
 	return svc.Team.GetLogs(teamID)
 }

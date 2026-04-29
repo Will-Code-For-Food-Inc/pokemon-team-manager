@@ -4,12 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
-
-	"github.com/user/pokemon-team-manager/internal/pokemon"
-	"github.com/user/pokemon-team-manager/internal/team"
 )
 
 // ── Ollama wire types ─────────────────────────────────────────────────────────
@@ -62,6 +61,7 @@ type AgentView struct {
 	Type        string `json:"type"`
 	TeamID      int    `json:"team_id,omitempty"`
 	PokemonName string `json:"pokemon_name,omitempty"`
+	ItemName    string `json:"item_name,omitempty"`
 }
 
 // ── Ollama client ─────────────────────────────────────────────────────────────
@@ -145,15 +145,22 @@ func (c *OllamaClient) Embed(text string) ([]float32, error) {
 
 // PtmSystemPrompt is the baseline system prompt appended to every agent session.
 const PtmSystemPrompt = `
---- ptm assistant baseline (always active) ---
-You are a Pokemon VGC team building assistant. Use tools to answer — never guess data.
+--- Sable baseline (always active) ---
+You are Sable, a peppy female Ace Trainer and Pokemon Champions coach. You're sharp, enthusiastic, and competitive — you live for optimizing teams and love breaking down matchups. You speak with energy and confidence, like someone who's battled her way to the top and wants to bring everyone with her. You use battle metaphors naturally and get genuinely excited about good synergy or a clever tech pick. Be concise — you're a specialist coach, not a chatbot. Use tools to answer — never guess data.
+
+Response style: be terse. The UI shows data cards automatically in the right panel whenever you call a data tool — do NOT re-list stats, moves, type matchups, or base numbers in your text. Provide only inference: your recommendation, the reason, and any tradeoffs. One to three sentences is ideal. If the user explicitly asks you to explain or list something, then do so.
+
+Data views: calling get_pokemon, get_team, evaluate_pokemon, etc. automatically renders a card in the user's scrolling data panel. If the user asks to "show" or "look at" a Pokemon or team, just call the relevant tool and tell them to check the data panel — you don't need to describe the data yourself. Example: "I've pulled up Tyranitar in the data panel on the right."
 
 Key tools:
 - find_pokemon_by_filters type="steel" role="support" speed_tier="slow" — discover owned candidates by type/role/speed. Use this first for any coverage or team-building search.
 - find_pokemon_by_name name="Garcho" — fuzzy name lookup. Use only when you already know the name.
 - set_owned type="pokemon"|"item" name="..." owned=true|false — mark collection ownership
 - search_items / get_item — look up held items
-- create_team / add_pokemon / set_ability / set_nature / set_item / set_moves / set_stats — build teams
+- create_team / copy_team / delete_team / rename_team — team management
+- add_pokemon / remove_pokemon / swap_slots — roster editing
+- set_ability / set_nature / set_item / set_moves / set_stats — member config (mega evolution is implicit via held Mega Stone item; there is no Tera in Champions)
+- set_notes (per-build notes) / set_team_notes (team gameplan/strategy) / set_role / set_nickname — annotations. When writing team strategy notes, first call search_knowledge with query "team strategy template" to load the canonical structure, then fill in each section for the specific team.
 - validate_team / analyse_team / export_team — evaluate teams
 - evaluate_pokemon pokemon_name="..." [team_id=N] — ALWAYS call on every candidate before recommending; verifies type chart, coverage, stat role
 - add_team_log team_id=N entry="..." — record a session/combat experience
@@ -162,1026 +169,182 @@ Key tools:
 - get_help — full tool reference
 
 Search workflow: identify gap → find_pokemon_by_filters → evaluate_pokemon each result → recommend. If no results, loosen one filter at a time. Never loop on name guesses.
-Pokemon Champions rules: 66 stat points total, max 32/stat, all IVs 31, 6-mon teams, double battles.`
 
-// BuildPtmTools returns the agent tool list for the given services.
-// This list does NOT include chat_agent — that tool is MCP-only.
-func BuildPtmTools(svc *Services) []AgentTool {
-	str := func(args map[string]any, k string) string {
-		v, _ := args[k].(string)
-		return strings.TrimSpace(v)
-	}
-	num := func(args map[string]any, k string) int {
-		switch v := args[k].(type) {
-		case float64:
-			return int(v)
-		case int:
-			return v
-		}
-		return 0
-	}
-	prop := func(typ, desc string) map[string]any {
-		return map[string]any{"type": typ, "description": desc}
-	}
-	schema := func(name, desc string, props map[string]any, required []string) OlamaTool {
-		return OlamaTool{
-			Type: "function",
-			Function: OlamaToolFn{
-				Name:        name,
-				Description: desc,
-				Parameters: map[string]any{
-					"type":       "object",
-					"properties": props,
-					"required":   required,
-				},
-			},
-		}
-	}
+Learnset workflow: the Champions learnset data is curated but may have gaps.
+- If set_moves fails with "not in learnset": call get_moves to see what IS available and pick a legal alternative.
+- Do not attempt to add moves yourself — never call add_learnset_move. The data is fixed externally. If no legal alternative fits, return that fact to whoever called you (parent agent or user).
 
-	formatSpecies := func(results []pokemon.Species) string {
-		if len(results) == 0 {
-			return ""
-		}
-		var b strings.Builder
-		for _, s := range results {
-			t2 := ""
-			if s.Type2 != "" {
-				t2 = "/" + string(s.Type2)
-			}
-			fmt.Fprintf(&b, "%s (ID %d) %s%s — BST %d\n", s.Name, s.ID, s.Type1, t2, s.BST())
-		}
-		return b.String()
-	}
+Pokemon Champions rules: 66 stat points total, max 32/stat, all IVs 31, 6-mon teams, double battles.
 
-	return []AgentTool{
-		{
-			Schema: schema("create_team", "Create a new empty VGC team.",
-				map[string]any{
-					"name":       prop("string", "Team name"),
-					"regulation": prop("string", "Regulation set ID (e.g. 'H')"),
-				},
-				[]string{"name", "regulation"}),
-			Execute: func(args map[string]any) string {
-				id, err := svc.Team.CreateTeam(str(args, "name"), str(args, "regulation"))
-				if err != nil {
-					return "error: " + err.Error()
-				}
-				return fmt.Sprintf("Team created with ID %d.", id)
-			},
-		},
-		{
-			Schema: schema("copy_team", "Duplicate a team with all members, moves, items and stats under a new name.",
-				map[string]any{
-					"team_id": prop("integer", "Source team ID"),
-					"name":    prop("string", "Name for the new team"),
-				},
-				[]string{"team_id", "name"}),
-			Execute: func(args map[string]any) string {
-				newID, err := svc.Team.CopyTeam(num(args, "team_id"), str(args, "name"))
-				if err != nil {
-					return "error: " + err.Error()
-				}
-				return fmt.Sprintf("Team copied as \"%s\" (ID %d).", str(args, "name"), newID)
-			},
-		},
-		{
-			Schema: schema("add_pokemon", "Add a Pokemon to a team. Placed in the next open slot (max 6).",
-				map[string]any{
-					"team_id":      prop("integer", "Team ID"),
-					"pokemon_name": prop("string", "Species name (e.g. 'Garchomp')"),
-					"ability":      prop("string", "Ability name — uses first available if omitted"),
-				},
-				[]string{"team_id", "pokemon_name"}),
-			Execute: func(args map[string]any) string {
-				teamID := num(args, "team_id")
-				name := str(args, "pokemon_name")
-				sp, err := svc.Pokemon.GetSpeciesByName(name)
-				if err != nil {
-					return "error: " + err.Error()
-				}
-				if !sp.IsFinalEvo {
-					return "error: " + sp.Name + " is not a final evolution"
-				}
-				abilities, err := svc.Pokemon.GetAbilitiesForSpecies(sp.ID)
-				if err != nil || len(abilities) == 0 {
-					return "error: no abilities configured for " + sp.Name
-				}
-				abilityID := abilities[0].ID
-				if abName := str(args, "ability"); abName != "" {
-					ab, err := svc.Pokemon.GetAbilityByName(abName)
-					if err != nil {
-						return "error: " + err.Error()
-					}
-					if ok, _ := svc.Pokemon.HasAbility(sp.ID, ab.ID); !ok {
-						return "error: " + abName + " is not a valid ability for " + sp.Name
-					}
-					abilityID = ab.ID
-				}
-				memberID, err := svc.Team.AddMember(teamID, sp.ID, abilityID)
-				if err != nil {
-					return "error: " + err.Error()
-				}
-				return fmt.Sprintf("Added %s to team %d as member ID %d.", sp.Name, teamID, memberID)
-			},
-		},
-		{
-			Schema: schema("remove_pokemon", "Remove a Pokemon from a team by species name.",
-				map[string]any{
-					"team_id":      prop("integer", "Team ID"),
-					"pokemon_name": prop("string", "Species name to remove"),
-				},
-				[]string{"team_id", "pokemon_name"}),
-			Execute: func(args map[string]any) string {
-				memberID, err := svc.Team.GetMemberByTeamAndSpecies(num(args, "team_id"), str(args, "pokemon_name"))
-				if err != nil {
-					return "error: " + err.Error()
-				}
-				if err := svc.Team.RemoveMember(memberID); err != nil {
-					return "error: " + err.Error()
-				}
-				return fmt.Sprintf("Removed %s from team.", str(args, "pokemon_name"))
-			},
-		},
-		{
-			Schema: schema("set_ability", "Set the ability for a Pokemon on a team.",
-				map[string]any{
-					"team_id":      prop("integer", "Team ID"),
-					"pokemon_name": prop("string", "Species name"),
-					"ability":      prop("string", "Ability name"),
-				},
-				[]string{"team_id", "pokemon_name", "ability"}),
-			Execute: func(args map[string]any) string {
-				teamID := num(args, "team_id")
-				pokeName := str(args, "pokemon_name")
-				memberID, err := svc.Team.GetMemberByTeamAndSpecies(teamID, pokeName)
-				if err != nil {
-					return "error: " + err.Error()
-				}
-				sp, _ := svc.Pokemon.GetSpeciesByName(pokeName)
-				ab, err := svc.Pokemon.GetAbilityByName(str(args, "ability"))
-				if err != nil {
-					return "error: " + err.Error()
-				}
-				if sp != nil {
-					if ok, _ := svc.Pokemon.HasAbility(sp.ID, ab.ID); !ok {
-						return "error: " + ab.Name + " is not a valid ability for " + pokeName
-					}
-				}
-				if err := svc.Team.SetAbility(memberID, ab.ID); err != nil {
-					return "error: " + err.Error()
-				}
-				return fmt.Sprintf("Set %s's ability to %s.", pokeName, ab.Name)
-			},
-		},
-		{
-			Schema: schema("set_nature", "Set the nature for a Pokemon on a team.",
-				map[string]any{
-					"team_id":      prop("integer", "Team ID"),
-					"pokemon_name": prop("string", "Species name"),
-					"nature":       prop("string", "Nature name (e.g. 'Timid', 'Adamant')"),
-				},
-				[]string{"team_id", "pokemon_name", "nature"}),
-			Execute: func(args map[string]any) string {
-				nature := str(args, "nature")
-				removed := map[string]bool{"hardy": true, "docile": true, "bashful": true, "quirky": true}
-				if removed[strings.ToLower(nature)] {
-					return fmt.Sprintf("error: %s is not a valid Stat Alignment in Pokemon Champions", nature)
-				}
-				memberID, err := svc.Team.GetMemberByTeamAndSpecies(num(args, "team_id"), str(args, "pokemon_name"))
-				if err != nil {
-					return "error: " + err.Error()
-				}
-				if err := svc.Team.SetNature(memberID, nature); err != nil {
-					return "error: " + err.Error()
-				}
-				return "Set nature to " + nature + "."
-			},
-		},
-		{
-			Schema: schema("set_item", "Set the held item for a Pokemon on a team. Item clause enforced.",
-				map[string]any{
-					"team_id":      prop("integer", "Team ID"),
-					"pokemon_name": prop("string", "Species name"),
-					"item":         prop("string", "Item name (e.g. 'Focus Band')"),
-				},
-				[]string{"team_id", "pokemon_name", "item"}),
-			Execute: func(args map[string]any) string {
-				teamID := num(args, "team_id")
-				pokeName := str(args, "pokemon_name")
-				item, err := svc.Pokemon.GetItemByName(str(args, "item"))
-				if err != nil {
-					return "error: " + err.Error()
-				}
-				if item.IsBanned {
-					return "error: " + item.Name + " is banned"
-				}
-				t, err := svc.Team.GetTeam(teamID)
-				if err != nil {
-					return "error: " + err.Error()
-				}
-				for _, m := range t.Members {
-					if m.Item != nil && m.Item.ID == item.ID && !strings.EqualFold(m.Species.Name, pokeName) {
-						return "error: item clause: " + item.Name + " already held by " + m.Species.Name
-					}
-				}
-				memberID, err := svc.Team.GetMemberByTeamAndSpecies(teamID, pokeName)
-				if err != nil {
-					return "error: " + err.Error()
-				}
-				if err := svc.Team.SetItem(memberID, item.ID); err != nil {
-					return "error: " + err.Error()
-				}
-				return fmt.Sprintf("Set %s's item to %s.", pokeName, item.Name)
-			},
-		},
-		{
-			Schema: schema("set_moves", "Set up to 4 moves for a Pokemon. All moves must be in the species' learnset unless force=true.",
-				map[string]any{
-					"team_id":      prop("integer", "Team ID"),
-					"pokemon_name": prop("string", "Species name"),
-					"move1":        prop("string", "First move name"),
-					"move2":        prop("string", "Second move name"),
-					"move3":        prop("string", "Third move name"),
-					"move4":        prop("string", "Fourth move name"),
-					"force":        prop("boolean", "Skip learnset validation"),
-				},
-				[]string{"team_id", "pokemon_name", "move1"}),
-			Execute: func(args map[string]any) string {
-				teamID := num(args, "team_id")
-				pokeName := str(args, "pokemon_name")
-				force, _ := args["force"].(bool)
-				sp, err := svc.Pokemon.GetSpeciesByName(pokeName)
-				if err != nil {
-					return "error: " + err.Error()
-				}
-				var moveIDs []int
-				for _, key := range []string{"move1", "move2", "move3", "move4"} {
-					name := str(args, key)
-					if name == "" {
-						continue
-					}
-					mv, err := svc.Pokemon.GetMoveByName(name)
-					if err != nil {
-						return "error: " + err.Error()
-					}
-					if !force {
-						ok, lerr := svc.Pokemon.CanLearnMove(sp.ID, mv.ID)
-						if !ok {
-							msg := name + " is not in " + pokeName + "'s learnset"
-							if lerr != nil {
-								msg = lerr.Error()
-							}
-							return "error: " + msg
-						}
-					}
-					moveIDs = append(moveIDs, mv.ID)
-				}
-				memberID, err := svc.Team.GetMemberByTeamAndSpecies(teamID, pokeName)
-				if err != nil {
-					return "error: " + err.Error()
-				}
-				if err := svc.Team.SetMoves(memberID, moveIDs); err != nil {
-					return "error: " + err.Error()
-				}
-				return fmt.Sprintf("Set %d move(s) for %s.", len(moveIDs), pokeName)
-			},
-		},
-		{
-			Schema: schema("set_stats", "Set stat points for a Pokemon (66 total, max 32/stat).",
-				map[string]any{
-					"team_id":      prop("integer", "Team ID"),
-					"pokemon_name": prop("string", "Species name"),
-					"hp":           prop("integer", "HP points (0-32)"),
-					"attack":       prop("integer", "Attack points (0-32)"),
-					"defense":      prop("integer", "Defense points (0-32)"),
-					"sp_attack":    prop("integer", "Sp. Atk points (0-32)"),
-					"sp_defense":   prop("integer", "Sp. Def points (0-32)"),
-					"speed":        prop("integer", "Speed points (0-32)"),
-				},
-				[]string{"team_id", "pokemon_name"}),
-			Execute: func(args map[string]any) string {
-				evs := team.StatSpread{
-					HP:  num(args, "hp"),
-					Atk: num(args, "attack"),
-					Def: num(args, "defense"),
-					SpA: num(args, "sp_attack"),
-					SpD: num(args, "sp_defense"),
-					Spe: num(args, "speed"),
-				}
-				for _, v := range []int{evs.HP, evs.Atk, evs.Def, evs.SpA, evs.SpD, evs.Spe} {
-					if v < 0 || v > 32 {
-						return "error: each stat must be 0–32"
-					}
-				}
-				if t := evs.Total(); t > 66 {
-					return fmt.Sprintf("error: total %d exceeds 66-point pool", t)
-				}
-				memberID, err := svc.Team.GetMemberByTeamAndSpecies(num(args, "team_id"), str(args, "pokemon_name"))
-				if err != nil {
-					return "error: " + err.Error()
-				}
-				if err := svc.Team.SetEVs(memberID, evs); err != nil {
-					return "error: " + err.Error()
-				}
-				remaining := 66 - evs.Total()
-				return fmt.Sprintf("Set EVs: HP %d / Atk %d / Def %d / SpA %d / SpD %d / Spe %d (total %d, %d remaining).",
-					evs.HP, evs.Atk, evs.Def, evs.SpA, evs.SpD, evs.Spe, evs.Total(), remaining)
-			},
-		},
-		{
-			Schema: schema("set_notes", "Set free-text notes on a team member.",
-				map[string]any{
-					"team_id":      prop("integer", "Team ID"),
-					"pokemon_name": prop("string", "Species name"),
-					"notes":        prop("string", "Notes text"),
-				},
-				[]string{"team_id", "pokemon_name", "notes"}),
-			Execute: func(args map[string]any) string {
-				memberID, err := svc.Team.GetMemberByTeamAndSpecies(num(args, "team_id"), str(args, "pokemon_name"))
-				if err != nil {
-					return "error: " + err.Error()
-				}
-				if err := svc.Team.SetMemberNotes(memberID, str(args, "notes")); err != nil {
-					return "error: " + err.Error()
-				}
-				return "Notes updated."
-			},
-		},
-		{
-			Schema: schema("set_team_notes", "Set strategy notes for a team (markdown supported).",
-				map[string]any{
-					"team_id": prop("integer", "Team ID"),
-					"notes":   prop("string", "Markdown notes text"),
-				},
-				[]string{"team_id", "notes"}),
-			Execute: func(args map[string]any) string {
-				if err := svc.Team.UpdateTeamNotes(num(args, "team_id"), str(args, "notes")); err != nil {
-					return "error: " + err.Error()
-				}
-				return "Team notes updated."
-			},
-		},
-		{
-			Schema: schema("set_role", "Set a strategic role label for a team member.",
-				map[string]any{
-					"team_id":      prop("integer", "Team ID"),
-					"pokemon_name": prop("string", "Species name"),
-					"role":         prop("string", "Role label (e.g. 'lead', 'trick_room_setter')"),
-				},
-				[]string{"team_id", "pokemon_name", "role"}),
-			Execute: func(args map[string]any) string {
-				memberID, err := svc.Team.GetMemberByTeamAndSpecies(num(args, "team_id"), str(args, "pokemon_name"))
-				if err != nil {
-					return "error: " + err.Error()
-				}
-				if err := svc.Team.SetRole(memberID, str(args, "role")); err != nil {
-					return "error: " + err.Error()
-				}
-				return "Role updated."
-			},
-		},
-		{
-			Schema: schema("set_nickname", "Set a nickname for a team member.",
-				map[string]any{
-					"team_id":      prop("integer", "Team ID"),
-					"pokemon_name": prop("string", "Species name"),
-					"nickname":     prop("string", "Nickname (empty string to clear)"),
-				},
-				[]string{"team_id", "pokemon_name", "nickname"}),
-			Execute: func(args map[string]any) string {
-				memberID, err := svc.Team.GetMemberByTeamAndSpecies(num(args, "team_id"), str(args, "pokemon_name"))
-				if err != nil {
-					return "error: " + err.Error()
-				}
-				if err := svc.Team.SetNickname(memberID, str(args, "nickname")); err != nil {
-					return "error: " + err.Error()
-				}
-				return "Nickname updated."
-			},
-		},
-		{
-			Schema: schema("rename_team", "Rename a team.",
-				map[string]any{
-					"team_id": prop("integer", "Team ID"),
-					"name":    prop("string", "New team name"),
-				},
-				[]string{"team_id", "name"}),
-			Execute: func(args map[string]any) string {
-				if err := svc.Team.RenameTeam(num(args, "team_id"), str(args, "name")); err != nil {
-					return "error: " + err.Error()
-				}
-				return "Team renamed to " + str(args, "name") + "."
-			},
-		},
-		{
-			Schema: schema("swap_slots", "Swap two Pokemon slots within a team.",
-				map[string]any{
-					"team_id": prop("integer", "Team ID"),
-					"slot_a":  prop("integer", "First slot (1-6)"),
-					"slot_b":  prop("integer", "Second slot (1-6)"),
-				},
-				[]string{"team_id", "slot_a", "slot_b"}),
-			Execute: func(args map[string]any) string {
-				if err := svc.Team.SwapSlots(num(args, "team_id"), num(args, "slot_a"), num(args, "slot_b")); err != nil {
-					return "error: " + err.Error()
-				}
-				return fmt.Sprintf("Swapped slots %d and %d.", num(args, "slot_a"), num(args, "slot_b"))
-			},
-		},
-		{
-			Schema: schema("list_teams", "List all teams in the database.", nil, nil),
-			Execute: func(args map[string]any) string {
-				teams, err := ListTeams(svc)
-				if err != nil {
-					return "error: " + err.Error()
-				}
-				if len(teams) == 0 {
-					return "No teams found."
-				}
-				var b strings.Builder
-				for _, t := range teams {
-					fmt.Fprintf(&b, "Team %d: %s (Regulation %s, %d members)\n", t.ID, t.Name, t.Regulation, t.MemberCount)
-				}
-				return b.String()
-			},
-		},
-		{
-			Schema: schema("get_team", "Get full details of a team including all members, moves, items, and stats.",
-				map[string]any{"team_id": prop("integer", "Team ID")},
-				[]string{"team_id"}),
-			Execute: func(args map[string]any) string {
-				t, err := GetTeam(svc, num(args, "team_id"))
-				if err != nil {
-					return "error: " + err.Error()
-				}
-				var b strings.Builder
-				fmt.Fprintf(&b, "Team %d: %s (Regulation %s)\n", t.ID, t.Name, t.Regulation)
-				for _, m := range t.Members {
-					if m.Species == nil {
-						continue
-					}
-					item := "-"
-					if m.Item != nil {
-						item = m.Item.Name
-					}
-					ability := "-"
-					if m.Ability != nil {
-						ability = m.Ability.Name
-					}
-					var moves []string
-					for _, mv := range m.Moves {
-						if mv != nil {
-							moves = append(moves, mv.Name)
-						}
-					}
-					fmt.Fprintf(&b, "  [%d] %s | %s | %s | %s | EVs: HP%d Atk%d Def%d SpA%d SpD%d Spe%d\n",
-						m.Slot, m.Species.Name, ability, item, m.Nature,
-						m.EVs.HP, m.EVs.Atk, m.EVs.Def, m.EVs.SpA, m.EVs.SpD, m.EVs.Spe)
-					if len(moves) > 0 {
-						fmt.Fprintf(&b, "       Moves: %s\n", strings.Join(moves, " / "))
-					}
-				}
-				return b.String()
-			},
-		},
-		{
-			Schema: schema("find_pokemon_by_name",
-				"Look up owned Pokemon by name. Use when you already know the name. For discovery use find_pokemon_by_filters.",
-				map[string]any{
-					"name":  prop("string", "Species name or partial name (fuzzy match)"),
-					"owned": prop("boolean", "Default true; set false to include unowned"),
-					"limit": prop("integer", "Max results (default 10)"),
-				},
-				[]string{"name"}),
-			Execute: func(args map[string]any) string {
-				var owned *bool
-				if v, ok := args["owned"]; ok && v != nil {
-					b := v.(bool)
-					owned = &b
-				}
-				results, err := FindPokemonByName(svc, str(args, "name"), owned, num(args, "limit"))
-				if err != nil {
-					return "error: " + err.Error()
-				}
-				if len(results) == 0 {
-					return "No owned Pokemon found with that name. If you're looking for candidates to fill a role, use find_pokemon_by_filters instead."
-				}
-				return formatSpecies(results)
-			},
-		},
-		{
-			Schema: schema("find_pokemon_by_filters",
-				"Discover owned Pokemon candidates by type, role, and speed tier. Use for coverage gaps — never guess names.",
-				map[string]any{
-					"type":           prop("string", "Filter by type (e.g. 'fire', 'steel')"),
-					"role":           prop("string", "'physical attacker'|'special attacker'|'mixed attacker'|'support'|'tank'"),
-					"speed_tier":     prop("string", "'fast' (>100 base)|'mid' (70-100)|'slow' (<70)"),
-					"legendary":      prop("boolean", "Filter by legendary status"),
-					"final_evo_only": prop("boolean", "Only final evolutions"),
-					"owned":          prop("boolean", "Default true; set false to include unowned"),
-					"limit":          prop("integer", "Max results (default 20)"),
-				},
-				[]string{}),
-			Execute: func(args map[string]any) string {
-				f := pokemon.SpeciesFilter{
-					Type:         str(args, "type"),
-					Role:         str(args, "role"),
-					SpeedTier:    str(args, "speed_tier"),
-					FinalEvoOnly: func() bool { b, _ := args["final_evo_only"].(bool); return b }(),
-				}
-				if v, ok := args["owned"]; ok && v != nil {
-					b := v.(bool)
-					f.Owned = &b
-				}
-				if v, ok := args["legendary"]; ok && v != nil {
-					b := v.(bool)
-					f.Legendary = &b
-				}
-				results, err := FindPokemonByFilters(svc, f, num(args, "limit"))
-				if err != nil {
-					return "error: " + err.Error()
-				}
-				if len(results) == 0 {
-					return "No owned Pokemon match those filters. Try broadening: remove role or speed_tier constraints."
-				}
-				return formatSpecies(results)
-			},
-		},
-		{
-			Schema: schema("analyse_team", "Analyse a team for speed tiers, type coverage, and weaknesses.",
-				map[string]any{"team_id": prop("integer", "Team ID")},
-				[]string{"team_id"}),
-			Execute: func(args map[string]any) string {
-				t, a, err := AnalyseTeam(svc, num(args, "team_id"))
-				if err != nil {
-					return "error: " + err.Error()
-				}
-				var b strings.Builder
-				fmt.Fprintf(&b, "Team: %s\n\nSpeed tiers:\n", t.Name)
-				for _, st := range a.SpeedTiers {
-					fmt.Fprintf(&b, "  Slot %d %s: %d\n", st.Slot, st.Name, st.StatSpeed)
-				}
-				if len(a.DefensiveWeaknesses) > 0 {
-					fmt.Fprintf(&b, "\nDefensive weaknesses (≥2 mons weak):\n")
-					for _, w := range a.DefensiveWeaknesses {
-						fmt.Fprintf(&b, "  %s: %d mons\n", w.Type, w.Count)
-					}
-				}
-				if len(a.OffensiveCoverage) > 0 {
-					fmt.Fprintf(&b, "\nOffensive coverage: %s\n", strings.Join(a.OffensiveCoverage, ", "))
-				}
-				fmt.Fprintf(&b, "\nArchetypes: %s\n", strings.Join(a.Archetypes, ", "))
-				return b.String()
-			},
-		},
-		{
-			Schema: schema("validate_team", "Check a team for VGC rule violations.",
-				map[string]any{"team_id": prop("integer", "Team ID")},
-				[]string{"team_id"}),
-			Execute: func(args map[string]any) string {
-				violations, err := ValidateTeam(svc, num(args, "team_id"))
-				if err != nil {
-					return "error: " + err.Error()
-				}
-				if len(violations) == 0 {
-					return "Team is legal — no violations."
-				}
-				var b strings.Builder
-				for _, v := range violations {
-					fmt.Fprintf(&b, "  [%s] %s\n", v.Rule, v.Message)
-				}
-				return b.String()
-			},
-		},
-		{
-			Schema: schema("search_knowledge", "Search the VGC strategy knowledge base.",
-				map[string]any{"query": prop("string", "Search query")},
-				[]string{"query"}),
-			Execute: func(args map[string]any) string {
-				results, err := SearchKnowledge(svc, str(args, "query"), 3)
-				if err != nil {
-					return "error: " + err.Error()
-				}
-				if len(results) == 0 {
-					return "No knowledge base results."
-				}
-				var b strings.Builder
-				for _, r := range results {
-					fmt.Fprintf(&b, "--- %s ---\n%s\n\n", r.Source, r.Content)
-				}
-				return b.String()
-			},
-		},
-		{
-			Schema: schema("calc_stats", "Calculate final Level 50 stats for a Pokemon given its base stats, stat points, and nature.",
-				map[string]any{
-					"species":    prop("string", "Species name"),
-					"hp":         prop("integer", "HP stat points (0-32)"),
-					"attack":     prop("integer", "Attack stat points (0-32)"),
-					"defense":    prop("integer", "Defense stat points (0-32)"),
-					"sp_attack":  prop("integer", "Sp. Atk stat points (0-32)"),
-					"sp_defense": prop("integer", "Sp. Def stat points (0-32)"),
-					"speed":      prop("integer", "Speed stat points (0-32)"),
-					"nature":     prop("string", "Nature name (e.g. Modest, Jolly)"),
-				},
-				[]string{"species"}),
-			Execute: func(args map[string]any) string {
-				spread := team.StatSpread{
-					HP:  num(args, "hp"),
-					Atk: num(args, "attack"),
-					Def: num(args, "defense"),
-					SpA: num(args, "sp_attack"),
-					SpD: num(args, "sp_defense"),
-					Spe: num(args, "speed"),
-				}
-				result, err := CalcStats(svc, str(args, "species"), spread, str(args, "nature"))
-				if err != nil {
-					return "error: " + err.Error()
-				}
-				return fmt.Sprintf("%s @ %s (SP: %d/66)\n"+
-					"  HP:      %3d (base %d, SP %d)\n"+
-					"  Attack:  %3d (base %d, SP %d)\n"+
-					"  Defense: %3d (base %d, SP %d)\n"+
-					"  Sp. Atk: %3d (base %d, SP %d)\n"+
-					"  Sp. Def: %3d (base %d, SP %d)\n"+
-					"  Speed:   %3d (base %d, SP %d)\n",
-					result.SpeciesName, result.Nature, result.TotalSP,
-					result.Rows[0].Final, result.Rows[0].Base, result.Rows[0].SP,
-					result.Rows[1].Final, result.Rows[1].Base, result.Rows[1].SP,
-					result.Rows[2].Final, result.Rows[2].Base, result.Rows[2].SP,
-					result.Rows[3].Final, result.Rows[3].Base, result.Rows[3].SP,
-					result.Rows[4].Final, result.Rows[4].Base, result.Rows[4].SP,
-					result.Rows[5].Final, result.Rows[5].Base, result.Rows[5].SP,
-				)
-			},
-		},
-		{
-			Schema: schema("set_owned",
-				"Mark a Pokemon or item as owned (or unowned).",
-				map[string]any{
-					"type":  prop("string", "'pokemon' or 'item'"),
-					"name":  prop("string", "Species or item name"),
-					"owned": prop("boolean", "true to mark owned, false to unmark"),
-				},
-				[]string{"type", "name", "owned"}),
-			Execute: func(args map[string]any) string {
-				owned, _ := args["owned"].(bool)
-				msg, err := SetOwned(svc, str(args, "type"), str(args, "name"), owned)
-				if err != nil {
-					return "error: " + err.Error()
-				}
-				return msg
-			},
-		},
-		{
-			Schema: schema("evaluate_pokemon",
-				"Evaluate a Pokemon: type chart, offensive coverage, stat role, bulk, speed tier. Pass team_id for move/EV analysis.",
-				map[string]any{
-					"pokemon_name": prop("string", "Species name (e.g. 'Garchomp')"),
-					"team_id":      prop("integer", "Team ID — enables member-level move/EV analysis"),
-				},
-				[]string{"pokemon_name"}),
-			Execute: func(args map[string]any) string {
-				var teamID int
-				switch v := args["team_id"].(type) {
-				case float64:
-					teamID = int(v)
-				case int:
-					teamID = v
-				}
-				result, err := EvaluatePokemon(svc, str(args, "pokemon_name"), teamID)
-				if err != nil {
-					return "error: " + err.Error()
-				}
-				switch result.Kind {
-				case EvalMember:
-					return team.FormatMemberEval(result.MemberEval)
-				case EvalNotOnTeam:
-					return fmt.Sprintf("%s is not on team %d; showing species-level evaluation.", result.SpeciesName, result.TeamID)
-				default:
-					return team.FormatSpeciesEval(result.SpeciesEval)
-				}
-			},
-		},
-		{
-			Schema: schema("get_help", "Returns a compact usage guide for all ptm tools.", nil, nil),
-			Execute: func(args map[string]any) string {
-				return PtmSystemPrompt
-			},
-		},
-		{
-			Schema: schema("get_pokemon", "Get full details for a Pokemon species including base stats, types, and available abilities.",
-				map[string]any{"name": prop("string", "Pokemon name (e.g. 'Garchomp')")},
-				[]string{"name"}),
-			Execute: func(args map[string]any) string {
-				sp, err := svc.Pokemon.GetSpeciesByName(str(args, "name"))
-				if err != nil {
-					return "error: " + err.Error()
-				}
-				abilities, _ := svc.Pokemon.GetAbilitiesForSpecies(sp.ID)
-				out, _ := json.Marshal(map[string]any{"species": sp, "abilities": abilities})
-				return string(out)
-			},
-		},
-		{
-			Schema: schema("get_moves", "Get the full learnset for a species.",
-				map[string]any{"pokemon_name": prop("string", "Pokemon name")},
-				[]string{"pokemon_name"}),
-			Execute: func(args map[string]any) string {
-				sp, err := svc.Pokemon.GetSpeciesByName(str(args, "pokemon_name"))
-				if err != nil {
-					return "error: " + err.Error()
-				}
-				moves, err := svc.Pokemon.GetLearnset(sp.ID)
-				if err != nil {
-					return "error: " + err.Error()
-				}
-				if len(moves) == 0 {
-					return fmt.Sprintf("No learnset data for %s. Use add_learnset_move to populate.", sp.Name)
-				}
-				out, _ := json.Marshal(moves)
-				return string(out)
-			},
-		},
-		{
-			Schema: schema("add_learnset_move", "Add a move to a species' learnset. Use when the user confirms a move is available in-game.",
-				map[string]any{
-					"pokemon_name": prop("string", "Species name"),
-					"move_name":    prop("string", "Move name"),
-				},
-				[]string{"pokemon_name", "move_name"}),
-			Execute: func(args map[string]any) string {
-				sp, err := svc.Pokemon.GetSpeciesByName(str(args, "pokemon_name"))
-				if err != nil {
-					return "error: " + err.Error()
-				}
-				mv, err := svc.Pokemon.GetMoveByName(str(args, "move_name"))
-				if err != nil {
-					return "error: " + err.Error()
-				}
-				if err := svc.Pokemon.AddLearnsetMove(sp.ID, mv.ID); err != nil {
-					return "error: " + err.Error()
-				}
-				return fmt.Sprintf("Added %s to %s's learnset.", mv.Name, sp.Name)
-			},
-		},
-		{
-			Schema: schema("search_moves", "Search moves by name/description with optional filters.",
-				map[string]any{
-					"query":        prop("string", "Name or description fragment"),
-					"type":         prop("string", "Filter by type"),
-					"category":     prop("string", "physical, special, or status"),
-					"min_power":    prop("integer", "Minimum base power"),
-					"max_power":    prop("integer", "Maximum base power"),
-					"min_accuracy": prop("integer", "Minimum accuracy"),
-					"priority":     prop("integer", "Exact priority value"),
-					"limit":        prop("integer", "Max results (default 20)"),
-				},
-				[]string{"query"}),
-			Execute: func(args map[string]any) string {
-				f := pokemon.MoveFilter{
-					Type:        str(args, "type"),
-					Category:    str(args, "category"),
-					MinPower:    num(args, "min_power"),
-					MaxPower:    num(args, "max_power"),
-					MinAccuracy: num(args, "min_accuracy"),
-				}
-				if v, ok := args["priority"]; ok && v != nil {
-					p := num(args, "priority")
-					f.Priority = &p
-				}
-				moves, err := svc.Pokemon.SearchMoves(str(args, "query"), num(args, "limit"), f)
-				if err != nil {
-					return "error: " + err.Error()
-				}
-				out, _ := json.Marshal(moves)
-				return string(out)
-			},
-		},
-		{
-			Schema: schema("get_item", "Get details for a held item by name.",
-				map[string]any{"name": prop("string", "Item name (e.g. 'Choice Specs')")},
-				[]string{"name"}),
-			Execute: func(args map[string]any) string {
-				item, err := svc.Pokemon.GetItemByName(str(args, "name"))
-				if err != nil {
-					return "error: " + err.Error()
-				}
-				out, _ := json.Marshal(item)
-				return string(out)
-			},
-		},
-		{
-			Schema: schema("search_items", "Search held items by name or effect description.",
-				map[string]any{
-					"query": prop("string", "Search term (empty to list all)"),
-					"owned": prop("boolean", "Filter to owned/unowned items"),
-					"banned": prop("boolean", "Filter to banned/legal items"),
-					"limit": prop("integer", "Max results (default 20)"),
-				},
-				[]string{"query"}),
-			Execute: func(args map[string]any) string {
-				f := pokemon.ItemFilter{}
-				if v, ok := args["owned"]; ok && v != nil {
-					b := v.(bool)
-					f.Owned = &b
-				}
-				if v, ok := args["banned"]; ok && v != nil {
-					b := v.(bool)
-					f.Banned = &b
-				}
-				items, err := svc.Pokemon.SearchItems(str(args, "query"), num(args, "limit"), f)
-				if err != nil {
-					return "error: " + err.Error()
-				}
-				out, _ := json.Marshal(items)
-				return string(out)
-			},
-		},
-		{
-			Schema: schema("export_team", "Export a team as a formatted markdown document.",
-				map[string]any{"team_id": prop("integer", "Team ID")},
-				[]string{"team_id"}),
-			Execute: func(args map[string]any) string {
-				t, err := svc.Team.GetTeam(num(args, "team_id"))
-				if err != nil {
-					return "error: " + err.Error()
-				}
-				return team.ExportMarkdown(t)
-			},
-		},
-		{
-			Schema: schema("delete_team", "Delete a team and all its members permanently.",
-				map[string]any{"team_id": prop("integer", "Team ID to delete")},
-				[]string{"team_id"}),
-			Execute: func(args map[string]any) string {
-				if err := svc.Team.DeleteTeam(num(args, "team_id")); err != nil {
-					return "error: " + err.Error()
-				}
-				return fmt.Sprintf("Team %d deleted.", num(args, "team_id"))
-			},
-		},
-		{
-			Schema: schema("set_tera_type", "Set the Tera Type for a Pokemon on a team.",
-				map[string]any{
-					"team_id":      prop("integer", "Team ID"),
-					"pokemon_name": prop("string", "Species name"),
-					"tera_type":    prop("string", "Type name (e.g. 'fire', 'fairy')"),
-				},
-				[]string{"team_id", "pokemon_name", "tera_type"}),
-			Execute: func(args map[string]any) string {
-				memberID, err := svc.Team.GetMemberByTeamAndSpecies(num(args, "team_id"), str(args, "pokemon_name"))
-				if err != nil {
-					return "error: " + err.Error()
-				}
-				if err := svc.Team.SetTeraType(memberID, str(args, "tera_type")); err != nil {
-					return "error: " + err.Error()
-				}
-				return fmt.Sprintf("Set Tera Type to %s.", str(args, "tera_type"))
-			},
-		},
-		{
-			Schema: schema("list_regulations", "List all VGC regulation sets.", nil, nil),
-			Execute: func(args map[string]any) string {
-				regs, err := svc.Team.ListRegulations()
-				if err != nil {
-					return "error: " + err.Error()
-				}
-				out, _ := json.Marshal(regs)
-				return string(out)
-			},
-		},
-		{
-			Schema: schema("get_regulation", "Get details for a VGC regulation set including banned and restricted species.",
-				map[string]any{"id": prop("string", "Regulation ID (e.g. 'H')")},
-				[]string{"id"}),
-			Execute: func(args map[string]any) string {
-				regs, err := svc.Team.ListRegulations()
-				if err != nil {
-					return "error: " + err.Error()
-				}
-				id := strings.ToUpper(str(args, "id"))
-				for _, r := range regs {
-					if r.ID == id {
-						out, _ := json.Marshal(r)
-						return string(out)
-					}
-				}
-				return "error: regulation not found: " + id
-			},
-		},
-		{
-			Schema: schema("training_cost", "Calculate VP cost to build a team from scratch.",
-				map[string]any{"team_id": prop("integer", "Team ID")},
-				[]string{"team_id"}),
-			Execute: func(args map[string]any) string {
-				t, err := svc.Team.GetTeam(num(args, "team_id"))
-				if err != nil {
-					return "error: " + err.Error()
-				}
-				if len(t.Members) == 0 {
-					return "Team has no members."
-				}
-				var b strings.Builder
-				total := 0
-				for _, m := range t.Members {
-					if m.Species == nil {
-						continue
-					}
-					spVP := (m.EVs.HP + m.EVs.Atk + m.EVs.Def + m.EVs.SpA + m.EVs.SpD + m.EVs.Spe) * 2
-					natureVP := 0
-					if m.Nature != "" && !strings.EqualFold(m.Nature, "Serious") {
-						natureVP = 200
-					}
-					moveVP := len(m.Moves) * 100
-					abilityVP := 0
-					if m.Ability != nil {
-						if abilities, err := svc.Pokemon.GetAbilitiesForSpecies(m.Species.ID); err == nil && len(abilities) > 0 && abilities[0].ID != m.Ability.ID {
-							abilityVP = 400
-						}
-					}
-					memberTotal := spVP + natureVP + moveVP + abilityVP
-					total += memberTotal
-					fmt.Fprintf(&b, "%s: %d VP (SP %d + nature %d + moves %d + ability %d)\n", m.Species.Name, memberTotal, spVP, natureVP, moveVP, abilityVP)
-				}
-				fmt.Fprintf(&b, "Total: %d VP", total)
-				return b.String()
-			},
-		},
-		{
-			Schema: schema("ingest_document", "Add a document to the knowledge base.",
-				map[string]any{
-					"title":   prop("string", "Document title"),
-					"source":  prop("string", "Source URL or file path"),
-					"content": prop("string", "Full document content (markdown supported)"),
-				},
-				[]string{"title", "content"}),
-			Execute: func(args map[string]any) string {
-				if err := svc.Knowledge.Ingest(str(args, "title"), str(args, "source"), str(args, "content"), 1500); err != nil {
-					return "error: " + err.Error()
-				}
-				return "Document ingested successfully."
-			},
-		},
-		{
-			Schema: schema("review_document", "Reset the TTL on a knowledge base document, marking it reviewed for another 6 months.",
-				map[string]any{"title": prop("string", "Document title or path")},
-				[]string{"title"}),
-			Execute: func(args map[string]any) string {
-				n, err := svc.Knowledge.Touch(str(args, "title"))
-				if err != nil {
-					return "error: " + err.Error()
-				}
-				return fmt.Sprintf("TTL reset on %d chunks — valid for 6 more months.", n)
-			},
-		},
-		{
-			Schema: schema("add_team_log",
-				"Append a combat/session log entry to a team.",
-				map[string]any{
-					"team_id": prop("integer", "Team ID"),
-					"entry":   prop("string", "Log entry text (markdown supported)"),
-				},
-				[]string{"team_id", "entry"}),
-			Execute: func(args map[string]any) string {
-				id, err := AddTeamLog(svc, num(args, "team_id"), str(args, "entry"))
-				if err != nil {
-					return "error: " + err.Error()
-				}
-				return fmt.Sprintf("Log entry %d recorded.", id)
-			},
-		},
-		{
-			Schema: schema("get_team_logs",
-				"Retrieve all combat/session log entries for a team, newest first.",
-				map[string]any{"team_id": prop("integer", "Team ID")},
-				[]string{"team_id"}),
-			Execute: func(args map[string]any) string {
-				logs, err := GetTeamLogs(svc, num(args, "team_id"))
-				if err != nil {
-					return "error: " + err.Error()
-				}
-				if len(logs) == 0 {
-					return "No log entries yet."
-				}
-				var b strings.Builder
-				for _, l := range logs {
-					fmt.Fprintf(&b, "[%s]\n%s\n\n", l.CreatedAt.Format("2006-01-02 15:04"), l.Entry)
-				}
-				return b.String()
-			},
-		},
-	}
-}
+Curated data sets: Champions has no RPG layer, so the held-item and move sets are smaller than the broader Pokemon games. The following mainline items DO NOT exist here, so do NOT call set_item with them: Life Orb, Eviolite, Assault Vest, Choice Specs, Choice Band, Booster Energy, Clear Amulet, Mirror Herb, Loaded Dice, Covert Cloak, Safety Goggles. Items that DO exist: Choice Scarf, Focus Sash, Focus Band, Leftovers, Sitrus Berry, Lum Berry, Light Ball, Scope Lens, Mental Herb, Black Glasses, Black Belt, plus Mega Stones. If unsure, call search_items('') first.`
 
 // ── Agent loop ────────────────────────────────────────────────────────────────
 
-const agentMaxTurns = 10
+const (
+	// agentMaxResumes caps auto-continuations after a state's MaxTurns budget
+	// is exhausted without producing a final assistant message. Per-state.
+	agentMaxResumes = 1
+	// maxToolResultChars caps any single tool result fed back to the model.
+	maxToolResultChars = 2000
+	// keepRecentToolFulls — when compacting under context pressure, never stub
+	// the most recent N tool results; the model needs them to reason next.
+	keepRecentToolFulls = 3
+)
 
-// RunAgent runs the Ollama agent loop for one user turn.
-// Returns produced display messages, updated context history, and any UI view.
-func RunAgent(ollama *OllamaClient, svc *Services, history []OllamaMessage, userMsg string) ([]ChatMessage, []OllamaMessage, *AgentView) {
-	agentTools := BuildPtmTools(svc)
+// capToolResult truncates a single tool result if it exceeds the per-result
+// budget, leaving a tail note so the model knows it was clipped.
+func capToolResult(result string) string {
+	if len(result) <= maxToolResultChars {
+		return result
+	}
+	head := result[:maxToolResultChars-120]
+	return fmt.Sprintf("%s\n... [truncated; full result was %d chars — refine your query for less data]", head, len(result))
+}
+
+// compactMessages keeps the messages slice within maxChars by replacing the
+// oldest tool-result contents with short stubs. Structure is preserved: the
+// assistant tool_call entries that reference these results stay in place, just
+// with shorter follow-up content. Returns the new slice and how many tool
+// results were stubbed.
+func compactMessages(messages []OllamaMessage, maxChars int) ([]OllamaMessage, int) {
+	total := 0
+	for _, m := range messages {
+		total += len(m.Content)
+	}
+	if total <= maxChars {
+		return messages, 0
+	}
+
+	out := make([]OllamaMessage, len(messages))
+	copy(out, messages)
+
+	var toolIdx []int
+	for i, m := range out {
+		if m.Role == "tool" {
+			toolIdx = append(toolIdx, i)
+		}
+	}
+
+	cutoff := len(toolIdx) - keepRecentToolFulls
+	if cutoff <= 0 {
+		return out, 0
+	}
+
+	stubbed := 0
+	for i := 0; i < cutoff; i++ {
+		idx := toolIdx[i]
+		orig := out[idx].Content
+		if len(orig) <= 80 {
+			continue
+		}
+		out[idx].Content = fmt.Sprintf("[older tool result compacted, was %d chars]", len(orig))
+		stubbed++
+		total -= len(orig) - len(out[idx].Content)
+		if total <= maxChars {
+			break
+		}
+	}
+	return out, stubbed
+}
+
+// EmbedAndSave generates an embedding for a chat message and saves it.
+// Runs best-effort — errors are silently ignored so they never block the agent.
+func EmbedAndSave(ollama *OllamaClient, repo *ChatRepo, id int64, text string) {
+	vec, err := ollama.Embed(text)
+	if err != nil || len(vec) == 0 {
+		return
+	}
+	_ = repo.SaveEmbedding(id, vec)
+}
+
+// RunAgent runs the Sable orchestrator for one user turn. Internally this
+// dispatches into the recursive state machine: orchestrator (sable) at depth 0
+// holds only delegate_* tools and routes to scout/team_builder, which in turn
+// may delegate further (team_builder → pokebuilder). Sub-agents are stateless;
+// they receive a self-contained task string.
+//
+// onMsg, if non-nil, is called for each surfaced message (tool indicators,
+// view hints, the final assistant text). Messages are also accumulated and
+// returned for persistence.
+//
+// Each call generates a stable run_id that's stamped on every structured-log
+// event for the turn — the agent_graph.py script reconstructs the state
+// machine flow by grouping log lines on this id.
+func RunAgent(ollama *OllamaClient, svc *Services, history []OllamaMessage, userMsg string, onMsg func(ChatMessage)) ([]ChatMessage, []OllamaMessage, *AgentView) {
+	orch, ok := agentStates["sable"]
+	if !ok {
+		m := ChatMessage{Role: "error", Content: "agent registry missing 'sable' orchestrator state"}
+		if onMsg != nil {
+			onMsg(m)
+		}
+		return []ChatMessage{m}, nil, nil
+	}
+
+	runID := strconv.FormatInt(time.Now().UnixMicro(), 36)
+	slog.Info("agent.run_start",
+		"run_id", runID,
+		"top_state", orch.Name,
+		"user_msg_len", len(userMsg),
+		"history_len", len(history),
+	)
+
+	systemContent := strings.TrimSpace(ollama.cfg.Prompt) + "\n" + orch.SystemPrompt
+	messages := []OllamaMessage{{Role: "system", Content: systemContent}}
+	messages = append(messages, history...)
+	messages = append(messages, OllamaMessage{Role: "user", Content: userMsg})
+
+	produced, ctx, view := runStateLoop(ollama, svc, runID, "user", orch, messages, 0, defaultMaxAgentDepth, onMsg)
+
+	viewType := ""
+	if view != nil {
+		viewType = view.Type
+	}
+	slog.Info("agent.run_end",
+		"run_id", runID,
+		"final_view_type", viewType,
+		"produced_msgs", len(produced),
+	)
+	return produced, ctx, view
+}
+
+// runStateLoop runs one agent state's tool-call loop against the given message
+// buffer. This is the shared core: same compaction, same loop-detection, same
+// turn budget + 1-resume nudge as the original single-agent loop. The only
+// per-state knobs are state.MaxTurns and state.ToolNames (with delegate_*
+// tools auto-injected for AllowedChildren).
+//
+// runID and parent flow purely for structured logging — they let the
+// agent_graph.py script render the call tree from journald output.
+func runStateLoop(
+	ollama *OllamaClient,
+	svc *Services,
+	runID, parent string,
+	state AgentState,
+	messages []OllamaMessage,
+	depth, maxDepth int,
+	onMsg func(ChatMessage),
+) ([]ChatMessage, []OllamaMessage, *AgentView) {
+	slog.Info("agent.state_enter",
+		"run_id", runID,
+		"state", state.Name,
+		"depth", depth,
+		"parent", parent,
+	)
+	stateStart := time.Now()
+	exitReason := "completed"
+	turnsUsed := 0
+	defer func() {
+		slog.Info("agent.state_exit",
+			"run_id", runID,
+			"state", state.Name,
+			"depth", depth,
+			"turns_used", turnsUsed,
+			"exit_reason", exitReason,
+			"duration_ms", time.Since(stateStart).Milliseconds(),
+		)
+	}()
+
+	agentTools := buildStateTools(ollama, svc, runID, state, depth, maxDepth, onMsg)
 
 	ollamaTools := make([]OlamaTool, len(agentTools))
 	for i, t := range agentTools {
@@ -1192,105 +355,345 @@ func RunAgent(ollama *OllamaClient, svc *Services, history []OllamaMessage, user
 		toolMap[t.Schema.Function.Name] = t.Execute
 	}
 
-	systemContent := strings.TrimSpace(ollama.cfg.Prompt) + "\n" + PtmSystemPrompt
-	messages := []OllamaMessage{{Role: "system", Content: systemContent}}
-	messages = append(messages, history...)
-	messages = append(messages, OllamaMessage{Role: "user", Content: userMsg})
+	emit := func(m ChatMessage) {
+		if onMsg != nil {
+			onMsg(m)
+		}
+	}
 
 	var produced []ChatMessage
 	var view *AgentView
 	lastSig := ""
+	loopWarned := false
+	completed := false
+	resumesUsed := 0
+	maxMessageChars := ollama.cfg.NumCtx * 2
 
-	for range agentMaxTurns {
-		reply, err := ollama.Chat(messages, ollamaTools)
-		if err != nil {
-			produced = append(produced, ChatMessage{Role: "error", Content: err.Error()})
-			break
+resumeLoop:
+	for {
+	turnLoop:
+		for range state.MaxTurns {
+			turnsUsed++
+			if compacted, stubbed := compactMessages(messages, maxMessageChars); stubbed > 0 {
+				slog.Warn("agent.compaction",
+					"run_id", runID, "state", state.Name, "depth", depth,
+					"stubbed", stubbed,
+				)
+				messages = compacted
+				m := ChatMessage{Role: "tool", Content: fmt.Sprintf("⌂ context compacted (%d older tool results stubbed)", stubbed)}
+				emit(m)
+				produced = append(produced, m)
+			}
+			chatStart := time.Now()
+			reply, err := ollama.Chat(messages, ollamaTools)
+			chatDur := time.Since(chatStart).Milliseconds()
+			if err != nil {
+				slog.Error("agent.ollama_error",
+					"run_id", runID, "state", state.Name, "depth", depth,
+					"err", err.Error(), "duration_ms", chatDur,
+				)
+				m := ChatMessage{Role: "error", Content: err.Error()}
+				emit(m)
+				produced = append(produced, m)
+				exitReason = "ollama_error"
+				completed = true
+				break turnLoop
+			}
+			messages = append(messages, reply)
+
+			if len(reply.ToolCalls) == 0 {
+				if reply.Content != "" {
+					m := ChatMessage{Role: "assistant", Content: reply.Content}
+					emit(m)
+					produced = append(produced, m)
+				}
+				completed = true
+				break turnLoop
+			}
+
+			for _, tc := range reply.ToolCalls {
+				argsJSON, _ := json.Marshal(tc.Function.Arguments)
+				sig := tc.Function.Name + string(argsJSON)
+				if sig == lastSig {
+					if loopWarned {
+						slog.Warn("agent.loop_detected",
+							"run_id", runID, "state", state.Name, "depth", depth,
+							"tool", tc.Function.Name, "phase", "bail",
+						)
+						m := ChatMessage{
+							Role:    "assistant",
+							Content: "I'm stuck in a loop and can't make progress on this. Please stand by — you may need to rephrase or break the request into smaller steps.",
+						}
+						emit(m)
+						produced = append(produced, m)
+						exitReason = "loop_detected"
+						completed = true
+						break turnLoop
+					}
+					slog.Warn("agent.loop_detected",
+						"run_id", runID, "state", state.Name, "depth", depth,
+						"tool", tc.Function.Name, "phase", "warn",
+					)
+					loopWarned = true
+					guidance := fmt.Sprintf(
+						"You just called %s with the same arguments twice in a row. "+
+							"Do not repeat that call. Try a different tool, different arguments, or explain why you cannot proceed.",
+						tc.Function.Name,
+					)
+					messages = append(messages, OllamaMessage{Role: "tool", Content: guidance})
+					m := ChatMessage{Role: "tool", Content: "⚠ loop detected — guiding model"}
+					emit(m)
+					produced = append(produced, m)
+					break
+				}
+				loopWarned = false
+				lastSig = sig
+
+				isDelegate := strings.HasPrefix(tc.Function.Name, "delegate_")
+				slog.Info("agent.tool_call",
+					"run_id", runID, "state", state.Name, "depth", depth,
+					"tool", tc.Function.Name, "is_delegate", isDelegate,
+					"args_chars", len(argsJSON),
+				)
+
+				m1 := ChatMessage{Role: "tool", Content: fmt.Sprintf("→ %s(%s)", tc.Function.Name, string(argsJSON))}
+				emit(m1)
+				produced = append(produced, m1)
+
+				fn, ok := toolMap[tc.Function.Name]
+				var result string
+				toolStart := time.Now()
+				if !ok {
+					result = "unknown tool: " + tc.Function.Name
+				} else {
+					result = fn(tc.Function.Arguments)
+				}
+				toolDur := time.Since(toolStart).Milliseconds()
+				slog.Info("agent.tool_result",
+					"run_id", runID, "state", state.Name, "depth", depth,
+					"tool", tc.Function.Name, "is_delegate", isDelegate,
+					"duration_ms", toolDur,
+					"result_chars", len(result),
+					"is_error", strings.HasPrefix(result, "error:"),
+				)
+
+				m2 := ChatMessage{Role: "tool", Content: "  ← " + truncate(result, 150)}
+				emit(m2)
+				produced = append(produced, m2)
+				messages = append(messages, OllamaMessage{Role: "tool", Content: capToolResult(result)})
+
+				if v := inferView(tc.Function.Name, tc.Function.Arguments); v != nil {
+					if view == nil {
+						view = v
+					}
+					if onMsg != nil {
+						if b, err := json.Marshal(map[string]any{"type": "view_hint", "view": v}); err == nil {
+							onMsg(ChatMessage{Role: "view", Content: string(b)})
+						}
+					}
+				}
+			}
 		}
-		messages = append(messages, reply)
 
-		if len(reply.ToolCalls) == 0 {
-			if reply.Content != "" {
-				produced = append(produced, ChatMessage{Role: "assistant", Content: reply.Content})
-			}
-			break
+		if completed {
+			break resumeLoop
 		}
-
-		for _, tc := range reply.ToolCalls {
-			argsJSON, _ := json.Marshal(tc.Function.Arguments)
-			sig := tc.Function.Name + string(argsJSON)
-			if sig == lastSig {
-				produced = append(produced, ChatMessage{Role: "error", Content: "loop detected, stopping"})
-				goto done
+		if resumesUsed >= agentMaxResumes {
+			total := state.MaxTurns * (resumesUsed + 1)
+			slog.Warn("agent.turn_exhausted",
+				"run_id", runID, "state", state.Name, "depth", depth,
+				"total_turns", total, "resumes_used", resumesUsed, "phase", "abandon",
+			)
+			m := ChatMessage{
+				Role:    "error",
+				Content: fmt.Sprintf("%s ran out of turns (%d) without finishing. Type 'continue' to resume, or rephrase into smaller steps.", state.Title, total),
 			}
-			lastSig = sig
-
-			produced = append(produced, ChatMessage{
-				Role:    "tool",
-				Content: fmt.Sprintf("→ %s(%s)", tc.Function.Name, string(argsJSON)),
-			})
-
-			fn, ok := toolMap[tc.Function.Name]
-			var result string
-			if !ok {
-				result = "unknown tool: " + tc.Function.Name
-			} else {
-				result = fn(tc.Function.Arguments)
-			}
-
-			if view == nil {
-				view = inferView(tc.Function.Name, tc.Function.Arguments)
-			}
-
-			produced = append(produced, ChatMessage{Role: "tool", Content: "  ← " + truncate(result, 150)})
-			messages = append(messages, OllamaMessage{Role: "tool", Content: result})
+			emit(m)
+			produced = append(produced, m)
+			exitReason = "exhausted"
+			break resumeLoop
 		}
+		slog.Warn("agent.turn_exhausted",
+			"run_id", runID, "state", state.Name, "depth", depth,
+			"resumes_used", resumesUsed, "phase", "resume",
+		)
+		nudge := "You ran out of turns. Your ONLY valid next action is an assistant text message — do not call any tool. " +
+			"Report honestly per slot/item: list each Pokemon as 'Slot N <species>: ability=X|MISSING nature=Y|MISSING item=Z|MISSING moves=[..]|INVALID:<err> sp=[..]|MISSING'. " +
+			"List any add_pokemon attempts that were rejected. Do not claim success when fields are missing or invalid. A summary that overstates completion is worse than no summary."
+		messages = append(messages, OllamaMessage{Role: "user", Content: nudge})
+		m := ChatMessage{Role: "tool", Content: fmt.Sprintf("⟳ %s resumed — turn budget exhausted, nudging to wrap up", state.Title)}
+		emit(m)
+		produced = append(produced, m)
+		resumesUsed++
+		lastSig = ""
+		loopWarned = false
 	}
 
-done:
 	ctx := trimHistory(messages)
 	return produced, ctx, view
 }
 
+// runSubAgent invokes a child state with a self-contained task string. The
+// child gets a fresh message buffer (system + user[task]); it does NOT see the
+// parent's conversation. The child's final assistant text is returned to the
+// parent as the tool result for the delegate_<child>(...) call.
+//
+// Tool indicators from the child still stream to onMsg with a [Title] prefix
+// so the user can see the chain of reasoning; the child's final assistant
+// message is suppressed from the chat (it surfaces as the tool result instead).
+func runSubAgent(
+	ollama *OllamaClient,
+	svc *Services,
+	runID, parentName string,
+	state AgentState,
+	task string,
+	depth, maxDepth int,
+	parentOnMsg func(ChatMessage),
+) string {
+	childOnMsg := func(m ChatMessage) {
+		if parentOnMsg == nil {
+			return
+		}
+		// Suppress the child's assistant message — it becomes the tool result.
+		// Keep error messages visible (they're failure signals the user wants).
+		if m.Role == "assistant" {
+			return
+		}
+		// Prefix tool indicators with the child's title so the user can trace
+		// which agent did what.
+		if m.Role == "tool" && state.Title != "" {
+			m.Content = "[" + state.Title + "] " + m.Content
+		}
+		parentOnMsg(m)
+	}
+
+	messages := []OllamaMessage{
+		{Role: "system", Content: state.SystemPrompt},
+		{Role: "user", Content: task},
+	}
+	produced, _, _ := runStateLoop(ollama, svc, runID, parentName, state, messages, depth, maxDepth, childOnMsg)
+
+	// Pluck the final assistant text. If no assistant message was produced
+	// (turn exhaustion + no resume completion), fall back to error or stub.
+	for i := len(produced) - 1; i >= 0; i-- {
+		if produced[i].Role == "assistant" && produced[i].Content != "" {
+			return produced[i].Content
+		}
+	}
+	for i := len(produced) - 1; i >= 0; i-- {
+		if produced[i].Role == "error" && produced[i].Content != "" {
+			return "sub-agent error: " + produced[i].Content
+		}
+	}
+	return "[" + state.Name + " produced no final answer]"
+}
+
+// buildStateTools resolves the concrete tool list for `state`: the named
+// subset of BuildPtmTools, plus auto-injected delegate_<child>(task) tools
+// for each AllowedChild. Delegation tools enforce the depth cap and route
+// back into runSubAgent for the recursive child invocation.
+func buildStateTools(
+	ollama *OllamaClient,
+	svc *Services,
+	runID string,
+	state AgentState,
+	depth, maxDepth int,
+	onMsg func(ChatMessage),
+) []AgentTool {
+	all := BuildPtmTools(svc)
+	tools := subsetTools(all, state.ToolNames)
+
+	for _, childName := range state.AllowedChildren {
+		child, ok := agentStates[childName]
+		if !ok {
+			continue
+		}
+		// Each delegate tool captures the child state and recursion bookkeeping.
+		childCopy := child
+		tools = append(tools, AgentTool{
+			Schema: OlamaTool{
+				Type: "function",
+				Function: OlamaToolFn{
+					Name:        "delegate_" + childCopy.Name,
+					Description: fmt.Sprintf("Delegate to the %s sub-agent. Pass a self-contained task string — the sub-agent does NOT see this conversation, so include team_id, current state, and exact specifications.", childCopy.Title),
+					Parameters: map[string]any{
+						"type": "object",
+						"properties": map[string]any{
+							"task": map[string]any{"type": "string", "description": "Self-contained task description for the sub-agent"},
+						},
+						"required": []string{"task"},
+					},
+				},
+			},
+			Execute: func(args map[string]any) string {
+				if depth+1 >= maxDepth {
+					slog.Warn("agent.depth_exceeded",
+						"run_id", runID, "from_state", state.Name,
+						"to_state", childCopy.Name, "depth", depth, "max_depth", maxDepth,
+					)
+					return fmt.Sprintf("error: max delegation depth (%d) reached. Answer with current information instead of delegating further.", maxDepth)
+				}
+				task, _ := args["task"].(string)
+				if task == "" {
+					return "error: delegate_" + childCopy.Name + " requires a non-empty task string"
+				}
+				return runSubAgent(ollama, svc, runID, state.Name, childCopy, task, depth+1, maxDepth, onMsg)
+			},
+		})
+	}
+	return tools
+}
+
 func inferView(toolName string, args map[string]any) *AgentView {
+	intArg := func(key string) int {
+		switch v := args[key].(type) {
+		case float64:
+			return int(v)
+		case int:
+			return v
+		}
+		return 0
+	}
+	strArg := func(key string) string {
+		s, _ := args[key].(string)
+		return s
+	}
+
 	switch toolName {
-	case "get_team", "analyse_team", "validate_team":
-		if id, ok := args["team_id"]; ok {
-			var tid int
-			switch v := id.(type) {
-			case float64:
-				tid = int(v)
-			case int:
-				tid = v
-			}
-			if tid > 0 {
-				return &AgentView{Type: "team", TeamID: tid}
-			}
+	case "get_team", "analyse_team", "validate_team", "export_team", "training_cost":
+		if tid := intArg("team_id"); tid > 0 {
+			return &AgentView{Type: "team", TeamID: tid}
+		}
+	case "add_pokemon", "remove_pokemon", "set_ability", "set_nature", "set_item",
+		"set_moves", "set_stats", "set_role", "set_notes", "set_nickname",
+		"replace_pokemon", "replace_move":
+		if tid := intArg("team_id"); tid > 0 {
+			return &AgentView{Type: "team", TeamID: tid}
 		}
 	case "get_pokemon":
-		if name, ok := args["name"].(string); ok && name != "" {
+		if name := strArg("name"); name != "" {
 			return &AgentView{Type: "pokemon", PokemonName: name}
 		}
 	case "find_pokemon_by_name":
-		if n, ok := args["name"].(string); ok && n != "" {
-			return &AgentView{Type: "pokemon", PokemonName: n}
+		if name := strArg("name"); name != "" {
+			return &AgentView{Type: "pokemon", PokemonName: name}
 		}
 	case "find_pokemon_by_filters":
-		if t, ok := args["type"].(string); ok && t != "" {
+		// No single species name — use type as a hint label only; client renders the raw results
+		if t := strArg("type"); t != "" {
 			return &AgentView{Type: "pokemon", PokemonName: t}
 		}
 	case "evaluate_pokemon":
-		if name, ok := args["pokemon_name"].(string); ok && name != "" {
+		if name := strArg("pokemon_name"); name != "" {
 			v := &AgentView{Type: "evaluate", PokemonName: name}
-			if id, ok := args["team_id"]; ok {
-				switch val := id.(type) {
-				case float64:
-					v.TeamID = int(val)
-				case int:
-					v.TeamID = val
-				}
+			if tid := intArg("team_id"); tid > 0 {
+				v.TeamID = tid
 			}
 			return v
+		}
+	case "get_item":
+		if name := strArg("name"); name != "" {
+			return &AgentView{Type: "item", ItemName: name}
 		}
 	}
 	return nil

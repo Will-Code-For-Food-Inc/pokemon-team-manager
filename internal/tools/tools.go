@@ -63,9 +63,76 @@ COMBAT LOGS: Record session experiences separate from team notes.
   add_team_log team_id=N entry="..." → append a log entry (notable matchups, what worked/didn't)
   get_team_logs team_id=N           → retrieve all entries newest-first`
 
+	toolHelp := map[string]string{
+		"get_moves": `get_moves pokemon_name="..."
+Returns the Champions-format learnset — the curated list of moves that species can use in-game.
+This is the authoritative source for set_moves validation.
+If a move you expect is missing, the learnset data may have a gap.
+Fix: call add_learnset_move to register it, then set_moves will accept it.`,
+
+		"add_learnset_move": `add_learnset_move pokemon_name="..." move_name="..."
+Adds a move to a species' Champions learnset permanently.
+Use this when the user confirms a move IS available in-game but our database is missing it.
+After adding, set_moves will accept the move.
+The addition persists for this session and future ones.`,
+
+		"set_moves": `set_moves team_id=N pokemon_name="..." move1="..." [move2 move3 move4]
+Sets up to 4 moves for a Pokemon. Each move is checked against the Champions learnset.
+If a move fails: call get_moves to see what IS legal and pick an alternative.
+The learnset data is fixed externally — never call add_learnset_move. If no legal alternative fits, return that fact to the caller.`,
+
+		"set_stats": `set_stats team_id=N pokemon_name="..." hp=N attack=N defense=N sp_attack=N sp_defense=N speed=N
+Sets stat points (SP) for a Pokemon. Champions rules: 66 total, max 32 per stat.
+Omitted stats default to 0. All six stats are replaced atomically.
+VP cost: 5 VP per stat point.`,
+
+		"training_cost": `training_cost team_id=N
+Calculates total VP cost to build the team from scratch.
+VP breakdown per Pokemon: recruit 800 + stat points (×5 each) + nature (500 if not Serious) + moves (250 each) + hidden ability (500).
+Item VP costs: 400 (resist berries), 700 (common), 1000 (special), 2000 (mega stone).`,
+
+		"evaluate_pokemon": `evaluate_pokemon pokemon_name="..." [team_id=N]
+Always call this before recommending any Pokemon.
+Without team_id: species-level analysis — type chart, offensive coverage, stat role, bulk, speed tier.
+With team_id: member-level analysis — adds move flags (priority/setup/recovery/redirection), EV efficiency check, move/stat mismatch detection.`,
+
+		"find_pokemon_by_filters": `find_pokemon_by_filters [type="..."] [role="..."] [speed_tier="..."] [legendary=true|false] [final_evo_only=true] [owned=true|false] [limit=N]
+Discover owned Pokemon by role and type — the primary search tool.
+role options: "physical attacker", "special attacker", "mixed attacker", "support", "tank"
+speed_tier options: "fast" (>100 base), "mid" (70-100), "slow" (<70)
+Always call evaluate_pokemon on each result before recommending.`,
+
+		"search_knowledge": `search_knowledge query="..."
+Semantic search over ingested strategy docs, meta guides, and tier lists.
+Use natural language queries. Call this BEFORE making team recommendations.
+Example: "steel type support for trick room" or "best physical attackers regulation H"`,
+
+		"add_team_log": `add_team_log team_id=N entry="..."
+Appends a battle/session journal entry. Use for: notable matchups, what worked, what didn't, opponent teams seen.
+These are separate from team strategy notes — logs are experiential and append-only.
+Retrieve with get_team_logs team_id=N.`,
+	}
+
 	s.AddTool(mcp.NewTool("get_help",
-		mcp.WithDescription("Returns a compact usage guide for all ptm tools. Call this first if you are unsure what tools are available or how to build a team."),
+		mcp.WithDescription("Returns usage docs for ptm tools. Call with no args for the full overview, or tool_name=... for detailed help on a specific tool."),
+		mcp.WithString("tool_name", mcp.Description("Optional: name of a specific tool to get detailed help for (e.g. 'set_moves', 'get_moves', 'add_learnset_move')")),
 	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		if name := getString(req.GetArguments(), "tool_name"); name != "" {
+			if detail, ok := toolHelp[strings.TrimSpace(strings.ToLower(name))]; ok {
+				return textResult(detail), nil
+			}
+			// Unknown tool name — return overview with note
+			return textResult(fmt.Sprintf("No detailed help for %q. Available: %s\n\n---\n%s",
+				name, strings.Join(func() []string {
+					keys := make([]string, 0, len(toolHelp))
+					for k := range toolHelp {
+						keys = append(keys, k)
+					}
+					return keys
+				}(), ", "),
+				helpText,
+			)), nil
+		}
 		return textResult(helpText), nil
 	})
 }
@@ -109,26 +176,27 @@ func registerPromptTool(s *server.MCPServer, svc *Services) {
 				}
 				fmt.Fprintf(&b, "\n### Team %d: %s (Regulation %s)\n", t.ID, t.Name, t.Regulation)
 				for _, m := range t.Members {
-					if m.Species == nil {
+					if m.Config == nil || m.Config.Species == nil {
 						continue
 					}
+					c := m.Config
 					item := "-"
-					if m.Item != nil {
-						item = m.Item.Name
+					if c.Item != nil {
+						item = c.Item.Name
 					}
 					ability := "-"
-					if m.Ability != nil {
-						ability = m.Ability.Name
+					if c.Ability != nil {
+						ability = c.Ability.Name
 					}
 					var moveNames []string
-					for _, mv := range m.Moves {
+					for _, mv := range c.Moves {
 						if mv != nil {
 							moveNames = append(moveNames, mv.Name)
 						}
 					}
 					fmt.Fprintf(&b, "- Slot %d: %s | %s | %s | %s | EVs: HP%d Atk%d Def%d SpA%d SpD%d Spe%d | Moves: %s\n",
-						m.Slot, m.Species.Name, ability, item, m.Nature,
-						m.EVs.HP, m.EVs.Atk, m.EVs.Def, m.EVs.SpA, m.EVs.SpD, m.EVs.Spe,
+						m.Slot, c.Species.Name, ability, item, c.Nature,
+						c.EVs.HP, c.EVs.Atk, c.EVs.Def, c.EVs.SpA, c.EVs.SpD, c.EVs.Spe,
 						strings.Join(moveNames, ", "))
 				}
 			}

@@ -112,31 +112,32 @@ func registerAnalysisTools(s *server.MCPServer, svc *Services) {
 
 		teamTotal := 0
 		for _, m := range t.Members {
-			if m.Species == nil {
+			if m.Config == nil || m.Config.Species == nil {
 				continue
 			}
-			spTotal := m.EVs.HP + m.EVs.Atk + m.EVs.Def + m.EVs.SpA + m.EVs.SpD + m.EVs.Spe
-			spVP := spTotal * 2
+			c := m.Config
+			spTotal := c.EVs.HP + c.EVs.Atk + c.EVs.Def + c.EVs.SpA + c.EVs.SpD + c.EVs.Spe
+			spVP := spTotal * 5
 
 			natureVP := 0
-			if m.Nature != "" && !strings.EqualFold(m.Nature, "Serious") {
-				natureVP = 200
+			if c.Nature != "" && !strings.EqualFold(c.Nature, "Serious") {
+				natureVP = 500
 			}
 
-			moveVP := len(m.Moves) * 100
+			moveVP := len(c.Moves) * 250
 
 			abilityVP := 0
-			if m.Ability != nil {
-				if abilities, err := svc.Pokemon.GetAbilitiesForSpecies(m.Species.ID); err == nil && len(abilities) > 0 {
-					if abilities[0].ID != m.Ability.ID {
-						abilityVP = 400
+			if c.Ability != nil {
+				if abilities, err := svc.Pokemon.GetAbilitiesForSpecies(c.Species.Slug); err == nil && len(abilities) > 0 {
+					if abilities[0].Slug != c.Ability.Slug {
+						abilityVP = 500
 					}
 				}
 			}
 
-			memberTotal := spVP + natureVP + moveVP + abilityVP
+			memberTotal := 800 + spVP + natureVP + moveVP + abilityVP
 			teamTotal += memberTotal
-			fmt.Fprintf(&b, "%-16s %6d %7d %7d %7d %8d\n", m.Species.Name, spVP, natureVP, moveVP, abilityVP, memberTotal)
+			fmt.Fprintf(&b, "%-16s %6d %7d %7d %7d %8d\n", c.Species.Name, spVP, natureVP, moveVP, abilityVP, memberTotal)
 		}
 
 		fmt.Fprintf(&b, "%-16s %6s %7s %7s %7s %8s\n", "----------------", "------", "-------", "-------", "-------", "--------")

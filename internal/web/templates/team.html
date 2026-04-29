@@ -7,10 +7,11 @@
 <div class="panel">
   <div class="panel-head">{{.Team.Name}} <small style="font-weight:normal">— Regulation {{.Team.Regulation}}</small></div>
   <div class="panel-body">
-    {{if .Team.NotesHTML}}<div class="team-notes">{{.Team.NotesHTML | safeHTML}}</div>{{end}}
+    {{if .Team.StrategyHTML}}<div class="team-notes">{{.Team.StrategyHTML | safeHTML}}</div>{{end}}
     <a href="/teams/{{.Team.ID}}/validate" class="btn btn-primary btn-sm">Validate</a>
     <a href="/teams/{{.Team.ID}}/analyse" class="btn btn-primary btn-sm">Analyse</a>
     <a href="/teams/{{.Team.ID}}/export" class="btn btn-primary btn-sm">Export</a>
+    <a href="/teams/{{.Team.ID}}/history" class="btn btn-primary btn-sm">History</a>
     &nbsp;
     <a href="/teams" style="font-size:12px">← Back to Teams</a>
   </div>
@@ -20,42 +21,41 @@
 <div class="panel">
   <div class="panel-head">
     Slot {{.Slot}} —
-    {{if .Species}}
-      <a href="/pokemon/{{.Species.Name}}" style="color:#fff">{{.Species.Name}}</a>
-      <span class="type type-{{.Species.Type1}}">{{.Species.Type1}}</span>
-      {{if .Species.Type2}}<span class="type type-{{.Species.Type2}}">{{.Species.Type2}}</span>{{end}}
+    {{if .Config}}
+      <a href="/pokemon/{{.Config.Species.Name}}" style="color:#fff">{{.Config.Species.Name}}</a>
+      <span class="type type-{{.Config.Species.Type1}}">{{.Config.Species.Type1}}</span>
+      {{if .Config.Species.Type2}}<span class="type type-{{.Config.Species.Type2}}">{{.Config.Species.Type2}}</span>{{end}}
     {{else}}(empty){{end}}
-    {{if .Nickname}}<em style="font-weight:normal">"{{.Nickname}}"</em>{{end}}
+    {{if .Config}}{{if .Config.Nickname}}<em style="font-weight:normal">"{{.Config.Nickname}}"</em>{{end}}{{end}}
   </div>
   <div class="panel-body">
-    {{if .Species}}
+    {{if .Config}}
     <div class="form-row">
       <div>
         <table>
-          <tr><th>Ability</th><td>{{if .Ability}}{{.Ability.Name}}{{else}}—{{end}}</td></tr>
-          <tr><th>Item</th><td>{{if .Item}}{{.Item.Name}}{{else}}—{{end}}</td></tr>
-          <tr><th>Nature</th><td>{{.Nature}}</td></tr>
-          <tr><th>Tera Type</th><td>{{if .TeraType}}{{.TeraType}}{{else}}—{{end}}</td></tr>
-          <tr><th>Role</th><td>{{if .Role}}{{.Role}}{{else}}—{{end}}</td></tr>
+          <tr><th>Ability</th><td>{{if .Config.Ability}}{{.Config.Ability.Name}}{{else}}—{{end}}</td></tr>
+          <tr><th>Item</th><td>{{if .Config.Item}}{{.Config.Item.Name}}{{else}}—{{end}}</td></tr>
+          <tr><th>Nature</th><td>{{.Config.Nature}}</td></tr>
+          <tr><th>Role</th><td>{{if .Config.Role}}{{.Config.Role}}{{else}}—{{end}}</td></tr>
         </table>
-        {{if .Notes}}<p style="margin-top:6px;font-size:12px;color:#555">{{.Notes}}</p>{{end}}
+        {{if .Config.Notes}}<p style="margin-top:6px;font-size:12px;color:#555">{{.Config.Notes}}</p>{{end}}
       </div>
       <div>
         <table>
-          <tr><th colspan="2">Base Stats (BST {{.Species.BST}}) <em style="font-weight:normal;color:#888;font-size:11px">— {{.EVs.Total}}/66 SP{{if lt .EVs.Total 66}} · <span style="color:#e67e22">{{sub66 .EVs.Total}} left</span>{{end}}</em></th></tr>
-          <tr><td>HP</td><td class="stat-num">{{.Species.HP}}{{if .EVs.HP}}<span style="color:#3498db;font-size:10px;margin-left:2px">+{{.EVs.HP}}</span>{{end}}</td></tr>
-          <tr><td>Atk</td><td class="stat-num">{{.Species.Attack}}{{if .EVs.Atk}}<span style="color:#3498db;font-size:10px;margin-left:2px">+{{.EVs.Atk}}</span>{{end}}</td></tr>
-          <tr><td>Def</td><td class="stat-num">{{.Species.Defense}}{{if .EVs.Def}}<span style="color:#3498db;font-size:10px;margin-left:2px">+{{.EVs.Def}}</span>{{end}}</td></tr>
-          <tr><td>SpA</td><td class="stat-num">{{.Species.SpAttack}}{{if .EVs.SpA}}<span style="color:#3498db;font-size:10px;margin-left:2px">+{{.EVs.SpA}}</span>{{end}}</td></tr>
-          <tr><td>SpD</td><td class="stat-num">{{.Species.SpDefense}}{{if .EVs.SpD}}<span style="color:#3498db;font-size:10px;margin-left:2px">+{{.EVs.SpD}}</span>{{end}}</td></tr>
-          <tr><td>Spe</td><td class="stat-num">{{.Species.Speed}}{{if .EVs.Spe}}<span style="color:#3498db;font-size:10px;margin-left:2px">+{{.EVs.Spe}}</span>{{end}}</td></tr>
+          <tr><th colspan="2">Base Stats (BST {{.Config.Species.BST}}) <em style="font-weight:normal;color:#888;font-size:11px">— {{.Config.EVs.Total}}/66 SP{{if lt .Config.EVs.Total 66}} · <span style="color:#e67e22">{{sub66 .Config.EVs.Total}} left</span>{{end}}</em></th></tr>
+          <tr><td>HP</td><td class="stat-num">{{.Config.Species.HP}}{{if .Config.EVs.HP}}<span style="color:#3498db;font-size:10px;margin-left:2px">+{{.Config.EVs.HP}}</span>{{end}}</td></tr>
+          <tr><td>Atk</td><td class="stat-num">{{.Config.Species.Attack}}{{if .Config.EVs.Atk}}<span style="color:#3498db;font-size:10px;margin-left:2px">+{{.Config.EVs.Atk}}</span>{{end}}</td></tr>
+          <tr><td>Def</td><td class="stat-num">{{.Config.Species.Defense}}{{if .Config.EVs.Def}}<span style="color:#3498db;font-size:10px;margin-left:2px">+{{.Config.EVs.Def}}</span>{{end}}</td></tr>
+          <tr><td>SpA</td><td class="stat-num">{{.Config.Species.SpAttack}}{{if .Config.EVs.SpA}}<span style="color:#3498db;font-size:10px;margin-left:2px">+{{.Config.EVs.SpA}}</span>{{end}}</td></tr>
+          <tr><td>SpD</td><td class="stat-num">{{.Config.Species.SpDefense}}{{if .Config.EVs.SpD}}<span style="color:#3498db;font-size:10px;margin-left:2px">+{{.Config.EVs.SpD}}</span>{{end}}</td></tr>
+          <tr><td>Spe</td><td class="stat-num">{{.Config.Species.Speed}}{{if .Config.EVs.Spe}}<span style="color:#3498db;font-size:10px;margin-left:2px">+{{.Config.EVs.Spe}}</span>{{end}}</td></tr>
         </table>
       </div>
     </div>
 
-    {{if .Moves}}
+    {{if .Config.Moves}}
     <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:6px">
-      {{range .Moves}}
+      {{range .Config.Moves}}
       <div style="border:1px solid #1e3460;border-radius:4px;padding:6px 8px;background:#0e1c35">
         <div style="margin-bottom:4px">
           <span class="type type-{{.Type}}" style="font-size:10px;padding:1px 4px;vertical-align:middle">{{.Type}}</span>
@@ -71,8 +71,8 @@
     {{end}}
 
     <div style="margin-top:8px">
-      <a href="/teams/{{$.Team.ID}}/members/{{.ID}}/edit" class="btn btn-primary btn-sm">Edit</a>
-      <form style="display:inline" method="POST" action="/teams/{{$.Team.ID}}/members/{{.ID}}/delete">
+      <a href="/teams/{{$.Team.ID}}/configs/{{.ConfigID}}/edit" class="btn btn-primary btn-sm">Edit</a>
+      <form style="display:inline" method="POST" action="/teams/{{$.Team.ID}}/configs/{{.ConfigID}}/delete">
         <button class="btn btn-danger btn-sm">Remove</button>
       </form>
     </div>

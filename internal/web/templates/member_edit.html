@@ -1,36 +1,62 @@
 {{template "base" .}}
-{{define "title"}}Edit {{.Member.Species.Name}}{{end}}
+{{define "title"}}Edit {{.Member.Config.Species.Name}}{{end}}
 {{define "head_extra"}}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
 <style>
 .CodeMirror { border: 1px solid #bdc3c7; font-size: 13px; font-family: inherit; height: auto; min-height: 80px; }
 .CodeMirror-scroll { min-height: 80px; }
+.move-chip {
+  padding: 4px 10px;
+  border: 1px solid #bdc3c7;
+  border-radius: 3px;
+  font-size: 12px;
+  cursor: pointer;
+  background: #f4f6f7;
+  user-select: none;
+  transition: background 0.1s, border-color 0.1s;
+}
+.move-chip:hover { border-color: #7f8c8d; background: #ecf0f1; }
+.move-chip.selected { background: #2c3e50; color: #fff; border-color: #2c3e50; }
+.move-chip.hidden { display: none; }
+.move-slot {
+  padding: 5px 12px;
+  border-radius: 3px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 2px solid #bdc3c7;
+  min-width: 100px;
+  cursor: default;
+  background: #ecf0f1;
+  color: #7f8c8d;
+}
+.move-slot.filled { background: #2c3e50; color: #ecf0f1; border-color: #2c3e50; cursor: pointer; }
+.move-slot.filled:hover { background: #c0392b; border-color: #c0392b; }
 </style>
 {{end}}
 {{define "content"}}
 {{with .Error}}<div class="flash-err">{{.}}</div>{{end}}
 
 <div class="panel">
-  <div class="panel-head">Edit — {{.Member.Species.Name}} (Team {{.Team.Name}}, Slot {{.Member.Slot}})</div>
+  <div class="panel-head">Edit — {{.Member.Config.Species.Name}} (Team {{.Team.Name}}, Slot {{.Member.Slot}})</div>
   <div class="panel-body">
     <a href="/teams/{{.Team.ID}}" style="font-size:12px">← Back to Team</a>
   </div>
 </div>
 
-<form method="POST" action="/teams/{{.Team.ID}}/members/{{.Member.ID}}/edit">
+<form method="POST" action="/teams/{{.Team.ID}}/configs/{{.Member.ConfigID}}/edit">
 <div class="panel">
   <div class="panel-head">Identity</div>
   <div class="panel-body">
     <div class="form-row-3">
       <div>
         <label>Nickname</label>
-        <input type="text" name="nickname" value="{{.Member.Nickname}}" placeholder="Optional nickname">
+        <input type="text" name="nickname" value="{{.Member.Config.Nickname}}" placeholder="Optional nickname">
       </div>
       <div>
         <label>Ability</label>
         <select name="ability_id">
           {{range .Abilities}}
-          <option value="{{.ID}}" {{if and $.Member.Ability (eq $.Member.Ability.ID .ID)}}selected{{end}}>{{.Name}}</option>
+          <option value="{{.ID}}" {{if and $.Member.Config.Ability (eq $.Member.Config.Ability.ID .ID)}}selected{{end}}>{{.Name}}</option>
           {{end}}
         </select>
       </div>
@@ -38,7 +64,7 @@
         <label>Nature</label>
         <select name="nature">
           {{range .Natures}}
-          <option value="{{.Name}}" {{if eq $.Member.Nature .Name}}selected{{end}}>
+          <option value="{{.Name}}" {{if eq $.Member.Config.Nature .Name}}selected{{end}}>
             {{.Name}}{{if .Boosted}} (+{{.Boosted}} -{{.Reduced}}){{end}}
           </option>
           {{end}}
@@ -51,77 +77,61 @@
         <select name="item_id">
           <option value="0">— none —</option>
           {{range .Items}}
-          <option value="{{.ID}}" {{if and $.Member.Item (eq $.Member.Item.ID .ID)}}selected{{end}}>{{.Name}}</option>
-          {{end}}
-        </select>
-      </div>
-      <div>
-        <label>Tera Type</label>
-        <select name="tera_type">
-          <option value="">— none —</option>
-          {{range .Types}}
-          <option value="{{.}}" {{if eq $.Member.TeraType .}}selected{{end}}>{{.}}</option>
+          <option value="{{.ID}}" {{if and $.Member.Config.Item (eq $.Member.Config.Item.ID .ID)}}selected{{end}}>{{.Name}}</option>
           {{end}}
         </select>
       </div>
       <div>
         <label>Role</label>
-        <input type="text" name="role" value="{{.Member.Role}}" placeholder="e.g. physical_sweeper">
+        <input type="text" name="role" value="{{.Member.Config.Role}}" placeholder="e.g. physical_sweeper">
       </div>
     </div>
   </div>
 </div>
 
 <div class="panel">
-  <div class="panel-head">EVs <small style="font-weight:normal">(0–252 each, 508 total)</small></div>
+  <div class="panel-head">Stat Points <small style="font-weight:normal" id="sp-total-label">(0–32 each, 66 total)</small></div>
   <div class="panel-body">
+    <div id="sp-remaining" style="margin-bottom:8px;font-size:13px;color:#888"></div>
     <div class="form-row-3">
-      <div><label>HP</label><input type="number" name="ev_hp" min="0" max="252" value="{{.Member.EVs.HP}}"></div>
-      <div><label>Attack</label><input type="number" name="ev_atk" min="0" max="252" value="{{.Member.EVs.Atk}}"></div>
-      <div><label>Defense</label><input type="number" name="ev_def" min="0" max="252" value="{{.Member.EVs.Def}}"></div>
-      <div><label>Sp. Atk</label><input type="number" name="ev_spa" min="0" max="252" value="{{.Member.EVs.SpA}}"></div>
-      <div><label>Sp. Def</label><input type="number" name="ev_spd" min="0" max="252" value="{{.Member.EVs.SpD}}"></div>
-      <div><label>Speed</label><input type="number" name="ev_spe" min="0" max="252" value="{{.Member.EVs.Spe}}"></div>
+      <div><label>HP</label><input type="number" class="sp-input" name="ev_hp" min="0" max="32" value="{{.Member.Config.EVs.HP}}"></div>
+      <div><label>Attack</label><input type="number" class="sp-input" name="ev_atk" min="0" max="32" value="{{.Member.Config.EVs.Atk}}"></div>
+      <div><label>Defense</label><input type="number" class="sp-input" name="ev_def" min="0" max="32" value="{{.Member.Config.EVs.Def}}"></div>
+      <div><label>Sp. Atk</label><input type="number" class="sp-input" name="ev_spa" min="0" max="32" value="{{.Member.Config.EVs.SpA}}"></div>
+      <div><label>Sp. Def</label><input type="number" class="sp-input" name="ev_spd" min="0" max="32" value="{{.Member.Config.EVs.SpD}}"></div>
+      <div><label>Speed</label><input type="number" class="sp-input" name="ev_spe" min="0" max="32" value="{{.Member.Config.EVs.Spe}}"></div>
     </div>
   </div>
 </div>
 
 <div class="panel">
-  <div class="panel-head">IVs <small style="font-weight:normal">(0–31 each)</small></div>
+  <div class="panel-head">Moves <small style="font-weight:normal">click to select up to 4 — click again to remove</small></div>
   <div class="panel-body">
-    <div class="form-row-3">
-      <div><label>HP</label><input type="number" name="iv_hp" min="0" max="31" value="{{.Member.IVs.HP}}"></div>
-      <div><label>Attack</label><input type="number" name="iv_atk" min="0" max="31" value="{{.Member.IVs.Atk}}"></div>
-      <div><label>Defense</label><input type="number" name="iv_def" min="0" max="31" value="{{.Member.IVs.Def}}"></div>
-      <div><label>Sp. Atk</label><input type="number" name="iv_spa" min="0" max="31" value="{{.Member.IVs.SpA}}"></div>
-      <div><label>Sp. Def</label><input type="number" name="iv_spd" min="0" max="31" value="{{.Member.IVs.SpD}}"></div>
-      <div><label>Speed</label><input type="number" name="iv_spe" min="0" max="31" value="{{.Member.IVs.Spe}}"></div>
+    <div id="move-slots" style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+      <div class="move-slot empty" data-slot="0">1. —</div>
+      <div class="move-slot empty" data-slot="1">2. —</div>
+      <div class="move-slot empty" data-slot="2">3. —</div>
+      <div class="move-slot empty" data-slot="3">4. —</div>
     </div>
-  </div>
-</div>
-
-<div class="panel">
-  <div class="panel-head">Moves <small style="font-weight:normal">(must be in species learnset)</small></div>
-  <div class="panel-body">
-    <div class="form-row">
-      {{$moves := .Member.Moves}}
-      {{range $i, $slot := iterate 4}}
-      <div>
-        <label>Move {{add $slot 1}}</label>
-        <input type="text" name="move{{add $slot 1}}" value="{{index $moves $i | moveName}}" list="move-list" placeholder="Move name">
+    <input type="text" id="move-filter" placeholder="Filter moves…" style="margin-bottom:10px;width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid #bdc3c7;border-radius:3px;font-size:13px">
+    <div id="move-pool" style="display:flex;flex-wrap:wrap;gap:6px">
+      {{range .Learnset}}
+      <div class="move-chip" data-name="{{.Name}}" data-type="{{.Type}}" data-cat="{{.Category}}">
+        {{.Name}}
       </div>
       {{end}}
     </div>
-    <datalist id="move-list">
-      {{range .Learnset}}<option value="{{.Name}}">{{end}}
-    </datalist>
+    <input type="hidden" name="move1" id="hm1">
+    <input type="hidden" name="move2" id="hm2">
+    <input type="hidden" name="move3" id="hm3">
+    <input type="hidden" name="move4" id="hm4">
   </div>
 </div>
 
 <div class="panel">
-  <div class="panel-head">Notes</div>
+  <div class="panel-head">Build Notes</div>
   <div class="panel-body">
-    <textarea name="notes" id="notes-editor">{{.Member.Notes}}</textarea>
+    <textarea name="notes" id="notes-editor">{{.Member.Config.Notes}}</textarea>
   </div>
 </div>
 
@@ -144,16 +154,93 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/markdown/markdown.min.js"></script>
 <script>
 (function() {
+  // Stat point tracker
+  var spInputs = Array.from(document.querySelectorAll('.sp-input'));
+  var spLabel = document.getElementById('sp-remaining');
+  function updateSP() {
+    var used = spInputs.reduce(function(s, el) { return s + (parseInt(el.value) || 0); }, 0);
+    var left = 66 - used;
+    spLabel.textContent = used + ' / 66 used — ' + left + ' remaining';
+    spLabel.style.color = left < 0 ? '#c0392b' : left === 0 ? '#27ae60' : '#888';
+  }
+  spInputs.forEach(function(el) { el.addEventListener('input', updateSP); });
+  updateSP();
+
+  // Notes editor
   var ta = document.getElementById('notes-editor');
-  var cm = CodeMirror.fromTextArea(ta, {
-    mode: 'markdown',
-    lineWrapping: true,
-    viewportMargin: Infinity
+  var cm = CodeMirror.fromTextArea(ta, { mode: 'markdown', lineWrapping: true, viewportMargin: Infinity });
+  ta.form.addEventListener('submit', function() { cm.save(); });
+
+  // Move picker
+  var selected = [];
+  var initialMoves = [
+    {{range $i, $slot := iterate 4}}"{{index $.Member.Config.Moves $i | moveName}}",{{end}}
+  ].filter(Boolean);
+
+  var slots = Array.from(document.querySelectorAll('.move-slot'));
+  var chips = Array.from(document.querySelectorAll('.move-chip'));
+  var hiddens = [
+    document.getElementById('hm1'),
+    document.getElementById('hm2'),
+    document.getElementById('hm3'),
+    document.getElementById('hm4'),
+  ];
+
+  function renderSlots() {
+    slots.forEach(function(el, i) {
+      if (selected[i]) {
+        el.textContent = (i+1) + '. ' + selected[i];
+        el.classList.add('filled');
+        el.title = 'Click to remove';
+      } else {
+        el.textContent = (i+1) + '. —';
+        el.classList.remove('filled');
+        el.title = '';
+      }
+    });
+    hiddens.forEach(function(h, i) { h.value = selected[i] || ''; });
+    chips.forEach(function(c) {
+      c.classList.toggle('selected', selected.indexOf(c.dataset.name) !== -1);
+    });
+  }
+
+  function selectMove(name) {
+    if (selected.indexOf(name) !== -1) return;
+    if (selected.length >= 4) return;
+    selected.push(name);
+    renderSlots();
+  }
+
+  function removeMove(name) {
+    var i = selected.indexOf(name);
+    if (i !== -1) { selected.splice(i, 1); renderSlots(); }
+  }
+
+  chips.forEach(function(c) {
+    c.addEventListener('click', function() {
+      if (selected.indexOf(c.dataset.name) !== -1) removeMove(c.dataset.name);
+      else selectMove(c.dataset.name);
+    });
   });
-  // Sync CodeMirror content back to the textarea before the form submits
-  ta.form.addEventListener('submit', function() {
-    cm.save();
+
+  slots.forEach(function(el) {
+    el.addEventListener('click', function() {
+      var i = parseInt(el.dataset.slot);
+      if (selected[i]) removeMove(selected[i]);
+    });
   });
+
+  // Filter
+  document.getElementById('move-filter').addEventListener('input', function() {
+    var q = this.value.toLowerCase();
+    chips.forEach(function(c) {
+      c.classList.toggle('hidden', q && c.dataset.name.toLowerCase().indexOf(q) === -1);
+    });
+  });
+
+  // Seed from current config moves
+  initialMoves.forEach(function(name) { if (name) selectMove(name); });
+  renderSlots();
 })();
 </script>
 {{end}}

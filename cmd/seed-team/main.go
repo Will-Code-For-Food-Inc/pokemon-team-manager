@@ -169,7 +169,7 @@ func registerTeam(db *sql.DB) error {
 			return fmt.Errorf("ability %q not found: %w", m.ability, err)
 		}
 
-		memberID, err := tr.AddMember(int(teamID), sp.ID, ab.ID)
+		memberID, err := tr.AddMember(int(teamID), sp.Slug, ab.Slug)
 		if err != nil {
 			return fmt.Errorf("add member %s: %w", m.species, err)
 		}
@@ -181,7 +181,7 @@ func registerTeam(db *sql.DB) error {
 		if err := tr.SetRole(mid, m.role); err != nil {
 			return fmt.Errorf("set role %s: %w", m.species, err)
 		}
-		if err := tr.SetMemberNotes(mid, m.notes); err != nil {
+		if err := tr.SetConfigNotes(mid, m.notes); err != nil {
 			return fmt.Errorf("set notes %s: %w", m.species, err)
 		}
 
@@ -190,7 +190,7 @@ func registerTeam(db *sql.DB) error {
 			if err != nil {
 				log.Printf("warn: item %q not found for %s, skipping", m.item, m.species)
 			} else {
-				if err := tr.SetItem(mid, item.ID); err != nil {
+				if err := tr.SetItem(mid, item.Slug); err != nil {
 					return fmt.Errorf("set item %s: %w", m.species, err)
 				}
 			}
@@ -201,17 +201,17 @@ func registerTeam(db *sql.DB) error {
 			return fmt.Errorf("set EVs %s: %w", m.species, err)
 		}
 
-		var moveIDs []int
+		var moveSlugs []string
 		for _, moveName := range m.moves {
 			mv, err := pr.GetMoveByName(moveName)
 			if err != nil {
 				log.Printf("warn: move %q not found for %s, skipping", moveName, m.species)
 				continue
 			}
-			moveIDs = append(moveIDs, mv.ID)
+			moveSlugs = append(moveSlugs, mv.Slug)
 		}
-		if len(moveIDs) > 0 {
-			if err := tr.SetMoves(mid, moveIDs); err != nil {
+		if len(moveSlugs) > 0 {
+			if err := tr.SetMoves(mid, moveSlugs); err != nil {
 				return fmt.Errorf("set moves %s: %w", m.species, err)
 			}
 		}

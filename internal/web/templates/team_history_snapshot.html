@@ -1,0 +1,66 @@
+{{template "base" .}}
+{{define "title"}}Team {{.Team.Name}} — Snapshot {{.Snapshot.ID}}{{end}}
+{{define "content"}}
+<div class="panel">
+  <div class="panel-head">
+    Snapshot {{.Snapshot.ID}}
+    <small style="font-weight:normal">
+      — {{.Team.Name}} (Regulation {{.Team.Regulation}})
+      — {{.Snapshot.CreatedAt.Format "2006-01-02 15:04:05"}}
+      — {{.Snapshot.Kind}}
+      {{if .Snapshot.Label}}— <em>{{.Snapshot.Label}}</em>{{end}}
+      — by {{.Snapshot.CreatedBy}}
+    </small>
+  </div>
+  <div class="panel-body">
+    <a href="/teams/{{.Team.ID}}/history" class="btn btn-primary btn-sm">← Back to History</a>
+    <a href="/teams/{{.Team.ID}}" class="btn btn-primary btn-sm">Current state</a>
+    <p style="font-size:12px;color:var(--cream-dim);margin-top:8px">
+      This is a read-only render of how the team looked at this point in time. To bring the team back to this state, mutate it manually — there's no "restore" tool by design.
+    </p>
+  </div>
+</div>
+
+{{if .Team.Members}}
+{{range .Team.Members}}
+<div class="panel">
+  <div class="panel-head">
+    Slot {{.Slot}} —
+    {{if .Config}}
+      {{.Config.Species.Name}}
+      <span class="type type-{{.Config.Species.Type1}}">{{.Config.Species.Type1}}</span>
+      {{if .Config.Species.Type2}}<span class="type type-{{.Config.Species.Type2}}">{{.Config.Species.Type2}}</span>{{end}}
+      {{if .Config.Nickname}}<em style="font-weight:normal">"{{.Config.Nickname}}"</em>{{end}}
+    {{else}}(empty){{end}}
+  </div>
+  {{if .Config}}
+  <div class="panel-body" style="font-size:12px">
+    <div>
+      <strong>Ability:</strong> {{if .Config.Ability}}{{.Config.Ability.Name}}{{else}}-{{end}}
+      &nbsp; <strong>Nature:</strong> {{.Config.Nature}}
+      &nbsp; <strong>Item:</strong> {{if .Config.Item}}{{.Config.Item.Name}}{{else}}-{{end}}
+    </div>
+    {{if .Config.Moves}}
+    <div style="margin-top:4px">
+      <strong>Moves:</strong>
+      {{range $i, $m := .Config.Moves}}{{if $m}}{{if $i}} / {{end}}{{$m.Name}}{{end}}{{end}}
+    </div>
+    {{end}}
+    <div style="margin-top:4px">
+      <strong>SP:</strong>
+      HP {{.Config.EVs.HP}} /
+      Atk {{.Config.EVs.Atk}} /
+      Def {{.Config.EVs.Def}} /
+      SpA {{.Config.EVs.SpA}} /
+      SpD {{.Config.EVs.SpD}} /
+      Spe {{.Config.EVs.Spe}}
+    </div>
+  </div>
+  {{end}}
+</div>
+{{end}}
+{{else}}
+<div class="panel"><div class="panel-body" style="font-size:12px;color:var(--cream-dim)">No members at this point.</div></div>
+{{end}}
+
+{{end}}

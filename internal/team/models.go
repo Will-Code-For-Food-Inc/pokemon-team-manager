@@ -8,37 +8,46 @@ import (
 	"github.com/user/pokemon-team-manager/internal/pokemon"
 )
 
-// Team represents a VGC team stored in the database.
+// Team represents a VGC team.
 type Team struct {
-	ID         int       `json:"id"`
-	Name       string    `json:"name"`
-	Regulation string    `json:"regulation"`
-	Notes      string    `json:"notes"`
-	// NotesHTML is the Notes field rendered to HTML via goldmark (unsafe HTML stripped).
-	NotesHTML  string    `json:"notes_html"`
-	Members    []Member  `json:"members"`
-	CreatedAt  time.Time `json:"created_at"`
-	UpdatedAt  time.Time `json:"updated_at"`
+	ID           int       `json:"id"`
+	Name         string    `json:"name"`
+	Regulation   string    `json:"regulation"`
+	// Strategy holds long-term team notes: gameplan, threats, synergy rationale.
+	Strategy     string    `json:"strategy"`
+	StrategyHTML string    `json:"strategy_html"`
+	Members      []Member  `json:"members"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
 }
 
-// Member represents a single Pokemon slot on a team.
+// Member is a resolved team slot: slot number + full pokemon config.
 type Member struct {
-	ID        int              `json:"id"`
-	TeamID    int              `json:"team_id"`
-	Slot      int              `json:"slot"`
-	Species   *pokemon.Species `json:"species,omitempty"`
-	Nickname  string           `json:"nickname"`
-	Ability   *pokemon.Ability `json:"ability,omitempty"`
-	Item      *pokemon.Item    `json:"item,omitempty"`
-	TeraType  string           `json:"tera_type"`
-	Nature    string           `json:"nature"`
-	Role      string           `json:"role"`
-	Notes     string           `json:"notes"`
-	EVs       StatSpread       `json:"evs"`
-	Moves     []*pokemon.Move  `json:"moves"`
+	Slot     int     `json:"slot"`
+	ConfigID int     `json:"config_id"`
+	Config   *Config `json:"config,omitempty"`
 }
 
-// StatSpread holds stat point values for all six stats.
+// Config is a fully-specified build for a single Pokemon.
+// It lives independently of any team slot.
+type Config struct {
+	ID          int              `json:"id"`
+	Species     *pokemon.Species `json:"species,omitempty"`
+	Nickname    string           `json:"nickname"`
+	Nature      string           `json:"nature"`
+	Ability     *pokemon.Ability `json:"ability,omitempty"`
+	Item        *pokemon.Item    `json:"item,omitempty"`
+	TeraType    string           `json:"tera_type"`
+	Role        string           `json:"role"`
+	// Notes holds config-level tactical notes for this specific build.
+	Notes       string           `json:"notes"`
+	EVs         StatSpread       `json:"evs"`
+	Moves       []*pokemon.Move  `json:"moves"`
+	CreatedAt   time.Time        `json:"created_at"`
+	UpdatedAt   time.Time        `json:"updated_at"`
+}
+
+// StatSpread holds stat point (SP) values for all six stats.
 type StatSpread struct {
 	HP  int `json:"hp"`
 	Atk int `json:"attack"`
@@ -48,7 +57,7 @@ type StatSpread struct {
 	Spe int `json:"speed"`
 }
 
-// Total returns the sum of all stats in the spread.
+// Total returns the sum of all stat points.
 func (s StatSpread) Total() int {
 	return s.HP + s.Atk + s.Def + s.SpA + s.SpD + s.Spe
 }
@@ -61,30 +70,31 @@ type Violation struct {
 
 // Analysis is the result of analysing a team's composition.
 type Analysis struct {
-	TeamID           int               `json:"team_id"`
-	TeamName         string            `json:"team_name"`
-	SpeedTiers       []SpeedTier       `json:"speed_tiers"`
-	OffensiveCoverage []string         `json:"offensive_coverage"`
+	TeamID              int               `json:"team_id"`
+	TeamName            string            `json:"team_name"`
+	SpeedTiers          []SpeedTier       `json:"speed_tiers"`
+	OffensiveCoverage   []string          `json:"offensive_coverage"`
 	DefensiveWeaknesses []WeaknessSummary `json:"defensive_weaknesses"`
-	Archetypes       []string          `json:"archetypes"`
-	EVSummary        []EVSummary       `json:"ev_summary"`
+	Archetypes          []string          `json:"archetypes"`
+	EVSummary           []EVSummary       `json:"ev_summary"`
 }
 
-// SpeedTier holds the calculated Lv. 50 speed stat for a member.
+// SpeedTier holds the calculated Lv50 speed stat for a team member.
 type SpeedTier struct {
 	Slot      int    `json:"slot"`
 	Name      string `json:"name"`
 	BaseSpeed int    `json:"base_speed"`
-	StatSpeed int    `json:"stat_speed"` // calculated at Lv.50 with EVs/IVs/nature
+	StatSpeed int    `json:"stat_speed"`
 }
 
-// WeaknessSummary records how many team members share a weakness.
+// WeaknessSummary records how many team members share a type weakness.
 type WeaknessSummary struct {
 	Type  string `json:"type"`
 	Count int    `json:"count"`
 }
 
-// TeamLog is a single combat/session log entry for a team.
+// TeamLog is a single battle/session journal entry.
+// Logs are append-only experiential records; use team.Strategy for standing notes.
 type TeamLog struct {
 	ID        int       `json:"id"`
 	TeamID    int       `json:"team_id"`
@@ -92,11 +102,21 @@ type TeamLog struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
-// EVSummary summarises EV investment for a team member.
+// EVSummary summarises SP investment for a team member.
 type EVSummary struct {
 	Slot   int        `json:"slot"`
 	Name   string     `json:"name"`
 	Nature string     `json:"nature"`
 	EVs    StatSpread `json:"evs"`
 	Total  int        `json:"total"`
+}
+
+// TeamSummary is a lightweight team view used in list operations.
+type TeamSummary struct {
+	ID          int       `json:"id"`
+	Name        string    `json:"name"`
+	Regulation  string    `json:"regulation"`
+	Strategy    string    `json:"strategy"`
+	MemberCount int       `json:"member_count"`
+	CreatedAt   time.Time `json:"created_at"`
 }

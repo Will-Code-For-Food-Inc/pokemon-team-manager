@@ -22,12 +22,14 @@
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: Verdana, Geneva, sans-serif; font-size: 14px; background: var(--navy-deep); color: var(--cream); }
+html, body { height: 100%; overflow: hidden; }
+body { font-family: Verdana, Geneva, sans-serif; font-size: 14px; background: var(--navy-deep); color: var(--cream); display: flex; flex-direction: column; }
 a { color: var(--gold); text-decoration: none; }
 a:hover { color: var(--gold-bright); text-decoration: underline; }
 
-/* Layout */
-#wrap { max-width: 960px; margin: 0 auto; padding: 8px; }
+/* Layout — body is a flex column: header shrinks, wrap fills the rest */
+#header { flex-shrink: 0; }
+#wrap { flex: 1; min-height: 0; padding: 8px; overflow-y: auto; }
 
 /* Header */
 #header {
@@ -102,6 +104,79 @@ form textarea { height: 60px; resize: vertical; }
 
 /* Violations */
 .violation { background: #2b0e0e; border-left: 3px solid var(--red-danger); color: #f1948a; padding: 4px 8px; margin: 3px 0; font-size: 12px; }
+
+/* ── Page-local settings drawer ─────────────────────────────────────────────
+   Pure-CSS toggle via a hidden checkbox. Pages that want a settings drawer
+   include three siblings inside their content:
+     <input type="checkbox" id="settings-toggle" class="settings-toggle">
+     <label for="settings-toggle" class="settings-fab" aria-label="...">⚙</label>
+     <div class="settings-drawer">...content...</div>
+   Settings live with the page they affect; this is the bottom-right
+   "unobtrusive pane that pops out" affordance. */
+.settings-toggle { display: none; }
+.settings-fab {
+  position: fixed; bottom: 16px; right: 16px;
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--navy-raised); border: 1px solid var(--gold-border);
+  color: var(--gold-bright); font-size: 20px; line-height: 42px; text-align: center;
+  cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  user-select: none; z-index: 90;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.settings-fab:hover { background: var(--navy-border); transform: scale(1.06); }
+.settings-toggle:checked ~ .settings-fab { opacity: 0; pointer-events: none; }
+.settings-drawer {
+  position: fixed; bottom: 16px; right: 16px;
+  width: 360px; max-width: calc(100vw - 32px); max-height: 80vh;
+  background: var(--navy-panel); border: 1px solid var(--gold-border);
+  border-radius: 4px; box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+  display: flex; flex-direction: column;
+  transform: translateY(calc(100% + 32px)); opacity: 0; pointer-events: none;
+  transform-origin: bottom right;
+  transition: transform 0.32s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.18s ease;
+  z-index: 91;
+}
+.settings-toggle:checked ~ .settings-drawer {
+  transform: translateY(0); opacity: 1; pointer-events: auto;
+}
+.settings-drawer-head {
+  background: var(--navy-mid); border-bottom: 1px solid var(--gold-border);
+  padding: 6px 12px; display: flex; align-items: center; justify-content: space-between;
+  font-size: 11px; font-weight: bold; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--gold-bright); flex-shrink: 0;
+}
+.settings-close {
+  cursor: pointer; padding: 0 6px; font-size: 18px; line-height: 1;
+  color: var(--cream-dim); user-select: none;
+}
+.settings-close:hover { color: var(--cream); }
+.settings-drawer-body {
+  padding: 10px 12px; overflow-y: auto; flex: 1; font-size: 12px;
+}
+.settings-drawer-body h3 {
+  font-size: 11px; font-weight: bold; letter-spacing: 0.05em; text-transform: uppercase;
+  color: var(--gold-bright); margin: 8px 0 4px;
+}
+.settings-drawer-body h3:first-child { margin-top: 0; }
+.settings-drawer-body label { display: block; font-size: 11px; color: var(--cream-dim); margin-top: 6px; }
+.settings-drawer-body input[type=text],
+.settings-drawer-body input[type=number],
+.settings-drawer-body textarea {
+  width: 100%; background: var(--navy-deep); color: var(--cream);
+  border: 1px solid var(--navy-border); border-radius: 2px;
+  padding: 4px 6px; font-size: 12px; font-family: inherit; margin-top: 2px;
+}
+.settings-drawer-body textarea { min-height: 80px; resize: vertical; font-family: monospace; }
+.settings-drawer-body .form-row    { display: grid; grid-template-columns: 1fr 1fr;     gap: 6px; }
+.settings-drawer-body .form-row-3  { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+.settings-drawer-body .field-hint  { font-size: 10px; color: var(--cream-dim); margin-top: 2px; }
+.settings-drawer-body .drawer-section { margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--navy-border); }
+.settings-drawer-body .drawer-section:first-child { margin-top: 0; padding-top: 0; border-top: none; }
+.settings-drawer-foot {
+  padding: 8px 12px; border-top: 1px solid var(--navy-border);
+  display: flex; gap: 6px; justify-content: flex-end; flex-shrink: 0;
+  background: var(--navy-mid);
+}
 </style>
 {{block "head_extra" .}}{{end}}
 </head>
@@ -114,7 +189,8 @@ form textarea { height: 60px; resize: vertical; }
     <a href="/moves">Moves</a>
     <a href="/items">Items</a>
     <a href="/kb">KB</a>
-    <a href="/chat">Agent</a>
+    <a href="/chat">Sable</a>
+    <a href="/regulations">Formats</a>
     <a href="/settings">Settings</a>
   </nav>
 </div>

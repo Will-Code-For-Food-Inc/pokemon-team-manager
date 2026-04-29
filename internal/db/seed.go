@@ -1,253 +1,285 @@
+// Package db handles database initialization, migrations, and seeding.
 package db
 
 import (
 	"database/sql"
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 )
 
-// seedSpecies is the JSON representation used in data/pokemon/species.json.
-type seedSpecies struct {
-	ID           int    `json:"id"`   // national dex number → dex_id
-	Name         string `json:"name"`
-	Form         string `json:"form"`
-	Type1        string `json:"type1"`
-	Type2        string `json:"type2"`
-	HP           int    `json:"hp"`
-	Attack       int    `json:"attack"`
-	Defense      int    `json:"defense"`
-	SpAttack     int    `json:"sp_attack"`
-	SpDefense    int    `json:"sp_defense"`
-	Speed        int    `json:"speed"`
-	Generation   int    `json:"generation"`
-	IsLegendary  int    `json:"is_legendary"`
-	IsMythical   int    `json:"is_mythical"`
-	IsFinalEvo   int    `json:"is_final_evo"`
-	IsRestricted int    `json:"is_restricted"`
-}
-
-type seedMove struct {
-	ID          int    `json:"id"`
-	Name        string `json:"name"`
-	Type        string `json:"type"`
-	Category    string `json:"category"`
-	Power       *int   `json:"power"`
-	Accuracy    *int   `json:"accuracy"`
-	PP          int    `json:"pp"`
-	Priority    int    `json:"priority"`
-	Target      string `json:"target"`
-	Description string `json:"description"`
-}
-
-type seedAbility struct {
-	ID          int    `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-}
-
-type seedItem struct {
-	ID          int    `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	IsBanned    int    `json:"is_banned"`
-}
-
-type seedLearnset struct {
-	SpeciesID   int    `json:"species_id"`
-	MoveID      int    `json:"move_id"`
-	LearnMethod string `json:"learn_method"`
-}
-
-type seedSpeciesAbility struct {
-	SpeciesID int    `json:"species_id"`
-	Form      string `json:"form"`
-	AbilityID int    `json:"ability_id"`
-	Slot      int    `json:"slot"`
-}
-
-type seedRegulation struct {
-	ID            string `json:"id"`
-	Name          string `json:"name"`
-	StartDate     string `json:"start_date"`
-	EndDate       string `json:"end_date"`
-	Description   string `json:"description"`
-	MaxRestricted int    `json:"max_restricted"`
-}
-
-// Seed loads all JSON files from dataDir/pokemon/ and dataDir/knowledge/ and
-// inserts them into the database. All inserts are INSERT OR IGNORE so the
-// operation is idempotent.
+// Seed loads all CSV files from dataDir/pokemon/ into the database.
+// Inserts are INSERT OR IGNORE (idempotent). Used for tests and CLI seeding.
 func Seed(db *sql.DB, dataDir string) error {
-	pokemonDir := filepath.Join(dataDir, "pokemon")
-
-	if err := seedFile(db, filepath.Join(pokemonDir, "species.json"), seedSpeciesRows); err != nil {
-		return fmt.Errorf("seed species: %w", err)
+	dir := filepath.Join(dataDir, "pokemon")
+	for _, step := range seedSteps {
+		path := filepath.Join(dir, step.file)
+		if err := seedCSV(db, path, step.table, step.insert); err != nil {
+			return fmt.Errorf("seed %s: %w", step.file, err)
+		}
 	}
-	if err := seedFile(db, filepath.Join(pokemonDir, "abilities.json"), seedAbilityRows); err != nil {
-		return fmt.Errorf("seed abilities: %w", err)
+	// Legacy JSON seeds: resolve PokeAPI internal IDs to slugs via JOIN.
+	if err := seedSpeciesAbilitiesJSON(db, filepath.Join(dir, "species_abilities.json")); err != nil {
+		return fmt.Errorf("seed species_abilities.json: %w", err)
 	}
-	if err := seedFile(db, filepath.Join(pokemonDir, "moves.json"), seedMoveRows); err != nil {
-		return fmt.Errorf("seed moves: %w", err)
-	}
-	if err := seedFile(db, filepath.Join(pokemonDir, "items.json"), seedItemRows); err != nil {
-		return fmt.Errorf("seed items: %w", err)
-	}
-	if err := seedFile(db, filepath.Join(pokemonDir, "learnsets.json"), seedLearnsetRows); err != nil {
-		return fmt.Errorf("seed learnsets: %w", err)
-	}
-	if err := seedFile(db, filepath.Join(pokemonDir, "species_abilities.json"), seedSpeciesAbilityRows); err != nil {
-		return fmt.Errorf("seed species_abilities: %w", err)
-	}
-	if err := seedFile(db, filepath.Join(pokemonDir, "regulations.json"), seedRegulationRows); err != nil {
-		return fmt.Errorf("seed regulations: %w", err)
+	if err := seedLearnsetJSON(db, filepath.Join(dir, "learnsets.json")); err != nil {
+		return fmt.Errorf("seed learnsets.json: %w", err)
 	}
 	return nil
 }
 
-func seedFile[T any](db *sql.DB, path string, fn func(*sql.Tx, []T) error) error {
+// seedSpeciesAbilitiesJSON seeds species_abilities from the legacy JSON format.
+// species_id in the JSON is the national dex number; we join to get the slug.
+func seedSpeciesAbilitiesJSON(db *sql.DB, path string) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil // skip missing files gracefully
+			return nil
 		}
 		return err
 	}
-	var rows []T
+	var rows []struct {
+		SpeciesID int `json:"species_id"`
+		AbilityID int `json:"ability_id"`
+		Slot      int `json:"slot"`
+	}
 	if err := json.Unmarshal(data, &rows); err != nil {
-		return fmt.Errorf("parse %s: %w", path, err)
+		return err
 	}
 	tx, err := db.Begin()
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
-	if err := fn(tx, rows); err != nil {
+	stmt, err := tx.Prepare(`INSERT OR IGNORE INTO species_abilities(species_slug, ability_slug, slot)
+		SELECT s.slug, a.slug, ?
+		FROM species s, abilities a
+		WHERE s.dex_id=? AND s.form='' AND a.id=?`)
+	if err != nil {
 		return err
+	}
+	defer stmt.Close()
+	for _, r := range rows {
+		if _, err := stmt.Exec(r.Slot, r.SpeciesID, r.AbilityID); err != nil {
+			return err
+		}
 	}
 	return tx.Commit()
 }
 
-func seedSpeciesRows(tx *sql.Tx, rows []seedSpecies) error {
-	stmt, err := tx.Prepare(`INSERT OR IGNORE INTO species
-		(dex_id,name,form,type1,type2,hp,attack,defense,sp_attack,sp_defense,speed,
+// seedLearnsetJSON seeds learnsets from the legacy JSON format.
+func seedLearnsetJSON(db *sql.DB, path string) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+	var rows []struct {
+		SpeciesID   int    `json:"species_id"`
+		MoveID      int    `json:"move_id"`
+		LearnMethod string `json:"learn_method"`
+	}
+	if err := json.Unmarshal(data, &rows); err != nil {
+		return err
+	}
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	stmt, err := tx.Prepare(`INSERT OR IGNORE INTO learnsets(species_slug, move_slug)
+		SELECT s.slug, m.slug
+		FROM species s, moves m
+		WHERE s.dex_id=? AND s.form='' AND m.id=?`)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	for _, r := range rows {
+		if _, err := stmt.Exec(r.SpeciesID, r.MoveID); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
+type seedStep struct {
+	file   string
+	table  string
+	insert func(tx *sql.Tx, row []string) error
+}
+
+var seedSteps = []seedStep{
+	{"species.csv", "species", insertSpecies},
+	{"moves.csv", "moves", insertMove},
+	{"abilities.csv", "abilities", insertAbility},
+	{"items.csv", "items", insertItem},
+	{"regulations.csv", "regulations", insertRegulation},
+	{"champions_learnsets.csv", "champions_learnsets", insertChampionsLearnset},
+	{"learnsets.csv", "learnsets", insertLearnset},
+	{"species_abilities.csv", "species_abilities", insertSpeciesAbility},
+	{"regulation_species.csv", "regulation_species", insertRegulationSpecies},
+	{"mega_stones.csv", "mega_stones", insertMegaStone},
+}
+
+func seedCSV(db *sql.DB, path string, _ string, insert func(*sql.Tx, []string) error) error {
+	f, err := os.Open(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil // skip optional files
+		}
+		return err
+	}
+	defer f.Close()
+
+	r := csv.NewReader(f)
+	r.LazyQuotes = true
+	// Skip header row.
+	if _, err := r.Read(); err != nil {
+		return fmt.Errorf("read header: %w", err)
+	}
+
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	for {
+		row, err := r.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return fmt.Errorf("read row: %w", err)
+		}
+		if err := insert(tx, row); err != nil {
+			return fmt.Errorf("insert row %v: %w", row, err)
+		}
+	}
+	return tx.Commit()
+}
+
+// col returns row[i] or "" if out of bounds.
+func col(row []string, i int) string {
+	if i < len(row) {
+		return row[i]
+	}
+	return ""
+}
+
+// intCol parses row[i] as int, returns 0 on failure.
+func intCol(row []string, i int) int {
+	v, _ := strconv.Atoi(col(row, i))
+	return v
+}
+
+// nullIntCol returns nil if empty, else *int.
+func nullIntCol(row []string, i int) *int {
+	s := col(row, i)
+	if s == "" {
+		return nil
+	}
+	v, err := strconv.Atoi(s)
+	if err != nil {
+		return nil
+	}
+	return &v
+}
+
+func insertSpecies(tx *sql.Tx, row []string) error {
+	// slug,dex_id,name,form,type1,type2,hp,attack,defense,sp_attack,sp_defense,speed,
+	// generation,is_legendary,is_mythical,is_final_evo,is_restricted
+	_, err := tx.Exec(`INSERT OR IGNORE INTO species
+		(slug,dex_id,name,form,type1,type2,hp,attack,defense,sp_attack,sp_defense,speed,
 		 generation,is_legendary,is_mythical,is_final_evo,is_restricted)
-		VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	for _, r := range rows {
-		if _, err := stmt.Exec(r.ID, r.Name, r.Form, r.Type1, r.Type2,
-			r.HP, r.Attack, r.Defense, r.SpAttack, r.SpDefense, r.Speed,
-			r.Generation, r.IsLegendary, r.IsMythical, r.IsFinalEvo, r.IsRestricted); err != nil {
-			return err
-		}
-	}
-	return nil
+		VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+		col(row, 0), intCol(row, 1), col(row, 2), col(row, 3),
+		col(row, 4), col(row, 5),
+		intCol(row, 6), intCol(row, 7), intCol(row, 8),
+		intCol(row, 9), intCol(row, 10), intCol(row, 11),
+		intCol(row, 12), intCol(row, 13), intCol(row, 14),
+		intCol(row, 15), intCol(row, 16))
+	return err
 }
 
-func seedMoveRows(tx *sql.Tx, rows []seedMove) error {
-	stmt, err := tx.Prepare(`INSERT OR REPLACE INTO moves
-		(id,name,type,category,power,accuracy,pp,priority,target,description)
-		VALUES(?,?,?,?,?,?,?,?,?,?)`)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	for _, r := range rows {
-		if _, err := stmt.Exec(r.ID, r.Name, r.Type, r.Category,
-			r.Power, r.Accuracy, r.PP, r.Priority, r.Target, r.Description); err != nil {
-			return err
-		}
-	}
-	return nil
+func insertMove(tx *sql.Tx, row []string) error {
+	// id,name,slug,type,category,power,accuracy,pp,priority,target,description
+	_, err := tx.Exec(`INSERT OR REPLACE INTO moves
+		(id,name,slug,type,category,power,accuracy,pp,priority,target,description)
+		VALUES(?,?,?,?,?,?,?,?,?,?,?)`,
+		intCol(row, 0), col(row, 1), col(row, 2),
+		col(row, 3), col(row, 4),
+		nullIntCol(row, 5), nullIntCol(row, 6),
+		intCol(row, 7), intCol(row, 8),
+		col(row, 9), col(row, 10))
+	return err
 }
 
-func seedAbilityRows(tx *sql.Tx, rows []seedAbility) error {
-	stmt, err := tx.Prepare(`INSERT OR IGNORE INTO abilities(id,name,description) VALUES(?,?,?)`)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	for _, r := range rows {
-		if _, err := stmt.Exec(r.ID, r.Name, r.Description); err != nil {
-			return err
-		}
-	}
-	return nil
+func insertAbility(tx *sql.Tx, row []string) error {
+	// id,name,slug,description
+	_, err := tx.Exec(`INSERT OR IGNORE INTO abilities(id,name,slug,description) VALUES(?,?,?,?)`,
+		intCol(row, 0), col(row, 1), col(row, 2), col(row, 3))
+	return err
 }
 
-func seedItemRows(tx *sql.Tx, rows []seedItem) error {
-	stmt, err := tx.Prepare(`INSERT OR IGNORE INTO items(id,name,description,is_banned) VALUES(?,?,?,?)`)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	for _, r := range rows {
-		if _, err := stmt.Exec(r.ID, r.Name, r.Description, r.IsBanned); err != nil {
-			return err
-		}
-	}
-	return nil
+func insertItem(tx *sql.Tx, row []string) error {
+	// id,name,slug,description,is_banned,vp_cost
+	_, err := tx.Exec(`INSERT OR IGNORE INTO items(id,name,slug,description,is_banned,vp_cost) VALUES(?,?,?,?,?,?)`,
+		intCol(row, 0), col(row, 1), col(row, 2), col(row, 3),
+		intCol(row, 4), intCol(row, 5))
+	return err
 }
 
-func seedLearnsetRows(tx *sql.Tx, rows []seedLearnset) error {
-	stmt, err := tx.Prepare(`INSERT OR IGNORE INTO learnsets(species_id,move_id,learn_method)
-		SELECT id,?,? FROM species WHERE dex_id=? AND form=''`)
-	if err != nil {
-		return err
+func insertRegulation(tx *sql.Tx, row []string) error {
+	// id,name,start_date,end_date,description,max_restricted,active
+	active := 1
+	if len(row) > 6 {
+		active = intCol(row, 6)
 	}
-	defer stmt.Close()
-	for _, r := range rows {
-		if _, err := stmt.Exec(r.MoveID, r.LearnMethod, r.SpeciesID); err != nil {
-			return err
-		}
-	}
-	return nil
+	_, err := tx.Exec(`INSERT OR IGNORE INTO regulations(id,name,start_date,end_date,description,max_restricted,active) VALUES(?,?,?,?,?,?,?)`,
+		col(row, 0), col(row, 1), col(row, 2), col(row, 3), col(row, 4), intCol(row, 5), active)
+	return err
 }
 
-func seedSpeciesAbilityRows(tx *sql.Tx, rows []seedSpeciesAbility) error {
-	stmtBase, err := tx.Prepare(`INSERT OR IGNORE INTO species_abilities(species_id,ability_id,slot)
-		SELECT id,?,? FROM species WHERE dex_id=? AND form=''`)
-	if err != nil {
-		return err
-	}
-	defer stmtBase.Close()
-
-	stmtForm, err := tx.Prepare(`INSERT OR IGNORE INTO species_abilities(species_id,ability_id,slot)
-		SELECT id,?,? FROM species WHERE dex_id=? AND form=?`)
-	if err != nil {
-		return err
-	}
-	defer stmtForm.Close()
-
-	for _, r := range rows {
-		if r.Form == "" {
-			if _, err := stmtBase.Exec(r.AbilityID, r.Slot, r.SpeciesID); err != nil {
-				return err
-			}
-		} else {
-			if _, err := stmtForm.Exec(r.AbilityID, r.Slot, r.SpeciesID, r.Form); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
+func insertChampionsLearnset(tx *sql.Tx, row []string) error {
+	// species_slug,move_slug
+	_, err := tx.Exec(`INSERT OR IGNORE INTO champions_learnsets(species_slug,move_slug) VALUES(?,?)`,
+		col(row, 0), col(row, 1))
+	return err
 }
 
-func seedRegulationRows(tx *sql.Tx, rows []seedRegulation) error {
-	stmt, err := tx.Prepare(`INSERT OR IGNORE INTO regulations(id,name,start_date,end_date,description,max_restricted)
-		VALUES(?,?,?,?,?,?)`)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-	for _, r := range rows {
-		if _, err := stmt.Exec(r.ID, r.Name, r.StartDate, r.EndDate, r.Description, r.MaxRestricted); err != nil {
-			return err
-		}
-	}
-	return nil
+func insertLearnset(tx *sql.Tx, row []string) error {
+	// species_slug,move_slug
+	_, err := tx.Exec(`INSERT OR IGNORE INTO learnsets(species_slug,move_slug) VALUES(?,?)`,
+		col(row, 0), col(row, 1))
+	return err
 }
+
+func insertSpeciesAbility(tx *sql.Tx, row []string) error {
+	// species_slug,ability_slug,slot
+	_, err := tx.Exec(`INSERT OR IGNORE INTO species_abilities(species_slug,ability_slug,slot) VALUES(?,?,?)`,
+		col(row, 0), col(row, 1), intCol(row, 2))
+	return err
+}
+
+func insertRegulationSpecies(tx *sql.Tx, row []string) error {
+	// regulation_id,species_slug
+	_, err := tx.Exec(`INSERT OR IGNORE INTO regulation_species(regulation_id,species_slug) VALUES(?,?)`,
+		col(row, 0), col(row, 1))
+	return err
+}
+
+func insertMegaStone(tx *sql.Tx, row []string) error {
+	// pokemon_slug,stone_name,type1_override,type2_override,mega_ability
+	_, err := tx.Exec(`INSERT OR IGNORE INTO mega_stones(pokemon_slug,stone_name,type1_override,type2_override,mega_ability) VALUES(?,?,?,?,?)`,
+		col(row, 0), col(row, 1), col(row, 2), col(row, 3), col(row, 4))
+	return err
+}
+

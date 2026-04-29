@@ -1,0 +1,118 @@
+"id","name","slug","description","is_banned","vp_cost"
+1,"Black Belt","black-belt","An item to be held by a Pokémon. This belt helps with focus and boosts the power of the holder's Fighting-type moves.",0,700
+2,"Black Glasses","black-glasses","An item to be held by a Pokémon. It's a pair of shady- looking glasses that boost the power of the holder's Dark-type moves.",0,700
+3,"Bright Powder","bright-powder","An item to be held by a Pokémon. This glittery powder casts a tricky glare that lowers the accuracy of opposing Pokémon's moves.",0,700
+4,"Charcoal","charcoal","An item to be held by a Pokémon. It's a combustible fuel that boosts the power of the holder's Fire-type moves.",0,700
+5,"Choice Scarf","choice-scarf","An item to be held by a Pokémon. This curious scarf boosts the holder's Speed stat but only allows the use of a single move.",0,700
+6,"Dragon Fang","dragon-fang","An item to be held by a Pokémon. This hard, sharp fang boosts the power of the holder's Dragon-type moves.",0,700
+7,"Fairy Feather","fairy-feather","An item to be held by a Pokémon. This feather, which gleams faintly when hit by light, boosts the power of the holder's Fairy-type moves.",0,700
+8,"Focus Band","focus-band","An item to be held by a Pokémon. When the holder is hit with a move that should knock it out, it may be able to endure with 1 HP.",0,700
+9,"Focus Sash","focus-sash","An item to be held by a Pokémon. If the holder has full HP and it is hit with a move that should knock it out, it will endure with 1 HPbut only once.",0,700
+10,"Hard Stone","hard-stone","An item to be held by a Pokémon. It's a durable stone that boosts the power of the holder's Rock-type moves.",0,700
+11,"King's Rock","kings-rock","An item to be held by a Pokémon. It may cause the target to flinch whenever the holder successfully inflicts damage on them with an attack.",0,700
+12,"Leftovers","leftovers","An item to be held by a Pokémon. It slowly but steadily restores the holder's HP.",0,700
+13,"Light Ball","light-ball","An item to be held by Pikachu. It's a mysterious orb that boosts Pikachu's Attack and Sp. Atk stats.",0,1000
+14,"Magnet","magnet","An item to be held by a Pokémon. It's a powerful magnet that boosts the power of the holder's Electric-type moves.",0,700
+15,"Mental Herb","mental-herb","An item to be held by a Pokémon. The holder will be able to shake off move-binding effects to move freely but only once.",0,1000
+16,"Metal Coat","metal-coat","An item to be held by a Pokémon. It's a special metallic coating that boosts the power of the holder's Steel-type moves.",0,700
+17,"Miracle Seed","miracle-seed","An item to be held by a Pokémon. It's a seed imbued with life force that boosts the power of the holder's Grass-type moves.",0,700
+18,"Mystic Water","mystic-water","An item to be held by a Pokémon. This teardrop-shaped gem boosts the power of the holder's Water-type moves.",0,700
+19,"Never-Melt Ice","never-melt-ice","An item to be held by a Pokémon. It's a heat-repelling piece of ice that boosts the power of the holder's Ice- type moves.",0,700
+20,"Poison Barb","poison-barb","An item to be held by a Pokémon. This small poisonous barb boosts the power of the holder's Poison-type moves.",0,700
+21,"Quick Claw","quick-claw","An item to be held by a Pokémon. This light, sharp claw lets the holder occasionally unleash a move faster than it usually would.",0,700
+22,"Scope Lens","scope-lens","An item to be held by a Pokémon. It's a lens for scoping out weak points. It boosts the holder's critical-hit ratio.",0,1000
+23,"Sharp Beak","sharp-beak","An item to be held by a Pokémon. It's a long, sharp beak that boosts the power of the holder's Flying-type moves.",0,700
+24,"Shell Bell","shell-bell","An item to be held by a Pokémon. The holder restores a little HP to itself every time it inflicts damage with an attack.",0,700
+25,"Silk Scarf","silk-scarf","An item to be held by a Pokémon. It's a sumptuous scarf that boosts the power of the holder's Normal-type moves.",0,700
+26,"Silver Powder","silver-powder","An item to be held by a Pokémon. It's a shiny silver powder that boosts the power of the holder's Bug-type moves.",0,700
+27,"Soft Sand","soft-sand","An item to be held by a Pokémon. This loose, silky sand boosts the power of the holder's Ground-type moves.",0,700
+28,"Spell Tag","spell-tag","An item to be held by a Pokémon. It's a sinister, eerie tag that boosts the power of the holder's Ghost-type moves.",0,700
+29,"Twisted Spoon","twisted-spoon","An item to be held by a Pokémon. This spoon is imbued with telekinetic energy and boosts the power of the holder's Psychic-type moves.",0,700
+30,"White Herb","white-herb","An item to be held by a Pokémon. It will restore any lowered stat in battlebut only once.",0,700
+31,"Abomasite","abomasite","One of a variety of mysterious Mega Stones. An Abomasnow holding this stone will be able to Mega Evolve during battle.",0,700
+32,"Absolite","absolite","One of a variety of mysterious Mega Stones. An Absol holding this stone will be able to Mega Evolve during battle.",0,700
+33,"Aerodactylite","aerodactylite","One of a variety of mysterious Mega Stones. An Aerodactyl holding this stone will be able to Mega Evolve during battle.",0,700
+34,"Aggronite","aggronite","One of a variety of mysterious Mega Stones. An Aggron holding this stone will be able to Mega Evolve during battle.",0,700
+35,"Alakazite","alakazite","One of a variety of mysterious Mega Stones. An Alakazam holding this stone will be able to Mega Evolve during battle.",0,700
+36,"Altarianite","altarianite","One of a variety of mysterious Mega Stones. An Altaria holding this stone will be able to Mega Evolve during battle.",0,700
+37,"Ampharosite","ampharosite","One of a variety of mysterious Mega Stones. An Ampharos holding this stone will be able to Mega Evolve during battle.",0,700
+38,"Audinite","audinite","One of a variety of mysterious Mega Stones. An Audino holding this stone will be able to Mega Evolve during battle.",0,700
+39,"Banettite","banettite","One of a variety of mysterious Mega Stones. A Banette holding this stone will be able to Mega Evolve during battle.",0,700
+40,"Beedrillite","beedrillite","One of a variety of mysterious Mega Stones. A Beedrill holding this stone will be able to Mega Evolve during battle.",0,700
+41,"Blastoisinite","blastoisinite","One of a variety of mysterious Mega Stones. A Blastoise holding this stone will be able to Mega Evolve during battle.",0,700
+42,"Cameruptite","cameruptite","One of a variety of mysterious Mega Stones. A Camerupt holding this stone will be able to Mega Evolve during battle.",0,700
+43,"Chandelurite","chandelurite","One of a variety of mysterious Mega Stones. A Chandelure holding this stone will be able to Mega Evolve during battle.",0,700
+44,"Charizardite X","charizardite-x","One of a variety of mysterious Mega Stones. A Charizard holding this stone will be able to Mega Evolve during battle.",0,700
+45,"Charizardite Y","charizardite-y","One of a variety of mysterious Mega Stones. A Charizard holding this stone will be able to Mega Evolve during battle.",0,700
+46,"Chesnaughtite","chesnaughtite","One of a variety of mysterious Mega Stones. A Chesnaught holding this stone will be able to Mega Evolve during battle.",0,700
+47,"Chimechite","chimechite","One of a variety of mysterious Mega Stones. A Chimecho holding this stone will be able to Mega Evolve during battle.",0,700
+48,"Clefablite","clefablite","One of a variety of mysterious Mega Stones. A Clefable holding this stone will be able to Mega Evolve during battle.",0,700
+49,"Crabominite","crabominite","One of a variety of mysterious Mega Stones. A Crabominable holding this stone will be able to Mega Evolve during battle.",0,700
+50,"Delphoxite","delphoxite","One of a variety of mysterious Mega Stones. A Delphox holding this stone will be able to Mega Evolve during battle.",0,700
+51,"Dragoninite","dragoninite","One of a variety of mysterious Mega Stones. A Dragonite holding this stone will be able to Mega Evolve during battle.",0,700
+52,"Drampanite","drampanite","One of a variety of mysterious Mega Stones. A Drampa holding this stone will be able to Mega Evolve during battle.",0,700
+53,"Emboarite","emboarite","One of a variety of mysterious Mega Stones. An Emboar holding this stone will be able to Mega Evolve during battle.",0,700
+54,"Excadrite","excadrite","One of a variety of mysterious Mega Stones. An Excadrill holding this stone will be able to Mega Evolve during battle.",0,700
+55,"Feraligite","feraligite","One of a variety of mysterious Mega Stones. A Feraligatr holding this stone will be able to Mega Evolve during battle.",0,700
+56,"Floettite","floettite","One of a variety of mysterious Mega Stones. A special Floette holding this stone will be able to Mega Evolve during battle.",0,700
+57,"Froslassite","froslassite","One of a variety of mysterious Mega Stones. A Froslass holding this stone will be able to Mega Evolve during battle.",0,700
+58,"Galladite","galladite","One of a variety of mysterious Mega Stones. A Gallade holding this stone will be able to Mega Evolve during battle.",0,700
+59,"Garchompite","garchompite","One of a variety of mysterious Mega Stones. A Garchomp holding this stone will be able to Mega Evolve during battle.",0,700
+60,"Gardevoirite","gardevoirite","One of a variety of mysterious Mega Stones. A Gardevoir holding this stone will be able to Mega Evolve during battle.",0,700
+61,"Gengarite","gengarite","One of a variety of mysterious Mega Stones. A Gengar holding this stone will be able to Mega Evolve during battle.",0,700
+62,"Glalitite","glalitite","One of a variety of mysterious Mega Stones. A Glalie holding this stone will be able to Mega Evolve during battle.",0,700
+63,"Glimmoranite","glimmoranite","One of a variety of mysterious Mega Stones. A Glimmora holding this stone will be able to Mega Evolve during battle.",0,700
+64,"Golurkite","golurkite","One of a variety of mysterious Mega Stones. A Golurk holding this stone will be able to Mega Evolve during battle.",0,700
+65,"Greninjite","greninjite","One of a variety of mysterious Mega Stones. A Greninja holding this stone will be able to Mega Evolve during battle.",0,700
+66,"Gyaradosite","gyaradosite","One of a variety of mysterious Mega Stones. A Gyarados holding this stone will be able to Mega Evolve during battle.",0,700
+67,"Hawluchanite","hawluchanite","One of a variety of mysterious Mega Stones. A Hawlucha holding this stone will be able to Mega Evolve during battle.",0,700
+68,"Heracronite","heracronite","One of a variety of mysterious Mega Stones. A Heracross holding this stone will be able to Mega Evolve during battle.",0,700
+69,"Houndoominite","houndoominite","One of a variety of mysterious Mega Stones. A Houndoom holding this stone will be able to Mega Evolve during battle.",0,700
+70,"Kangaskhanite","kangaskhanite","One of a variety of mysterious Mega Stones. A Kangaskhan holding this stone will be able to Mega Evolve during battle.",0,700
+71,"Lopunnite","lopunnite","One of a variety of mysterious Mega Stones. A Lopunny holding this stone will be able to Mega Evolve during battle.",0,700
+72,"Lucarionite","lucarionite","One of a variety of mysterious Mega Stones. A Lucario holding this stone will be able to Mega Evolve during battle.",0,700
+73,"Manectite","manectite","One of a variety of mysterious Mega Stones. A Manectric holding this stone will be able to Mega Evolve during battle.",0,700
+74,"Medichamite","medichamite","One of a variety of mysterious Mega Stones. A Medicham holding this stone will be able to Mega Evolve during battle.",0,700
+75,"Meganiumite","meganiumite","One of a variety of mysterious Mega Stones. A Meganium holding this stone will be able to Mega Evolve during battle.",0,700
+76,"Meowsticite","meowsticite","One of a variety of mysterious Mega Stones. A Meowstic holding this stone will be able to Mega Evolve during battle.",0,700
+77,"Pidgeotite","pidgeotite","One of a variety of mysterious Mega Stones. A Pidgeot holding this stone will be able to Mega Evolve during battle.",0,700
+78,"Pinsirite","pinsirite","One of a variety of mysterious Mega Stones. A Pinsir holding this stone will be able to Mega Evolve during battle.",0,700
+79,"Sablenite","sablenite","One of a variety of mysterious Mega Stones. A Sableye holding this stone will be able to Mega Evolve during battle.",0,700
+80,"Scizorite","scizorite","One of a variety of mysterious Mega Stones. A Scizor holding this stone will be able to Mega Evolve during battle.",0,700
+81,"Scovillainite","scovillainite","One of a variety of mysterious Mega Stones. A Scovillain holding this stone will be able to Mega Evolve during battle.",0,700
+82,"Sharpedonite","sharpedonite","One of a variety of mysterious Mega Stones. A Sharpedo holding this stone will be able to Mega Evolve during battle.",0,700
+83,"Skarmorite","skarmorite","One of a variety of mysterious Mega Stones. A Skarmory holding this stone will be able to Mega Evolve during battle.",0,700
+84,"Slowbronite","slowbronite","One of a variety of mysterious Mega Stones. A Slowbro holding this stone will be able to Mega Evolve during battle. It won't work for a Galarian Slowbro, however.",0,700
+85,"Starminite","starminite","One of a variety of mysterious Mega Stones. A Starmie holding this stone will be able to Mega Evolve during battle.",0,700
+86,"Steelixite","steelixite","One of a variety of mysterious Mega Stones. A Steelix holding this stone will be able to Mega Evolve during battle.",0,700
+87,"Tyranitarite","tyranitarite","One of a variety of mysterious Mega Stones. A Tyranitar holding this stone will be able to Mega Evolve during battle.",0,700
+88,"Venusaurite","venusaurite","One of a variety of mysterious Mega Stones. A Venusaur holding this stone will be able to Mega Evolve during battle.",0,700
+89,"Victreebelite","victreebelite","One of a variety of mysterious Mega Stones. A Victreebel holding this stone will be able to Mega Evolve during battle.",0,700
+90,"Aspear Berry","aspear-berry","If a Pokémon holds one of these Berries, it will be able to thaw itself after being frozen.",0,400
+91,"Babiri Berry","babiri-berry","If a Pokémon holding this Berry is hit with a supereffective Steel-type move, the power of that move will be weakened.",0,400
+92,"Charti Berry","charti-berry","If a Pokémon holding this Berry is hit with a supereffective Rock-type move, the power of that move will be weakened.",0,400
+93,"Cheri Berry","cheri-berry","If a Pokémon holds one of these Berries, it will be able to free itself from paralysis.",0,400
+94,"Chesto Berry","chesto-berry","If a Pokémon holds one of these Berries, it will be able to shake off its drowsiness.",0,400
+95,"Chilan Berry","chilan-berry","If a Pokémon holding this Berry is hit with a Normal-type move, the power of that move will be weakened.",0,400
+96,"Chople Berry","chople-berry","If a Pokémon holding this Berry is hit with a supereffective Fighting-type move, the power of that move will be weakened.",0,400
+97,"Coba Berry","coba-berry","If a Pokémon holding this Berry is hit with a supereffective Flying-type move, the power of that move will be weakened.",0,400
+98,"Colbur Berry","colbur-berry","If a Pokémon holding this Berry is hit with a supereffective Dark-type move, the power of that move will be weakened.",0,400
+99,"Haban Berry","haban-berry","If a Pokémon holding this Berry is hit with a supereffective Dragon-type move, the power of that move will be weakened.",0,400
+100,"Kasib Berry","kasib-berry","If a Pokémon holding this Berry is hit with a supereffective Ghost-type move, the power of that move will be weakened.",0,400
+101,"Kebia Berry","kebia-berry","If a Pokémon holding this Berry is hit with a supereffective Poison-type move, the power of that move will be weakened.",0,400
+102,"Leppa Berry","leppa-berry","If a Pokémon holds one of these Berries, it will be able to restore 10 PP to a move.",0,400
+103,"Lum Berry","lum-berry","If a Pokémon holds one of these Berries, it will be able to cure itself of any status condition it may have.",0,700
+104,"Occa Berry","occa-berry","If a Pokémon holding this Berry is hit with a supereffective Fire-type move, the power of that move will be weakened.",0,400
+105,"Oran Berry","oran-berry","If a Pokémon holds one of these Berries, it will be able to restore 10 HP to itself.",0,400
+106,"Passho Berry","passho-berry","If a Pokémon holding this Berry is hit with a supereffective Water-type move, the power of that move will be weakened.",0,400
+107,"Payapa Berry","payapa-berry","If a Pokémon holding this Berry is hit with a supereffective Psychic-type move, the power of that move will be weakened.",0,400
+108,"Pecha Berry","pecha-berry","If a Pokémon holds one of these Berries, it will be able to lift the effects of being poisoned from itself.",0,400
+109,"Persim Berry","persim-berry","If a Pokémon holds one of these Berries, it will be able to cure itself of confusion.",0,400
+110,"Rawst Berry","rawst-berry","If a Pokémon holds one of these Berries, it will be able to cure itself of a burn.",0,400
+111,"Rindo Berry","rindo-berry","If a Pokémon holding this Berry is hit with a supereffective Grass-type move, the power of that move will be weakened.",0,400
+112,"Roseli Berry","roseli-berry","If a Pokémon holding this Berry is hit with a supereffective Fairy-type move, the power of that move will be weakened.",0,400
+113,"Shuca Berry","shuca-berry","If a Pokémon holding this Berry is hit with a supereffective Ground-type move, the power of that move will be weakened.",0,400
+114,"Sitrus Berry","sitrus-berry","If a Pokémon holds one of these Berries, it will be able to restore a small amount of HP to itself.",0,700
+115,"Tanga Berry","tanga-berry","If a Pokémon holding this Berry is hit with a supereffective Bug-type move, the power of that move will be weakened.",0,400
+116,"Wacan Berry","wacan-berry","If a Pokémon holding this Berry is hit with a supereffective Electric-type move, the power of that move will be weakened.",0,400
+117,"Yache Berry","yache-berry","If a Pokémon holding this Berry is hit with a supereffective Ice-type move, the power of that move will be weakened.",0,400

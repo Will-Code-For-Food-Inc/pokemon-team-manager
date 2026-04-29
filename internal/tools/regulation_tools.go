@@ -10,9 +10,16 @@ import (
 
 func registerRegulationTools(s *server.MCPServer, svc *Services) {
 	s.AddTool(mcp.NewTool("list_regulations",
-		mcp.WithDescription("List all VGC regulation sets (A through H and beyond)."),
+		mcp.WithDescription("List active regulation sets. Pass all=true to include inactive ones."),
+		mcp.WithBoolean("all", mcp.Description("Include inactive regulations (default false)")),
 	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		regs, err := svc.Team.ListRegulations()
+		var regs any
+		var err error
+		if getBool(req.GetArguments(), "all") {
+			regs, err = svc.Team.ListRegulations()
+		} else {
+			regs, err = svc.Team.ListActiveRegulations()
+		}
 		if err != nil {
 			return errResult(err.Error()), nil
 		}
@@ -20,19 +27,14 @@ func registerRegulationTools(s *server.MCPServer, svc *Services) {
 	})
 
 	s.AddTool(mcp.NewTool("get_regulation",
-		mcp.WithDescription("Get details for a VGC regulation set including banned and restricted Pokemon and banned moves."),
-		mcp.WithString("id", mcp.Required(), mcp.Description("Regulation ID (e.g. 'H')")),
+		mcp.WithDescription("Get details for a regulation set including banned and restricted Pokemon."),
+		mcp.WithString("id", mcp.Required(), mcp.Description("Regulation ID (e.g. 'I2', 'M-A')")),
 	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		regs, err := svc.Team.ListRegulations()
+		id := strings.ToUpper(getString(req.GetArguments(), "id"))
+		reg, err := svc.Team.GetRegulation(id)
 		if err != nil {
 			return errResult(err.Error()), nil
 		}
-		id := strings.ToUpper(getString(req.GetArguments(), "id"))
-		for _, r := range regs {
-			if r.ID == id {
-				return jsonResult(r), nil
-			}
-		}
-		return errResult("regulation not found: " + id), nil
+		return jsonResult(reg), nil
 	})
 }

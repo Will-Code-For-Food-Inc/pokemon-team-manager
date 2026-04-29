@@ -1,0 +1,68 @@
+{{template "base" .}}
+{{define "title"}}Team {{.Team.Name}} — History{{end}}
+{{define "content"}}
+{{with .Flash}}<div class="flash-ok">{{.}}</div>{{end}}
+
+<div class="panel">
+  <div class="panel-head">{{.Team.Name}} — History <small style="font-weight:normal">— Regulation {{.Team.Regulation}}</small></div>
+  <div class="panel-body">
+    <a href="/teams/{{.Team.ID}}" class="btn btn-primary btn-sm">← Back to Team</a>
+    <p style="font-size:12px;color:var(--cream-dim);margin-top:8px">
+      Every successful mutation writes a snapshot. Mutation snapshots auto-prune to the last 50; checkpoints (if any) are preserved.
+      Pruning is user-only — no agent can drop snapshots.
+    </p>
+  </div>
+</div>
+
+{{if .Snapshots}}
+<div class="panel">
+  <div class="panel-head">Snapshots ({{len .Snapshots}})</div>
+  <div class="panel-body">
+    <table style="width:100%;font-size:12px;border-collapse:collapse">
+      <thead>
+        <tr style="text-align:left;border-bottom:1px solid var(--gold-dim)">
+          <th style="padding:4px 8px">When</th>
+          <th style="padding:4px 8px">Kind</th>
+          <th style="padding:4px 8px">Label</th>
+          <th style="padding:4px 8px">By</th>
+          <th style="padding:4px 8px">View</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Snapshots}}
+        <tr style="border-bottom:1px solid var(--navy-border)">
+          <td style="padding:4px 8px;font-family:monospace">{{.CreatedAt.Format "2006-01-02 15:04:05"}}</td>
+          <td style="padding:4px 8px">
+            {{if eq .Kind "checkpoint"}}<strong style="color:var(--gold-bright)">{{.Kind}}</strong>{{else}}{{.Kind}}{{end}}
+          </td>
+          <td style="padding:4px 8px;font-family:monospace">{{.Label}}</td>
+          <td style="padding:4px 8px;font-size:11px;color:var(--cream-dim)">{{.CreatedBy}}</td>
+          <td style="padding:4px 8px"><a href="/teams/{{$.Team.ID}}/history/{{.ID}}">view</a></td>
+        </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="panel-head">Prune <small style="font-weight:normal">— user-only</small></div>
+  <div class="panel-body">
+    <p style="font-size:12px;color:var(--cream-dim)">
+      Drop mutation snapshots beyond the most recent <strong>N</strong>. Checkpoints are never touched. This is permanent — there's no "undo prune."
+    </p>
+    <form method="POST" action="/teams/{{.Team.ID}}/history/prune"
+          onsubmit="return confirm('Drop mutation snapshots beyond the kept window? This is permanent.');">
+      <label>Keep last
+        <input type="number" name="keep" value="20" min="0" max="500" style="width:60px">
+        snapshots
+      </label>
+      <button type="submit" class="btn btn-primary btn-sm">Prune</button>
+    </form>
+  </div>
+</div>
+{{else}}
+<div class="panel"><div class="panel-body" style="font-size:12px;color:var(--cream-dim)">No snapshots yet for this team.</div></div>
+{{end}}
+
+{{end}}
