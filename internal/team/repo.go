@@ -701,9 +701,11 @@ func (r *Repo) GetLogs(teamID int) ([]TeamLog, error) {
 	var logs []TeamLog
 	for rows.Next() {
 		var l TeamLog
-		if err := rows.Scan(&l.ID, &l.TeamID, &l.Entry, &l.CreatedAt); err != nil {
+		var ca string
+		if err := rows.Scan(&l.ID, &l.TeamID, &l.Entry, &ca); err != nil {
 			return nil, err
 		}
+		l.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", ca)
 		logs = append(logs, l)
 	}
 	return logs, rows.Err()

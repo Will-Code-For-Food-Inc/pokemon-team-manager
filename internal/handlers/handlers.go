@@ -6,6 +6,7 @@ package handlers
 import (
 	"database/sql"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 
@@ -36,9 +37,19 @@ type AgentConfig struct {
 	Prompt      string
 }
 
-// LoadConfig reads AgentConfig from the settings table, falling back to defaults.
+// LoadConfig reads AgentConfig from env vars (preferred), then the settings table, falling back to defaults.
 func LoadConfig(db *sql.DB) AgentConfig {
-	get := func(key, def string) string {
+	get := func(key, envKey, def string) string {
+		if env := os.Getenv(envKey); env != "" {
+			return env
+		}
+		var v string
+		if err := db.QueryRow(`SELECT value FROM settings WHERE key=?`, key).Scan(&v); err != nil {
+			return def
+		}
+		return v
+	}
+	getNoEnv := func(key, def string) string {
 		var v string
 		if err := db.QueryRow(`SELECT value FROM settings WHERE key=?`, key).Scan(&v); err != nil {
 			return def
@@ -46,30 +57,30 @@ func LoadConfig(db *sql.DB) AgentConfig {
 		return v
 	}
 	parseInt := func(key string, def int) int {
-		v, err := strconv.Atoi(get(key, ""))
+		v, err := strconv.Atoi(getNoEnv(key, ""))
 		if err != nil {
 			return def
 		}
 		return v
 	}
 	parseFloat := func(key string, def float64) float64 {
-		v, err := strconv.ParseFloat(get(key, ""), 64)
+		v, err := strconv.ParseFloat(getNoEnv(key, ""), 64)
 		if err != nil {
 			return def
 		}
 		return v
 	}
 	return AgentConfig{
-		OllamaURL:   get("ollama_url", "http://localhost:11434"),
-		Model:       get("ollama_model", "qwen3.5:9b"),
+		OllamaURL:   get("ollama_url", "PTM_OLLAMA_URL", "http://localhost:11434"),
+		Model:       get("ollama_model", "PTM_OLLAMA_MODEL", "qwen3.5:9b"),
 		NumCtx:      parseInt("ollama_num_ctx", 20000),
 		Temperature: parseFloat("ollama_temp", 0.3),
 		TopP:        parseFloat("ollama_top_p", 0.7),
 		TopK:        parseInt("ollama_top_k", 20),
 		Repeat:      parseFloat("ollama_repeat", 1.1),
-		KeepAlive:   get("ollama_keep_alive", "15m"),
+		KeepAlive:   getNoEnv("ollama_keep_alive", "15m"),
 		Lookback:    parseInt("agent_lookback", 10),
-		Prompt:      get("agent_prompt", PtmSystemPrompt),
+		Prompt:      getNoEnv("agent_prompt", PtmSystemPrompt),
 	}
 }
 

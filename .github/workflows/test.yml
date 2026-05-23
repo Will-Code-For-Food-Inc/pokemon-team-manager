@@ -1,0 +1,33 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: build
+        run: go build ./...
+
+      - name: test (fast packages with race)
+        run: go test -race -count=1 -timeout 120s
+          ./internal/db/...
+          ./internal/handlers/...
+          ./internal/knowledge/...
+          ./internal/pokemon/...
+          ./internal/testutil/...
+
+      - name: test (seeded packages — no race, high timeout due to per-test DB seed cost)
+        run: go test -count=1 -timeout 600s
+          ./internal/team/...
+          ./internal/tools/...
